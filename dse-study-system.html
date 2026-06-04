@@ -7031,19 +7031,56 @@ function generateNote(){
   } else if(selectedFmt==='2'){
     html=info+`
     <h3 style="color:var(--cool);margin-top:14px;">═══ 原因分析 ═══</h3>
-    <div class="form-group"><label class="form-label">政治原因</label><textarea class="form-textarea" id="gf-cp" placeholder="政治制度、權力鬥爭、政策失誤">${auto.causeP||''}</textarea></div>
-    <div class="form-group"><label class="form-label">經濟原因</label><textarea class="form-textarea" id="gf-ce" placeholder="經濟危機、資源爭奪">${auto.causeE||''}</textarea></div>
-    <div class="form-group"><label class="form-label">社會/文化原因</label><textarea class="form-textarea" id="gf-cs" placeholder="社會矛盾、文化衝突">${auto.causeS||''}</textarea></div>
-    <div class="form-group"><label class="form-label">外部/國際原因</label><textarea class="form-textarea" id="gf-co" placeholder="外國干涉、國際局勢">${auto.causeO||''}</textarea></div>
-    <div class="form-group" style="background:#FFF8E1;padding:10px;border-radius:8px;"><label class="form-label">🔑 最關鍵原因</label><textarea class="form-textarea" id="gf-ck" placeholder="哪個原因最重要？為什麼？DSE常問！">${auto.keyCause||''}</textarea></div>
+    <div class="form-group"><label class="form-label">政治原因</label><textarea class="form-textarea" id="gf-cp" rows="3" placeholder="政治制度、權力鬥爭、政策失誤">${auto.causeP||''}</textarea></div>
+    <div class="form-group"><label class="form-label">經濟原因</label><textarea class="form-textarea" id="gf-ce" rows="3" placeholder="經濟危機、資源爭奪">${auto.causeE||''}</textarea></div>
+    <div class="form-group"><label class="form-label">社會/文化原因</label><textarea class="form-textarea" id="gf-cs" rows="3" placeholder="社會矛盾、文化衝突">${auto.causeS||''}</textarea></div>
+    <div class="form-group"><label class="form-label">外部/國際原因</label><textarea class="form-textarea" id="gf-co" rows="3" placeholder="外國干涉、國際局勢">${auto.causeO||''}</textarea></div>
+    <div class="form-group" style="background:#FFF8E1;padding:10px;border-radius:8px;"><label class="form-label">🔑 最關鍵原因</label><textarea class="form-textarea" id="gf-ck" rows="3" placeholder="哪個原因最重要？為什麼？DSE常問！">${auto.keyCause||''}</textarea></div>
     <h3 style="color:var(--cool);margin-top:14px;">═══ 過程描述 ═══</h3>
-    <div class="form-group"><label class="form-label">關鍵人物角色</label><textarea class="form-textarea" id="gf-pp" placeholder="人物1：做了什麼？\n人物2：做了什麼？">${auto.peopleRole||(auto.people?'相關人物：'+auto.people:'')}</textarea></div>
-    <div class="form-group"><label class="form-label">關鍵轉折點</label><textarea class="form-textarea" id="gf-tp" placeholder="轉折1：什麼事？為何重要？\n轉折2：...">${auto.turningPoint||auto.process||''}</textarea></div>
+    <div class="form-group"><label class="form-label">關鍵人物角色</label><textarea class="form-textarea" id="gf-pp" rows="3" placeholder="人物1：做了什麼？\n人物2：做了什麼？">${auto.peopleRole||(auto.people?'相關人物：'+auto.people:'')}</textarea></div>
+    <div class="form-group"><label class="form-label">詳細經過（時間線）</label><textarea class="form-textarea" id="gf-tp" rows="5" placeholder="按時間順序記錄關鍵事件">${auto.process||auto.turningPoint||''}</textarea></div>
+    <div class="form-group"><label class="form-label">重要史實與數據</label><textarea class="form-textarea" id="gf-fd" rows="6" placeholder="具體年份、人數、制度名稱、條約內容等">${auto.factDetail||''}</textarea></div>
+    ${buildInstCard(auto.institutionDetail)}
     <h3 style="color:var(--cool);margin-top:14px;">═══ 影響分析 ═══</h3>
-    <div class="form-row"><div class="form-group"><label class="form-label">短期影響</label><textarea class="form-textarea" id="gf-is" rows="2" placeholder="當時-10年內">${auto.shortImpact||''}</textarea></div><div class="form-group"><label class="form-label">長期影響</label><textarea class="form-textarea" id="gf-il" rows="2" placeholder="10年以上">${auto.longImpact||''}</textarea></div></div>
-    <div class="form-row"><div class="form-group"><label class="form-label">正面影響</label><textarea class="form-textarea" id="gf-ip" rows="2">${auto.posImpact||''}</textarea></div><div class="form-group"><label class="form-label">負面影響</label><textarea class="form-textarea" id="gf-in" rows="2">${auto.negImpact||''}</textarea></div></div>
-    <div class="form-group" style="background:#FFF8E1;padding:10px;border-radius:8px;"><label class="form-label">🔑 歷史意義/評價</label><textarea class="form-textarea" id="gf-ev" placeholder="這個事件在歷史上的地位，DSE論述題必備">${auto.evaluation||''}</textarea></div>
-    ${buildInstCard(auto.institutionDetail)}`;
+    <div class="form-row"><div class="form-group"><label class="form-label">短期影響</label><textarea class="form-textarea" id="gf-is" rows="3" placeholder="當時-10年內">${auto.shortImpact||''}</textarea></div><div class="form-group"><label class="form-label">長期影響</label><textarea class="form-textarea" id="gf-il" rows="3" placeholder="10年以上">${auto.longImpact||''}</textarea></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">正面影響</label><textarea class="form-textarea" id="gf-ip" rows="3">${auto.posImpact||''}</textarea></div><div class="form-group"><label class="form-label">負面影響</label><textarea class="form-textarea" id="gf-in" rows="3">${auto.negImpact||''}</textarea></div></div>
+    <div class="form-group" style="background:#FFF8E1;padding:10px;border-radius:8px;"><label class="form-label">🔑 歷史意義/評價</label><textarea class="form-textarea" id="gf-ev" rows="3" placeholder="這個事件在歷史上的地位，DSE論述題必備">${auto.evaluation||''}</textarea></div>
+    ${auto.p1?`
+    <h3 style="color:var(--primary);margin-top:16px;">═══ DSE論述：深入分析 ═══</h3>
+    <div style="background:var(--gray-50);padding:14px;border-radius:8px;margin-bottom:14px;font-size:12px;color:var(--gray-500);">
+      PEEL = <span style="color:var(--peel-p);font-weight:700;">P論點</span> + <span style="color:var(--peel-e1);font-weight:700;">E論據</span> + <span style="color:var(--peel-e2);font-weight:700;">E解釋</span> + <span style="color:var(--peel-l);font-weight:700;">L扣題</span>　—　DSE論述題必用結構
+    </div>
+    <div style="background:#E3F2FD;padding:12px;border-radius:8px;margin-bottom:10px;border-left:4px solid #1565C0;">
+      <strong style="color:#1565C0;">📝 DSE常見問題</strong>
+      <div style="margin-top:6px;">${(auto.dseQ||'').split('|||').map((q,i)=>`<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;font-size:13px;"><span style="background:#1565C0;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">${i+1}</span><span>${q.trim()}</span></div>`).join('')}</div>
+    </div>
+    <div style="background:#E8F5E9;padding:12px;border-radius:8px;margin-bottom:10px;border-left:4px solid #2E7D32;">
+      <strong style="color:#2E7D32;">✅ 論點1</strong>
+      <div style="margin-top:6px;font-size:13px;"><strong style="color:var(--peel-p);">P：</strong>${auto.p1}</div>
+      <div style="margin-top:4px;font-size:13px;"><strong style="color:var(--peel-e1);">E1：</strong>${auto.e1_1||''}</div>
+      <div style="margin-top:4px;font-size:13px;"><strong style="color:var(--peel-e2);">E2：</strong>${auto.e2_1||''}</div>
+      <div style="margin-top:4px;font-size:13px;"><strong style="color:var(--peel-l);">L：</strong>${auto.l1||''}</div>
+    </div>
+    <div style="background:#FFF3E0;padding:12px;border-radius:8px;margin-bottom:10px;border-left:4px solid #E65100;">
+      <strong style="color:#E65100;">🔄 論點2（另一方面）</strong>
+      <div style="margin-top:6px;font-size:13px;"><strong style="color:var(--peel-p);">P：</strong>${auto.p2||''}</div>
+      <div style="margin-top:4px;font-size:13px;"><strong style="color:var(--peel-e1);">E1：</strong>${auto.e1_2||''}</div>
+      <div style="margin-top:4px;font-size:13px;"><strong style="color:var(--peel-e2);">E2：</strong>${auto.e2_2||''}</div>
+      <div style="margin-top:4px;font-size:13px;"><strong style="color:var(--peel-l);">L：</strong>${auto.l2||''}</div>
+    </div>
+    <div style="background:#F3E5F5;padding:12px;border-radius:8px;margin-bottom:10px;border-left:4px solid #7B1FA2;">
+      <strong style="color:#7B1FA2;">🔑 總結立場</strong>
+      <div style="margin-top:6px;font-size:13px;">${auto.conclusion||''}</div>
+    </div>
+    ${auto.commonMistakes?`<div style="background:#FFEBEE;padding:10px;border-radius:8px;margin-bottom:10px;border-left:4px solid #C62828;">
+      <strong style="color:#C62828;">⚠️ 考生常犯錯誤</strong>
+      <div style="margin-top:4px;font-size:13px;">${auto.commonMistakes}</div>
+    </div>`:''}
+    ${auto.answerTips?`<div style="background:#E8F5E9;padding:10px;border-radius:8px;margin-bottom:10px;border-left:4px solid #2E7D32;">
+      <strong style="color:#2E7D32;">💡 答題貼士</strong>
+      <div style="margin-top:4px;font-size:13px;">${auto.answerTips}</div>
+    </div>`:''}
+    `:''}`;
   } else if(selectedFmt==='3'){
     html=info+`
     <div style="background:var(--gray-50);padding:14px;border-radius:8px;margin-bottom:14px;font-size:12px;color:var(--gray-500);">
