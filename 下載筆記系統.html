@@ -1,0 +1,20 @@
+<html><body style="font-family:sans-serif;text-align:center;padding:40px">
+<h1>📚 DSE筆記系統 安裝器</h1>
+<p>按下面按鈕即可下載完整筆記系統</p>
+<button onclick="build()" style="padding:15px 40px;font-size:18px;cursor:pointer;background:#1B3A5C;color:#fff;border:none;border-radius:10px">🚀 下載筆記系統</button>
+<p id="s" style="margin-top:20px;color:#666"></p>
+<script>
+function build(){
+document.getElementById('s').textContent='正在準備...';
+var s=new XMLHttpRequest();s.open('GET','DSE筆記系統.html',true);
+s.onload=function(){
+if(s.status===200||s.status===0){
+var b=new Blob([s.responseText],{type:'text/html'});
+var a=document.createElement('a');a.href=URL.createObjectURL(b);
+a.download='DSE筆記系統.html';a.click();
+document.getElementById('s').textContent='✅ 已下載！雙擊 DSE筆記系統.html 即可使用';
+}else{
+document.getElementById('s').textContent='❌ 請將此檔案與 DSE筆記系統.html 放在同一資料夾';
+}};s.send();}
+</script>
+</body></html>

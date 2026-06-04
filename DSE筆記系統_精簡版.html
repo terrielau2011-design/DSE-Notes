@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DSE筆記系統</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Microsoft JhengHei","PingFang HK",sans-serif;background:#f0f2f5;display:flex;min-height:100vh}
+#sidebar{width:200px;background:#2c3e50;color:#fff;padding:15px 0;position:fixed;top:0;left:0;height:100vh;overflow-y:auto}
+#sidebar h2{text-align:center;padding:12px;font-size:16px;border-bottom:1px solid #34495e}
+#sidebar a{display:block;padding:10px 18px;color:#bdc3c7;text-decoration:none;font-size:13px;cursor:pointer}
+#sidebar a:hover,#sidebar a.active{background:#34495e;color:#fff}
+#main{margin-left:200px;padding:20px;flex:1;min-width:300px}
+.page{display:none}.page.active{display:block}
+h1{font-size:20px;color:#2c3e50;margin-bottom:15px}
+h2{font-size:16px;color:#34495e;margin:15px 0 8px}
+.card{background:#fff;border-radius:8px;padding:15px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.card h3{font-size:14px;color:#2c3e50;margin-bottom:8px}
+.stat-row{display:flex;gap:10px;flex-wrap:wrap}
+.stat{flex:1;min-width:120px;background:#fff;border-radius:8px;padding:12px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.stat .num{font-size:24px;font-weight:bold;color:#3498db}
+.stat .label{font-size:11px;color:#7f8c8d}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid #eee;font-size:12px}
+th{background:#2c3e50;color:#fff;font-size:12px}
+.btn{padding:6px 14px;border:none;border-radius:4px;cursor:pointer;font-size:12px;margin:2px}
+.btn-p{background:#3498db;color:#fff}.btn-s{background:#2ecc71;color:#fff}.btn-d{background:#e74c3c;color:#fff}
+.btn:hover{opacity:.85}
+input,select,textarea{padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px;width:100%;margin:3px 0}
+textarea{resize:vertical;min-height:60px}
+.modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:99}
+.modal{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;padding:20px;border-radius:8px;width:90%;max-width:500px;max-height:80vh;overflow-y:auto}
+.modal h3{margin-bottom:10px}
+.form-group{margin-bottom:8px}
+.form-group label{font-size:12px;color:#555;display:block;margin-bottom:2px}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;color:#fff;margin:1px}
+.tag-mc{background:#9b59b6}.tag-sa{background:#3498db}.tag-db{background:#e67e22}.tag-es{background:#e74c3c}
+.quote{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:15px;border-radius:8px;margin-bottom:15px;font-style:italic;font-size:14px}
+.bar{height:8px;background:#ecf0f1;border-radius:4px;overflow:hidden;margin-top:4px}
+.bar-fill{height:100%;border-radius:4px;transition:width .3s}
+.nav-sub{padding-left:25px}
+</style>
+</head>
+<body>
+<div id="sidebar">
+<h2>DSE筆記系統</h2>
+<a class="active" onclick="showPage('dash')">Dashboard</a>
+<a onclick="showPage('gen')">筆記生成器</a>
+<a onclick="showPage('n-chhist')">📝 中史筆記</a>
+<a onclick="showPage('n-whist')">📝 世史筆記</a>
+<a onclick="showPage('n-csd')">📝 C&SD筆記</a>
+<a onclick="showPage('p-eng')">✏️ 英文操練</a>
+<a onclick="showPage('p-math')">✏️ 數學操練</a>
+<a onclick="showPage('p-chi')">✏️ 中文操練</a>
+<a onclick="showPage('stats')">DSE題型統計</a>
+<a onclick="showPage('export')">匯出筆記</a>
+</div>
+<div id="main">
+<div id="pg-dash" class="page active"></div>
+<div id="pg-gen" class="page"></div>
+<div id="pg-n-chhist" class="page"></div>
+<div id="pg-n-whist" class="page"></div>
+<div id="pg-n-csd" class="page"></div>
+<div id="pg-p-eng" class="page"></div>
+<div id="pg-p-math" class="page"></div>
+<div id="pg-p-chi" class="page"></div>
+<div id="pg-stats" class="page"></div>
+<div id="pg-export" class="page"></div>
+</div>
+<div id="modal-bg" class="modal-bg" onclick="closeModal()">
+<div class="modal" onclick="event.stopPropagation()" id="modal-content"></div>
+</div>
+<script>
+const SUBJ={chhist:"中史",whist:"世史",csd:"C&SD",eng:"英文",math:"數學",chi:"中文"};
+const NOTE_KEYS=["chhist","whist","csd"];
+const PRAC_KEYS=["eng","math","chi"];
+const QTYPES=["MC","短答","DBQ","論述"];
+const QTCLS={MC:"tag-mc",短答:"tag-sa",DBQ:"tag-db",論述:"tag-es"};
+const QUOTES=["千里之行，始於足下。","努力不一定成功，但放棄一定失敗。","今日的汗水，是明天的收穫。","讀書破萬卷，下筆如有神。","學如逆水行舟，不進則退。","態度決定高度。","天下無難事，只怕有心人。","成功是從失敗到失敗也依然不改熱情。","勤能補拙。","不經一番寒徹骨，怎得梅花撲鼻香。","機會留給有準備的人。","每一次努力都不會白費。","堅持就是勝利。","比你厲害的人還在努力，你憑什麼放棄。","今天多一分努力，明天少一分遺憾。","失敗乃成功之母。","沒有壓力，就沒有動力。","寶劍鋒從磨礪出，梅花香自苦寒來。","學問是苦根上長出來的甜果。","你的未來，由你現在的努力決定。","做就對了，想太多只會絆住自己。","不怕慢，只怕站。","一分耕耘，一分收穫。","路雖遠行則將至，事雖難做則必成。","每一個不努力的日子，都是對生命的辜負。","滴水穿石，非一日之功。","溫故而知新。","成功沒有捷徑，只有堅持。","今天的你比昨天進步了嗎？","夢想不會逃跑，逃跑的只有自己。"];
+let D={notes:{},prac:{}};
+function load(){try{let s=localStorage.getItem("dse_data");if(s)D=JSON.parse(s)}catch(e){}}
+function save(){localStorage.setItem("dse_data",JSON.stringify(D))}
+function showPage(id){
+document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+document.getElementById("pg-"+id).classList.add("active");
+document.querySelectorAll("#sidebar a").forEach(a=>a.classList.remove("active"));
+event.target.classList.add("active");
+if(id==="dash")renderDash();
+else if(id==="gen")renderGen();
+else if(id.startsWith("n-"))renderNotes(id.slice(2));
+else if(id.startsWith("p-"))renderPrac(id.slice(2));
+else if(id==="stats")renderStats();
+else if(id==="export")renderExport();
+}
+function openModal(h){document.getElementById("modal-content").innerHTML=h;document.getElementById("modal-bg").style.display="block"}
+function closeModal(){document.getElementById("modal-bg").style.display="none"}
+function qtag(t){return `<span class="tag ${QTCLS[t]||""}">${t}</span>`}
+function profBadge(n){const c=["#e74c3c","#e67e22","#f1c40f","#2ecc71","#27ae60"];return `<span style="color:${c[n-1]||"#999"};font-weight:bold">${n}</span>`}
+function renderDash(){
+let tn=0,tp=0,dseN=0,p1=0,p3=0;
+NOTE_KEYS.forEach(k=>{let a=D.notes[k]||[];tn+=a.length;a.forEach(n=>{if(n.dse)dseN++;if(n.prof<=2)p1++;if(n.prof<=3)p3++})});
+PRAC_KEYS.forEach(k=>{tp+=(D.prac[k]||[]).length});
+let doneN=0;NOTE_KEYS.forEach(k=>{(D.notes[k]||[]).forEach(n=>{if(n.prof>=4)doneN++})});
+let pct=tn?Math.round(doneN/tn*100):0;
+let q=QUOTES[Math.floor(Math.random()*QUOTES.length)];
+let h=`<h1>Dashboard</h1><div class="quote">💡 ${q}</div><div class="stat-row">
+<div class="stat"><div class="num">${tn}</div><div class="label">筆記總數</div></div>
+<div class="stat"><div class="num">${tp}</div><div class="label">操練記錄</div></div>
+<div class="stat"><div class="num">${dseN}</div><div class="label">DSE曾出現</div></div>
+<div class="stat"><div class="num">${pct}%</div><div class="label">掌握程度</div></div></div>
+<div class="card"><h3>📈 整體進度</h3><div class="bar"><div class="bar-fill" style="width:${pct}%;background:#2ecc71"></div></div><p style="font-size:11px;color:#7f8c8d;margin-top:4px">熟練度4-5視為已掌握 | 熟練度1-2: ${p1}條 | 熟練度1-3: ${p3}條</p></div>`;
+NOTE_KEYS.forEach(k=>{
+let a=D.notes[k]||[];let d=0;a.forEach(n=>{if(n.prof>=4)d++});
+let p=a.length?Math.round(d/a.length*100):0;
+h+=`<div class="card"><h3>${SUBJ[k]}</h3><div class="bar"><div class="bar-fill" style="width:${p}%;background:#3498db"></div></div><p style="font-size:11px;color:#7f8c8d">${a.length}條筆記，${d}條已掌握 (${p}%)</p></div>`;
+});
+PRAC_KEYS.forEach(k=>{
+let a=D.prac[k]||[];
+h+=`<div class="card"><h3>${SUBJ[k]} 操練</h3><p style="font-size:11px;color:#7f8c8d">${a.length}條記錄</p></div>`;
+});
+document.getElementById("pg-dash").innerHTML=h;
+}
+function renderGen(){
+let h=`<h1>筆記生成器</h1><div class="card"><h3>輸入資料</h3>
+<div class="form-group"><label>科目</label><select id="g-subj"><option value="chhist">中史</option><option value="whist">世史</option><option value="csd">C&SD</option></select></div>
+<div class="form-group"><label>事件/主題標題</label><input id="g-title" placeholder="例：商鞅變法"></div>
+<div class="form-group"><label>時間/時期</label><input id="g-time" placeholder="例：公元前356年"></div>
+<div class="form-group"><label>筆記格式</label><select id="g-fmt"><option value="1">一、事實描述</option><option value="2">二、原因-過程-影響</option><option value="3">三、DSE PEEL結構</option><option value="4">四、混合型</option></select></div>
+<button class="btn btn-p" onclick="generateNote()">生成筆記</button></div>
+<div id="gen-result"></div>`;
+document.getElementById("pg-gen").innerHTML=h;
+}
+function generateNote(){
+let subj=document.getElementById("g-subj").value;
+let title=document.getElementById("g-title").value.trim();
+let time=document.getElementById("g-time").value.trim();
+let fmt=document.getElementById("g-fmt").value;
+if(!title){alert("請輸入事件標題");return}
+let s=SUBJ[subj],content="";
+if(fmt==="1")content=`【事實描述】\n主題：${title}\n時期：${time}\n\n背景：\n（請補充${title}的歷史背景）\n\n主要事實：\n1. \n2. \n3. \n\n重要細節：\n（請補充關鍵細節和數據）\n\n總結：\n（請補充${title}的整體意義）`;
+else if(fmt==="2")content=`【原因-過程-影響】\n主題：${title}\n時期：${time}\n\n📌 原因：\n1. \n2. \n3. \n\n📌 過程：\n1. \n2. \n3. \n\n📌 影響：\n1. \n2. \n3. \n\n💡 評價：\n（請補充對${title}的整體評價）`;
+else if(fmt==="3")content=`【DSE PEEL結構】\n主題：${title}\n時期：${time}\n\nP - Point 論點：\n${title}對${s}的發展產生了重要影響。\n\nE - Evidence 論據：\n1. \n2. \n3. \n\nE - Explain 解釋：\n這些證據顯示...\n\nL - Link 扣題：\n因此，${title}在${s}史上具有重要地位。`;
+else content=`【混合型筆記】\n主題：${title}\n時期：${time}\n\n═══ 事實描述 ═══\n背景：\n主要事實：\n1. \n2. \n\n═══ 原因-過程-影響 ═══\n原因：\n1. \n過程：\n1. \n影響：\n1. \n\n═══ DSE PEEL ═══\nP - 論點：\nE - 論據：\nE - 解釋：\nL - 扣題：\n\n💡 記憶提示：\n（請補充幫助記憶的口訣或關鍵詞）`;
+document.getElementById("gen-result").innerHTML=`<div class="card"><h3>生成結果</h3><pre style="white-space:pre-wrap;font-size:12px;line-height:1.6;background:#f8f9fa;padding:10px;border-radius:4px">${content}</pre>
+<div style="margin-top:10px"><button class="btn btn-s" onclick="saveGenNote('${subj}')">儲存到${s}筆記</button>
+<button class="btn btn-p" onclick="copyGen()">複製內容</button></div></div>`;
+window._genData={subj,title,time,content,fmt};
+}
+function copyGen(){if(window._genData){navigator.clipboard.writeText(window._genData.content).then(()=>alert("已複製！"))}}
+function saveGenNote(subj){
+let d=window._genData;if(!d)return;
+if(!D.notes[subj])D.notes[subj]=[];
+D.notes[subj].push({id:Date.now(),title:d.title,time:d.time,content:d.content,prof:1,dse:false,qtype:[],fmt:d.fmt});
+save();alert("已儲存！");renderGen();
+}
+function renderNotes(key){
+let a=D.notes[key]||[];
+let h=`<h1>${SUBJ[key]} 筆記</h1><button class="btn btn-p" onclick="openNoteModal('${key}')">+ 新增筆記</button>
+<table><tr><th>標題</th><th>時期</th><th>熟練度</th><th>DSE</th><th>題型</th><th>操作</th></tr>`;
+a.forEach((n,i)=>{
+h+=`<tr><td>${n.title}</td><td>${n.time||""}</td><td>${profBadge(n.prof)}</td><td>${n.dse?"✅":""}</td><td>${(n.qtype||[]).map(qtag).join("")}</td>
+<td><button class="btn btn-s" onclick="editNote('${key}',${i})">編輯</button><button class="btn btn-d" onclick="delNote('${key}',${i})">刪除</button></td></tr>`;
+});
+if(!a.length)h+=`<tr><td colspan="6" style="text-align:center;color:#999">暫無筆記，按上方新增</td></tr>`;
+h+=`</table>`;
+if(a.length){h+=`<div class="card" style="margin-top:10px"><h3>筆記預覽</h3>`;
+a.forEach(n=>{h+=`<div style="margin:8px 0;padding:8px;background:#f8f9fa;border-radius:4px"><strong>${n.title}</strong>${n.time?" ("+n.time+")":""}<pre style="white-space:pre-wrap;font-size:11px;margin-top:4px">${n.content||""}</pre></div>`});
+h+=`</div>`}
+document.getElementById("pg-n-"+key).innerHTML=h;
+}
+function openNoteModal(key,idx){
+let n=idx!==undefined?(D.notes[key]||[])[idx]:null;
+let h=`<h3>${n?"編輯":"新增"}筆記 - ${SUBJ[key]}</h3>
+<div class="form-group"><label>標題</label><input id="m-title" value="${n?n.title:""}"></div>
+<div class="form-group"><label>時期</label><input id="m-time" value="${n?n.time||"":""}"></div>
+<div class="form-group"><label>內容</label><textarea id="m-content" rows="6">${n?n.content:""}</textarea></div>
+<div class="form-group"><label>熟練度 (1-5)</label><select id="m-prof">${[1,2,3,4,5].map(i=>`<option value="${i}"${n&&n.prof===i?" selected":""}>${i}</option>`).join("")}</select></div>
+<div class="form-group"><label>DSE曾出現</label><select id="m-dse"><option value="0"${n&&!n.dse?" selected":""}>否</option><option value="1"${n&&n.dse?" selected":""}>是</option></select></div>
+<div class="form-group"><label>題型（可多選）</label><div>${QTYPES.map(q=>`<label style="font-size:12px"><input type="checkbox" class="m-qt" value="${q}"${n&&(n.qtype||[]).includes(q)?" checked":""}> ${q}</label>`).join(" ")}</div></div>
+<button class="btn btn-s" onclick="saveNote('${key}',${idx!==undefined?idx:-1})">儲存</button>
+<button class="btn" onclick="closeModal()">取消</button>`;
+openModal(h);
+}
+function saveNote(key,idx){
+let n={id:Date.now(),title:document.getElementById("m-title").value.trim(),time:document.getElementById("m-time").value.trim(),content:document.getElementById("m-content").value.trim(),prof:parseInt(document.getElementById("m-prof").value),dse:document.getElementById("m-dse").value==="1",qtype:Array.from(document.querySelectorAll(".m-qt:checked")).map(c=>c.value)};
+if(!n.title){alert("請輸入標題");return}
+if(!D.notes[key])D.notes[key]=[];
+if(idx>=0)D.notes[key][idx]=n;else D.notes[key].push(n);
+save();closeModal();renderNotes(key);
+}
+function editNote(key,idx){openNoteModal(key,idx)}
+function delNote(key,idx){if(confirm("確定刪除？")){D.notes[key].splice(idx,1);save();renderNotes(key)}}
+function renderPrac(key){
+let a=D.prac[key]||[];
+let h=`<h1>${SUBJ[key]} 操練記錄</h1><button class="btn btn-p" onclick="openPracModal('${key}')">+ 新增記錄</button>
+<table><tr><th>日期</th><th>題目/卷別</th><th>題型</th><th>得分</th><th>滿分</th><th>熟練度</th><th>備註</th><th>操作</th></tr>`;
+a.forEach((p,i)=>{
+h+=`<tr><td>${p.date||""}</td><td>${p.title}</td><td>${(p.qtype||[]).map(qtag).join("")}</td><td>${p.score||""}</td><td>${p.total||""}</td><td>${profBadge(p.prof)}</td><td>${p.note||""}</td>
+<td><button class="btn btn-s" onclick="editPrac('${key}',${i})">編輯</button><button class="btn btn-d" onclick="delPrac('${key}',${i})">刪除</button></td></tr>`;
+});
+if(!a.length)h+=`<tr><td colspan="8" style="text-align:center;color:#999">暫無記錄</td></tr>`;
+h+=`</table>`;
+document.getElementById("pg-p-"+key).innerHTML=h;
+}
+function openPracModal(key,idx){
+let p=idx!==undefined?(D.prac[key]||[])[idx]:null;
+let h=`<h3>${p?"編輯":"新增"}記錄 - ${SUBJ[key]}</h3>
+<div class="form-group"><label>日期</label><input type="date" id="m-date" value="${p?p.date||"":""}"></div>
+<div class="form-group"><label>題目/卷別</label><input id="m-ptitle" value="${p?p.title:""}"></div>
+<div class="form-group"><label>題型（可多選）</label><div>${QTYPES.map(q=>`<label style="font-size:12px"><input type="checkbox" class="m-pqt" value="${q}"${p&&(p.qtype||[]).includes(q)?" checked":""}> ${q}</label>`).join(" ")}</div></div>
+<div class="form-group"><label>得分</label><input type="number" id="m-score" value="${p?p.score||"":""}"></div>
+<div class="form-group"><label>滿分</label><input type="number" id="m-total" value="${p?p.total||"":""}"></div>
+<div class="form-group"><label>熟練度 (1-5)</label><select id="m-pprof">${[1,2,3,4,5].map(i=>`<option value="${i}"${p&&p.prof===i?" selected":""}>${i}</option>`).join("")}</select></div>
+<div class="form-group"><label>備註</label><textarea id="m-pnote" rows="2">${p?p.note||"":""}</textarea></div>
+<button class="btn btn-s" onclick="savePrac('${key}',${idx!==undefined?idx:-1})">儲存</button>
+<button class="btn" onclick="closeModal()">取消</button>`;
+openModal(h);
+}
+function savePrac(key,idx){
+let p={id:Date.now(),date:document.getElementById("m-date").value,title:document.getElementById("m-ptitle").value.trim(),qtype:Array.from(document.querySelectorAll(".m-pqt:checked")).map(c=>c.value),score:document.getElementById("m-score").value,total:document.getElementById("m-total").value,prof:parseInt(document.getElementById("m-pprof").value),note:document.getElementById("m-pnote").value.trim()};
+if(!p.title){alert("請輸入題目");return}
+if(!D.prac[key])D.prac[key]=[];
+if(idx>=0)D.prac[key][idx]=p;else D.prac[key].push(p);
+save();closeModal();renderPrac(key);
+}
+function editPrac(key,idx){openPracModal(key,idx)}
+function delPrac(key,idx){if(confirm("確定刪除？")){D.prac[key].splice(idx,1);save();renderPrac(key)}}
+function renderStats(){
+let stats={};
+NOTE_KEYS.forEach(k=>{(D.notes[k]||[]).forEach(n=>{QTYPES.forEach(q=>{if((n.qtype||[]).includes(q)){if(!stats[k])stats[k]={};stats[k][q]=(stats[k][q]||0)+1}})})});
+let h=`<h1>DSE題型統計</h1>`;
+if(Object.keys(stats).length===0){h+=`<div class="card"><p style="color:#999">暫無數據，新增筆記並標記題型後即可查看統計</p></div>`}
+else{Object.keys(stats).forEach(k=>{
+h+=`<div class="card"><h3>${SUBJ[k]}</h3><table><tr><th>題型</th><th>數量</th></tr>`;
+QTYPES.forEach(q=>{h+=`<tr><td>${qtag(q)} ${q}</td><td>${stats[k][q]||0}</td></tr>`});
+h+=`</table></div>`})}
+document.getElementById("pg-stats").innerHTML=h;
+}
+function renderExport(){
+let h=`<h1>匯出筆記</h1><div class="card">
+<div class="form-group"><label>科目</label><select id="ex-subj"><option value="all">全部科目</option>`;
+Object.keys(SUBJ).forEach(k=>{h+=`<option value="${k}">${SUBJ[k]}</option>`});
+h+=`</select></div>
+<div class="form-group"><label>篩選</label><select id="ex-filter"><option value="all">全部</option><option value="dse">只匯出DSE曾出現</option><option value="p12">只匯出熟練度1-2</option><option value="p13">只匯出熟練度1-3</option></select></div>
+<button class="btn btn-p" onclick="doExport('html')">匯出HTML</button>
+<button class="btn btn-s" onclick="doExport('print')">列印/另存PDF</button>
+</div>`;
+document.getElementById("pg-export").innerHTML=h;
+}
+function doExport(mode){
+let subj=document.getElementById("ex-subj").value;
+let filter=document.getElementById("ex-filter").value;
+let keys=subj==="all"?NOTE_KEYS:[subj];
+let content=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>DSE筆記匯出</title>
+<style>body{font-family:sans-serif;padding:20px}h1{color:#2c3e50}h2{color:#34495e;border-bottom:2px solid #3498db;padding-bottom:5px}pre{white-space:pre-wrap;background:#f8f9fa;padding:10px;border-radius:4px}.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;color:#fff;margin:1px}.mc{background:#9b59b6}.sa{background:#3498db}.db{background:#e67e22}.es{background:#e74c3c}</style></head><body><h1>DSE筆記匯出</h1>`;
+keys.forEach(k=>{
+let a=D.notes[k]||[];
+let filtered=a.filter(n=>{
+if(filter==="dse")return n.dse;
+if(filter==="p12")return n.prof<=2;
+if(filter==="p13")return n.prof<=3;
+return true;
+});
+if(!filtered.length)return;
+content+=`<h2>${SUBJ[k]}</h2>`;
+filtered.forEach(n=>{
+content+=`<h3>${n.title}${n.time?" ("+n.time+")":""}</h3>`;
+content+=`<p>熟練度：${n.prof}/5 | DSE：${n.dse?"是":"否"} | 題型：${(n.qtype||[]).join(", ")}</p>`;
+content+=`<pre>${n.content||""}</pre><hr>`;
+});
+});
+content+=`</body></html>`;
+if(mode==="print"){let w=window.open("","_blank");w.document.write(content);w.document.close();w.print()}
+else{let b=new Blob([content],{type:"text/html;charset=utf-8"});let a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="DSE筆記匯出.html";a.click()}
+}
+function seedData(){
+if(D.notes.chhist&&D.notes.chhist.length)return;
+D.notes.chhist=[
+{id:1,title:"商鞅變法",time:"公元前356年",content:"【原因-過程-影響】\n主題：商鞅變法\n\n📌 原因：\n1. 秦國落後，需富國強兵\n2. 各國變法圖強\n\n📌 過程：\n1. 廢井田，開阡陌\n2. 獎勵耕織\n3. 實行連坐法\n\n📌 影響：\n1. 秦國國力大增\n2. 為統一六國奠定基礎",prof:2,dse:true,qtype:["DBQ","論述"],fmt:"2"},
+{id:2,title:"秦始皇統一六國",time:"公元前221年",content:"【事實描述】\n背景：戰國末期，秦國通過商鞅變法國力最強\n\n主要事實：\n1. 先後消滅韓趙魏楚燕齊\n2. 統一文字、度量衡、貨幣\n3. 修築長城",prof:3,dse:true,qtype:["MC","短答"],fmt:"1"},
+{id:3,title:"安史之亂",time:"公元755-763年",content:"【DSE PEEL結構】\nP - 安史之亂是唐朝由盛轉衰的轉折點\nE - 安祿山以討伐楊國忠為名起兵\nE - 反映了節度使權力過大、中央削弱\nL - 因此安史之亂標誌唐朝衰落的開始",prof:1,dse:true,qtype:["DBQ","論述"],fmt:"3"}
+];
+D.notes.whist=[
+{id:4,title:"法國大革命",time:"1789年",content:"【混合型筆記】\n═══ 事實描述 ═══\n背景：法國社會三級制不平等\n═══ 原因-過程-影響 ═══\n原因：啟蒙思想、財政危機\n影響：推翻君主制、人權宣言",prof:2,dse:true,qtype:["DBQ","論述"],fmt:"4"},
+{id:5,title:"工業革命",time:"18世紀中-19世紀",content:"【事實描述】\n起源：英國\n重大發明：蒸汽機、紡紗機\n社會影響：城市化、工人階級",prof:3,dse:true,qtype:["MC","短答"],fmt:"1"}
+];
+D.notes.csd=[{id:6,title:"青少年犯罪",time:"—",content:"【原因-過程-影響】\n原因：家庭、朋輩、社會因素\n影響：個人前途、社會治安",prof:2,dse:false,qtype:["論述"],fmt:"2"}];
+D.prac.eng=[{id:7,date:"2025-05-01",title:"DSE 2023 Paper 1",qtype:["MC","短答"],score:"32",total:"42",prof:3,note:"閱讀理解需加強"}];
+D.prac.math=[{id:8,date:"2025-05-03",title:"DSE 2022 Paper 1",qtype:["短答"],score:"40",total:"63",prof:2,note:"三角學較弱"}];
+D.prac.chi=[{id:9,date:"2025-05-05",title:"DSE 2023 卷二",qtype:["MC"],score:"28",total:"40",prof:3,note:"語文運用需改善"}];
+save();
+}
+load();seedData();renderDash();
+</script>
+</body>
+</html>

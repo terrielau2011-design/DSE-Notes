@@ -1,0 +1,987 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>建立DSE筆記系統</title></head><body style="font-family:sans-serif;text-align:center;padding:60px">
+<h1 style="color:#1B3A5C">📚 DSE筆記系統</h1>
+<p style="color:#666">按下面按鈕建立並下載完整筆記系統</p>
+<button onclick="go()" style="padding:15px 50px;font-size:20px;cursor:pointer;background:#1B3A5C;color:#fff;border:none;border-radius:12px;margin-top:20px">🚀 一鍵建立</button>
+<div id="msg" style="margin-top:20px;color:#2E7D32;font-weight:bold"></div>
+<script>
+function go(){
+var d=document.getElementById('c').textContent;
+var b=new Blob([d],{type:'text/html;charset=utf-8'});
+var a=document.createElement('a');
+a.href=URL.createObjectURL(b);
+a.download='DSE筆記系統.html';
+a.click();
+document.getElementById('msg').textContent='✅ 已下載！雙擊 DSE筆記系統.html 即可使用';
+}
+</script>
+<script id="c" type="text/plain">
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DSE 筆記系統</title>
+<style>
+:root {
+  --primary: #1B3A5C;
+  --primary-light: #2E5090;
+  --warm: #8B4513;
+  --warm-bg: #FFF8E1;
+  --warm-accent: #E65100;
+  --cool: #2E5090;
+  --cool-bg: #E3F2FD;
+  --cool-accent: #1565C0;
+  --peel-p: #C0392B;
+  --peel-e1: #2980B9;
+  --peel-e2: #27AE60;
+  --peel-l: #8E44AD;
+  --success: #2E7D32;
+  --danger: #C0392B;
+  --gray-50: #FAFAFA;
+  --gray-100: #F5F5F5;
+  --gray-200: #EEEEEE;
+  --gray-300: #E0E0E0;
+  --gray-500: #9E9E9E;
+  --gray-700: #616161;
+  --gray-900: #212121;
+  --sidebar-w: 240px;
+  --radius: 10px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.1);
+  --shadow-lg: 0 4px 20px rgba(0,0,0,0.15);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--gray-100); color: var(--gray-900); min-height: 100vh; }
+
+/* Sidebar */
+.sidebar { position:fixed; left:0; top:0; bottom:0; width:var(--sidebar-w); background:var(--primary); color:#fff; overflow-y:auto; z-index:100; transition: transform .3s; }
+.sidebar-header { padding:20px 18px 10px; text-align:center; }
+.sidebar-header h1 { font-size:18px; font-weight:700; letter-spacing:1px; }
+.sidebar-header .sub { font-size:11px; opacity:.6; margin-top:4px; }
+.nav-section { padding:8px 14px 4px; font-size:11px; text-transform:uppercase; letter-spacing:1.5px; opacity:.5; margin-top:8px; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:10px 18px; cursor:pointer; border-radius:0 20px 20px 0; margin-right:10px; transition:all .2s; font-size:14px; }
+.nav-item:hover { background:rgba(255,255,255,.1); }
+.nav-item.active { background:rgba(255,255,255,.15); font-weight:600; }
+.nav-item .icon { font-size:18px; width:24px; text-align:center; }
+.nav-badge { background:var(--warm-accent); color:#fff; font-size:10px; padding:2px 7px; border-radius:10px; margin-left:auto; }
+
+/* Main */
+.main { margin-left:var(--sidebar-w); padding:24px 32px; min-height:100vh; }
+.page { display:none; }
+.page.active { display:block; }
+
+/* Quote Banner */
+.quote-banner { background:linear-gradient(135deg, #FFF8E1, #FFECB3); border-radius:var(--radius); padding:16px 24px; margin-bottom:20px; text-align:center; border:1px solid #FFE082; }
+.quote-banner .quote-text { font-size:15px; font-weight:600; color:var(--primary); line-height:1.6; }
+.quote-banner .quote-label { font-size:10px; color:var(--gray-500); margin-top:4px; }
+
+/* Cards */
+.card { background:#fff; border-radius:var(--radius); box-shadow:var(--shadow); padding:20px 24px; margin-bottom:16px; }
+.card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.card-header h2 { font-size:18px; font-weight:700; color:var(--primary); }
+.card-header h3 { font-size:15px; font-weight:600; color:var(--gray-700); }
+
+/* Progress Cards */
+.progress-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px; margin-top:12px; }
+.progress-card { background:#fff; border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 20px; border-left:4px solid var(--primary); position:relative; }
+.progress-card.warm { border-left-color:var(--warm); }
+.progress-card.cool { border-left-color:var(--cool); }
+.progress-card .subject-name { font-size:16px; font-weight:700; }
+.progress-card .subject-type { font-size:11px; color:var(--gray-500); margin-top:2px; }
+.progress-bar-bg { height:8px; background:var(--gray-200); border-radius:4px; margin-top:10px; overflow:hidden; }
+.progress-bar { height:100%; border-radius:4px; transition:width .5s; }
+.progress-bar.warm { background:linear-gradient(90deg, #FF9800, #F57C00); }
+.progress-bar.cool { background:linear-gradient(90deg, #42A5F5, #1565C0); }
+.progress-stats { display:flex; justify-content:space-between; margin-top:8px; font-size:12px; color:var(--gray-500); }
+.progress-stats .stat-val { font-weight:600; color:var(--gray-900); }
+
+/* Buttons */
+.btn { display:inline-flex; align-items:center; gap:6px; padding:8px 18px; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; transition:all .2s; }
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-primary:hover { background:var(--primary-light); }
+.btn-success { background:var(--success); color:#fff; }
+.btn-danger { background:var(--danger); color:#fff; }
+.btn-warm { background:var(--warm); color:#fff; }
+.btn-cool { background:var(--cool); color:#fff; }
+.btn-outline { background:transparent; border:2px solid var(--primary); color:var(--primary); }
+.btn-outline:hover { background:var(--primary); color:#fff; }
+.btn-sm { padding:5px 12px; font-size:12px; }
+.btn-group { display:flex; gap:8px; flex-wrap:wrap; }
+
+/* Forms */
+.form-group { margin-bottom:14px; }
+.form-label { display:block; font-size:13px; font-weight:600; color:var(--gray-700); margin-bottom:5px; }
+.form-input, .form-select, .form-textarea { width:100%; padding:9px 14px; border:2px solid var(--gray-300); border-radius:8px; font-size:14px; transition:border-color .2s; font-family:inherit; }
+.form-input:focus, .form-select:focus, .form-textarea:focus { outline:none; border-color:var(--primary); }
+.form-textarea { min-height:80px; resize:vertical; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.form-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+
+/* Tags */
+.tag { display:inline-block; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600; margin:2px; }
+.tag-mc { background:#FFF3E0; color:#E65100; }
+.tag-short { background:#E8F5E9; color:#2E7D32; }
+.tag-dbq { background:#E3F2FD; color:#1565C0; }
+.tag-essay { background:#F3E5F5; color:#7B1FA2; }
+.tag-warm { background:var(--warm-bg); color:var(--warm); }
+.tag-cool { background:var(--cool-bg); color:var(--cool); }
+
+/* Note Cards */
+.note-list { display:flex; flex-direction:column; gap:14px; }
+.note-item { background:#fff; border-radius:var(--radius); box-shadow:var(--shadow); padding:18px 22px; border-left:4px solid var(--warm); transition:box-shadow .2s; }
+.note-item:hover { box-shadow:var(--shadow-lg); }
+.note-item .note-title { font-size:15px; font-weight:700; color:var(--primary); }
+.note-item .note-subtitle { font-size:13px; color:var(--gray-500); margin-top:2px; }
+.note-item .note-content { margin-top:10px; font-size:13px; line-height:1.7; color:var(--gray-700); white-space:pre-wrap; }
+.note-item .note-meta { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:10px; }
+.note-item .note-keywords { font-size:12px; color:var(--warm); background:var(--warm-bg); padding:4px 10px; border-radius:6px; display:inline-block; margin-top:6px; }
+.note-item .self-test { margin-top:10px; background:var(--gray-50); border-radius:8px; padding:10px 14px; }
+.note-item .self-test .q { font-size:13px; color:var(--cool); font-weight:600; }
+.note-item .self-test .a { font-size:13px; color:var(--success); margin-top:6px; display:none; }
+.note-item .self-test .a.show { display:block; }
+
+/* Proficiency */
+.prof { display:inline-flex; gap:3px; }
+.prof-dot { width:20px; height:20px; border-radius:50%; background:var(--gray-200); }
+.prof-dot.filled { background:var(--success); }
+.prof-dot.warn { background:#FF9800; }
+
+/* Practice Table */
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { background:var(--primary); color:#fff; padding:10px 14px; text-align:left; font-weight:600; white-space:nowrap; }
+td { padding:10px 14px; border-bottom:1px solid var(--gray-200); vertical-align:top; }
+tr:hover td { background:var(--gray-50); }
+.error-badge { background:#FFEBEE; color:var(--danger); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:600; }
+.improve-badge { background:#E8F5E9; color:var(--success); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:600; }
+
+/* Generator */
+.gen-input-area { background:linear-gradient(135deg, #E8F5E9, #C8E6C9); border-radius:var(--radius); padding:20px 24px; margin-bottom:16px; }
+.gen-format-btns { display:flex; gap:10px; margin:14px 0; flex-wrap:wrap; }
+.gen-format-btn { flex:1; min-width:180px; padding:14px 18px; border:3px solid transparent; border-radius:var(--radius); background:#fff; cursor:pointer; text-align:left; transition:all .2s; box-shadow:var(--shadow); }
+.gen-format-btn:hover { transform:translateY(-2px); box-shadow:var(--shadow-lg); }
+.gen-format-btn.selected { border-color:var(--primary); background:var(--warm-bg); }
+.gen-format-btn .fmt-title { font-size:14px; font-weight:700; }
+.gen-format-btn .fmt-desc { font-size:11px; color:var(--gray-500); margin-top:4px; }
+
+/* PEEL sections */
+.peel-p { border-left:4px solid var(--peel-p); background:#FFEBEE; }
+.peel-e1 { border-left:4px solid var(--peel-e1); background:#E3F2FD; }
+.peel-e2 { border-left:4px solid var(--peel-e2); background:#E8F5E9; }
+.peel-l { border-left:4px solid var(--peel-l); background:#F3E5F5; }
+.peel-section { padding:10px 16px; border-radius:0 8px 8px 0; margin:6px 0; }
+.peel-section label { font-weight:700; font-size:13px; }
+.peel-section textarea { margin-top:4px; background:rgba(255,255,255,.7); }
+
+/* Export */
+.export-options { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:14px; }
+.export-card { background:#fff; border:2px solid var(--gray-200); border-radius:var(--radius); padding:20px; text-align:center; cursor:pointer; transition:all .2s; }
+.export-card:hover { border-color:var(--primary); box-shadow:var(--shadow); }
+.export-card.selected { border-color:var(--primary); background:var(--cool-bg); }
+.export-card .ec-icon { font-size:36px; margin-bottom:8px; }
+.export-card .ec-title { font-size:15px; font-weight:700; }
+.export-card .ec-desc { font-size:11px; color:var(--gray-500); margin-top:4px; }
+
+/* Modal */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; display:none; justify-content:center; align-items:flex-start; padding-top:60px; }
+.modal-overlay.show { display:flex; }
+.modal { background:#fff; border-radius:var(--radius); width:90%; max-width:700px; max-height:80vh; overflow-y:auto; box-shadow:var(--shadow-lg); padding:24px; }
+.modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.modal-header h2 { font-size:18px; font-weight:700; color:var(--primary); }
+.modal-close { width:32px; height:32px; border-radius:50%; border:none; background:var(--gray-200); cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center; }
+
+/* Tabs */
+.tab-bar { display:flex; gap:0; border-bottom:2px solid var(--gray-200); margin-bottom:16px; }
+.tab-item { padding:10px 20px; cursor:pointer; font-size:14px; font-weight:500; color:var(--gray-500); border-bottom:3px solid transparent; transition:all .2s; }
+.tab-item:hover { color:var(--primary); }
+.tab-item.active { color:var(--primary); border-bottom-color:var(--primary); font-weight:700; }
+
+/* Empty State */
+.empty-state { text-align:center; padding:40px 20px; color:var(--gray-500); }
+.empty-state .icon { font-size:48px; margin-bottom:12px; }
+.empty-state .title { font-size:16px; font-weight:600; margin-bottom:6px; }
+.empty-state .desc { font-size:13px; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar { transform:translateX(-100%); }
+  .sidebar.open { transform:translateX(0); }
+  .main { margin-left:0; padding:16px; }
+  .progress-grid { grid-template-columns:1fr; }
+  .form-row, .form-row-3 { grid-template-columns:1fr; }
+  .export-options { grid-template-columns:1fr; }
+}
+.mobile-toggle { display:none; position:fixed; top:12px; left:12px; z-index:150; background:var(--primary); color:#fff; border:none; width:40px; height:40px; border-radius:50%; font-size:20px; cursor:pointer; }
+@media (max-width: 768px) { .mobile-toggle { display:flex; align-items:center; justify-content:center; } }
+
+/* Print */
+@media print { .sidebar, .mobile-toggle { display:none!important; } .main { margin-left:0; } }
+</style>
+</head>
+<body>
+
+<button class="mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <h1>📚 DSE筆記系統</h1>
+    <div class="sub">2028 DSE 備戰工具</div>
+  </div>
+  <div class="nav-section">總覽</div>
+  <div class="nav-item active" data-page="dashboard"><span class="icon">🏠</span>主頁</div>
+  <div class="nav-section">筆記类</div>
+  <div class="nav-item" data-page="generator"><span class="icon">📝</span>筆記生成器</div>
+  <div class="nav-item" data-page="notes-chhist"><span class="icon">📖</span>中史筆記</div>
+  <div class="nav-item" data-page="notes-whist"><span class="icon">📖</span>世史筆記</div>
+  <div class="nav-item" data-page="notes-csd"><span class="icon">📖</span>C&SD 筆記</div>
+  <div class="nav-section">操練类</div>
+  <div class="nav-item" data-page="prac-eng"><span class="icon">✏️</span>英文操練</div>
+  <div class="nav-item" data-page="prac-math"><span class="icon">✏️</span>數學操練</div>
+  <div class="nav-item" data-page="prac-chi"><span class="icon">✏️</span>中文操練</div>
+  <div class="nav-section">工具</div>
+  <div class="nav-item" data-page="dse-stats"><span class="icon">📊</span>DSE題型分佈</div>
+  <div class="nav-item" data-page="export"><span class="icon">📤</span>匯出筆記</div>
+</nav>
+
+<div class="main">
+
+<!-- ============ DASHBOARD ============ -->
+<div class="page active" id="page-dashboard">
+  <div class="quote-banner">
+    <div class="quote-text" id="quote-text">💪 每多溫一頁，就多一分把握。唔急，慢慢嚟！div>
+    <div class="quote-label">💬 每日鼓勵（每次刷新隨機更新）</div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h2>📊 六科進度總覽</h2></div>
+    <div class="progress-grid" id="progress-grid"></div>
+  </div>
+</div>
+
+<!-- ============ NOTE GENERATOR ============ -->
+<div class="page" id="page-generator">
+  <div class="card">
+    <div class="card-header"><h2>📝 筆記生成器</h2></div>
+    <p style="font-size:13px;color:var(--gray-500);margin-bottom:14px;">輸入事件資料，選擇筆記格式，系統幫你生成結構化筆記模板</p>
+    <div class="gen-input-area">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">科目</label>
+          <select class="form-select" id="gen-subject"><option value="中史">中史</option><option value="世史">世史</option><option value="C&SD">C&SD</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">事件/課題標題</label><input class="form-input" id="gen-title" placeholder="如：秦朝統一措施"></div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group"><label class="form-label">時間/朝代</label><input class="form-input" id="gen-time" placeholder="如：公元前221年"></div>
+        <div class="form-group"><label class="form-label">相關人物</label><input class="form-input" id="gen-people" placeholder="如：秦始皇、李斯"></div>
+        <div class="form-group"><label class="form-label">地區/國家</label><input class="form-input" id="gen-region" placeholder="如：中國"></div>
+      </div>
+    </div>
+    <label class="form-label">選擇筆記格式</label>
+    <div class="gen-format-btns">
+      <div class="gen-format-btn selected" data-fmt="1"><div class="fmt-title">① 事實描述</div><div class="fmt-desc">背景→經過→關鍵細節→影響<br>適合首次溫習新課題</div></div>
+      <div class="gen-format-btn" data-fmt="2"><div class="fmt-title">② 原因-過程-影響</div><div class="fmt-desc">政治/經濟/社會/外部原因分析<br>適合深入理解因果</div></div>
+      <div class="gen-format-btn" data-fmt="3"><div class="fmt-title">③ DSE PEEL結構</div><div class="fmt-desc">P論點→E論據→E解釋→L扣題<br>適合準備DSE論述題</div></div>
+      <div class="gen-format-btn" data-fmt="4"><div class="fmt-title">④ 混合型</div><div class="fmt-desc">事實+因果+PEEL 三合一<br>適合重點高頻課題</div></div>
+    </div>
+    <div class="btn-group" style="margin-top:12px;">
+      <button class="btn btn-primary" onclick="generateNote()">🪄 生成筆記模板</button>
+      <button class="btn btn-success" onclick="saveGeneratedNote()">💾 儲存到筆記表</button>
+    </div>
+  </div>
+  <div class="card" id="gen-output" style="display:none;">
+    <div class="card-header"><h2>📄 生成結果</h2><button class="btn btn-sm btn-outline" onclick="copyGenOutput()">📋 複製</button></div>
+    <div id="gen-result-content"></div>
+  </div>
+</div>
+
+<!-- ============ NOTES PAGES (shared template) ============ -->
+<div class="page" id="page-notes-chhist">
+  <div class="card">
+    <div class="card-header"><h2>📖 中史筆記</h2>
+      <div class="btn-group">
+        <button class="btn btn-sm btn-warm" onclick="openNoteModal('中史')">+ 新增筆記</button>
+        <select class="form-select" style="width:auto;padding:5px 10px;font-size:12px;" onchange="filterNotes('chhist',this.value)">
+          <option value="all">全部</option><option value="dse">只看DSE曾出現</option><option value="low">只看熟練度1-2</option>
+        </select>
+      </div>
+    </div>
+    <div class="note-list" id="note-list-chhist"></div>
+  </div>
+</div>
+
+<div class="page" id="page-notes-whist">
+  <div class="card">
+    <div class="card-header"><h2>📖 世史筆記</h2>
+      <div class="btn-group">
+        <button class="btn btn-sm btn-warm" onclick="openNoteModal('世史')">+ 新增筆記</button>
+        <select class="form-select" style="width:auto;padding:5px 10px;font-size:12px;" onchange="filterNotes('whist',this.value)">
+          <option value="all">全部</option><option value="dse">只看DSE曾出現</option><option value="low">只看熟練度1-2</option>
+        </select>
+      </div>
+    </div>
+    <div class="note-list" id="note-list-whist"></div>
+  </div>
+</div>
+
+<div class="page" id="page-notes-csd">
+  <div class="card">
+    <div class="card-header"><h2>📖 C&SD 筆記</h2>
+      <div class="btn-group">
+        <button class="btn btn-sm btn-warm" onclick="openNoteModal('C&SD')">+ 新增筆記</button>
+        <select class="form-select" style="width:auto;padding:5px 10px;font-size:12px;" onchange="filterNotes('csd',this.value)">
+          <option value="all">全部</option><option value="dse">只看DSE曾出現</option><option value="low">只看熟練度1-2</option>
+        </select>
+      </div>
+    </div>
+    <div class="note-list" id="note-list-csd"></div>
+  </div>
+</div>
+
+<!-- ============ PRACTICE PAGES ============ -->
+<div class="page" id="page-prac-eng">
+  <div class="card">
+    <div class="card-header"><h2>✏️ 英文操練</h2><button class="btn btn-sm btn-cool" onclick="openPracModal('英文')">+ 新增記錄</button></div>
+    <div class="table-wrap"><table id="prac-table-eng"><thead><tr><th>日期</th><th>類型</th><th>卷別</th><th>來源</th><th>題號</th><th>得分</th><th>錯誤類型</th><th>錯誤詳情</th><th>改善行動</th><th>覆檢</th><th></th></tr></thead><tbody></tbody></table></div>
+  </div>
+</div>
+
+<div class="page" id="page-prac-math">
+  <div class="card">
+    <div class="card-header"><h2>✏️ 數學操練</h2><button class="btn btn-sm btn-cool" onclick="openPracModal('數學')">+ 新增記錄</button></div>
+    <div class="table-wrap"><table id="prac-table-math"><thead><tr><th>日期</th><th>課題</th><th>卷別</th><th>來源</th><th>題號</th><th>題型</th><th>做對</th><th>錯誤類型</th><th>錯誤詳情</th><th>正確解法</th><th>覆檢</th><th></th></tr></thead><tbody></tbody></table></div>
+  </div>
+</div>
+
+<div class="page" id="page-prac-chi">
+  <div class="card">
+    <div class="card-header"><h2>✏️ 中文操練</h2><button class="btn btn-sm btn-cool" onclick="openPracModal('中文')">+ 新增記錄</button></div>
+    <div class="table-wrap"><table id="prac-table-chi"><thead><tr><th>日期</th><th>類型</th><th>卷別</th><th>來源</th><th>題號</th><th>得分</th><th>錯誤類型</th><th>錯誤詳情</th><th>改善行動</th><th>覆檢</th><th></th></tr></thead><tbody></tbody></table></div>
+  </div>
+</div>
+
+<!-- ============ DSE STATS ============ -->
+<div class="page" id="page-dse-stats">
+  <div class="card">
+    <div class="card-header"><h2>📊 DSE 題型分佈統計</h2></div>
+    <div class="tab-bar">
+      <div class="tab-item active" onclick="showStatTab('chhist',this)">中史</div>
+      <div class="tab-item" onclick="showStatTab('whist',this)">世史</div>
+      <div class="tab-item" onclick="showStatTab('csd',this)">C&SD</div>
+    </div>
+    <div class="table-wrap"><table id="stats-table"><thead><tr><th>課題</th><th>MC</th><th>短答</th><th>DBQ</th><th>論述</th><th>總計</th></tr></thead><tbody></tbody></table></div>
+  </div>
+</div>
+
+<!-- ============ EXPORT ============ -->
+<div class="page" id="page-export">
+  <div class="card">
+    <div class="card-header"><h2>📤 匯出筆記</h2></div>
+    <div class="form-row" style="margin-bottom:16px;">
+      <div class="form-group"><label class="form-label">科目</label>
+        <select class="form-select" id="exp-subject"><option value="全部">全部</option><option value="中史">中史</option><option value="世史">世史</option><option value="C&SD">C&SD</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">篩選</label>
+        <select class="form-select" id="exp-filter"><option value="all">全部</option><option value="dse">只匯出DSE曾出現</option><option value="low">只匯出熟練度1-2</option></select>
+      </div>
+    </div>
+    <div class="export-options">
+      <div class="export-card selected" data-exp="pdf" onclick="selectExport(this)">
+        <div class="ec-icon">📄</div><div class="ec-title">匯出 PDF</div><div class="ec-desc">適合打印或手機覆習</div>
+      </div>
+      <div class="export-card" data-exp="print" onclick="selectExport(this)">
+        <div class="ec-icon">🖨️</div><div class="ec-title">列印</div><div class="ec-desc">直接列印筆記</div>
+      </div>
+    </div>
+    <div style="margin-top:16px;text-align:center;">
+      <button class="btn btn-primary" onclick="doExport()" style="padding:12px 36px;font-size:15px;">📤 開始匯出</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODALS ============ -->
+<div class="modal-overlay" id="note-modal">
+  <div class="modal">
+    <div class="modal-header"><h2 id="note-modal-title">新增筆記</h2><button class="modal-close" onclick="closeModal('note-modal')">✕</button></div>
+    <input type="hidden" id="note-edit-id">
+    <input type="hidden" id="note-edit-subject">
+    <div class="form-row"><div class="form-group"><label class="form-label">課題</label><input class="form-input" id="nm-topic"></div><div class="form-group"><label class="form-label">子課題</label><input class="form-input" id="nm-subtopic"></div></div>
+    <div class="form-group"><label class="form-label">筆記重點</label><textarea class="form-textarea" id="nm-content" rows="4"></textarea></div>
+    <div class="form-group"><label class="form-label">關鍵詞/人名/年份</label><input class="form-input" id="nm-keywords"></div>
+    <div class="form-row-3">
+      <div class="form-group"><label class="form-label">DSE出現</label><select class="form-select" id="nm-dse"><option value="否">否</option><option value="是">是</option></select></div>
+      <div class="form-group"><label class="form-label">DSE題型（可多選，用/分隔）</label><input class="form-input" id="nm-dse-type" placeholder="MC/短答/DBQ/論述"></div>
+      <div class="form-group"><label class="form-label">DSE年份</label><input class="form-input" id="nm-dse-year"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">自測題目</label><input class="form-input" id="nm-testq"></div>
+      <div class="form-group"><label class="form-label">自測答案</label><input class="form-input" id="nm-testa"></div>
+    </div>
+    <div class="form-row"><div class="form-group"><label class="form-label">熟練度 (1-5)</label><select class="form-select" id="nm-prof"><option value="1">1 - 完全不懂</option><option value="2">2 - 勉強理解</option><option value="3">3 - 基本掌握</option><option value="4">4 - 熟練運用</option><option value="5">5 - 完全掌握</option></select></div><div class="form-group"><label class="form-label">備註</label><input class="form-input" id="nm-remarks"></div></div>
+    <div style="text-align:right;margin-top:14px;"><button class="btn btn-success" onclick="saveNote()">💾 儲存</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="prac-modal">
+  <div class="modal">
+    <div class="modal-header"><h2 id="prac-modal-title">新增操練記錄</h2><button class="modal-close" onclick="closeModal('prac-modal')">✕</button></div>
+    <input type="hidden" id="prac-edit-id">
+    <input type="hidden" id="prac-edit-subject">
+    <div id="prac-form-fields"></div>
+    <div style="text-align:right;margin-top:14px;"><button class="btn btn-success" onclick="savePrac()">💾 儲存</button></div>
+  </div>
+</div>
+
+<script>
+// ===== DATA LAYER =====
+const KEYS = { notes:'dse_notes', prac:'dse_prac' };
+function getData(key){ try{return JSON.parse(localStorage.getItem(key))||{};}catch(e){return {};} }
+function setData(key,val){ localStorage.setItem(key, JSON.stringify(val)); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+// ===== QUOTES =====
+const quotes=[
+"💪 每多溫一頁，就多一分把握。唔急，慢慢嚟！","🌟 今日嘅努力，係明日嘅底氣。堅持落去！","📚 DSE唔係短跑，係馬拉松。保持你嘅節奏！","🔥 熟練度1不可怕，最怕你唔願意由1開始。","✨ 每做錯一題，就離做對近一步。錯題係你嘅朋友！","🎯 專注當下，唔好諗仲有幾多未做，做好眼前呢一步。","🌱 溫習唔需要完美，需要嘅係開始。坐低就已經贏咗一半！","⏰ 15分鐘都係時間，用咗就賺咗。唔好等「有時間」先開始。","🧠 背唔到？試下用PEEL寫出嚟，手寫記憶更深。","💡 唔識唔係問題，唔去搞清楚先係問題。翻開筆記睇下啦！","🚀 每日進步1%，一年後你就係365%嘅自己。","📖 打開書本嘅那一刻，你已經超越咗昨日的自己。","🎨 筆記唔使靚，自己睇得明就夠。最重要係寫落嚟！","🏔️ 山唔怕高，最怕腳停。一步一步行，終會到頂。","🌊 溫習如逆水行舟，唔進則退。但休息都好重要㗎！","⭐ 你嘅努力唔會白費，DSE當日你就會感受到。","🎪 考試唔係考你識幾多，係考你溫咗幾多入腦。覆習啦！","🏠 補習老師教嘅，要自己再整理一次先係你嘅嘢。","🦋 改變唔係一朝一夕，但每日做少少，蝴蝶效應會出現。","🎲 做錯MC？記落操練表！覆檢嗰陣你會感激今日嘅自己。","🔑 記住：熟練度1→2→3→4→5，每升一級你都強咗。","🌍 歷史係故事，唔係死記硬背。用「原因-過程-影響」去理解！","✏️ 寫作唔夠分？每段用PEEL，結構即刻清晰。","🎯 數學最弱？每日做2題，積少成多，手感會嚟嘅。","🌈 低潮期人人都有，重點係唔好停。就算慢，都係前進。","💪 今天的你比昨天多溫了一課，已經在進步了！","🧩 每一個課題都係拼圖的一塊，遲早會砌出完整畫面。","🌟 信自己，你願意坐低溫書呢件事本身，已經好叻。","📈 成績唔係一日升嘅，但每日做，一定會升。Keep going！","🎪 考DSE嗰日，你會感激現在每一個坐低溫書嘅自己。"
+];
+
+// ===== NAVIGATION =====
+document.querySelectorAll('.nav-item').forEach(item=>{
+  item.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    item.classList.add('active');
+    const page=item.dataset.page;
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('page-'+page).classList.add('active');
+    document.querySelector('.sidebar').classList.remove('open');
+    if(page==='dashboard') renderDashboard();
+    if(page.startsWith('notes-')) renderNotes(page.replace('notes-',''));
+    if(page.startsWith('prac-')) renderPrac(page.replace('prac-',''));
+    if(page==='dse-stats') renderStats('chhist');
+  });
+});
+
+// ===== DASHBOARD =====
+function renderDashboard(){
+  document.getElementById('quote-text').textContent=quotes[Math.floor(Math.random()*quotes.length)];
+  const notes=getData(KEYS.notes);
+  const prac=getData(KEYS.prac);
+  const subjects=[
+    {key:'chhist',name:'中史',type:'筆記类',total:30},
+    {key:'whist',name:'世史',type:'筆記类',total:25},
+    {key:'csd',name:'C&SD',type:'筆記类',total:20},
+    {key:'eng',name:'英文',type:'操練类',total:50},
+    {key:'math',name:'數學',type:'操練类',total:40},
+    {key:'chi',name:'中文',type:'操練类',total:45},
+  ];
+  const grid=document.getElementById('progress-grid');
+  grid.innerHTML=subjects.map(s=>{
+    const items=notes[s.key]||[];
+    const pItems=prac[s.key]||[];
+    const done=items.length;
+    const pct=Math.round((done/s.total)*100);
+    const isWarm=s.type==='筆記类';
+    const dseCount=items.filter(n=>n.dse==='是').length;
+    const lowCount=items.filter(n=>n.prof&&parseInt(n.prof)<=2).length;
+    const errCount=pItems.filter(p=>p.errorType).length;
+    return `<div class="progress-card ${isWarm?'warm':'cool'}">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div><div class="subject-name">${s.name}</div><div class="subject-type">${s.type} ${isWarm?'📖':'✏️'}</div></div>
+        <span class="tag ${isWarm?'tag-warm':'tag-cool'}">${pct}%</span>
+      </div>
+      <div class="progress-bar-bg"><div class="progress-bar ${isWarm?'warm':'cool'}" style="width:${pct}%"></div></div>
+      <div class="progress-stats">
+        <span>完成 <span class="stat-val">${done}</span>/${s.total}</span>
+        ${isWarm?`<span>DSE題 <span class="stat-val">${dseCount}</span></span><span>弱項 <span class="stat-val">${lowCount}</span></span>`:`<span>錯題 <span class="stat-val">${errCount}</span></span>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== NOTES =====
+const subjMap={chhist:'中史',whist:'世史',csd:'C&SD'};
+let noteFilter={chhist:'all',whist:'all',csd:'all'};
+function filterNotes(key,val){ noteFilter[key]=val; renderNotes(key); }
+
+function renderNotes(key){
+  const notes=getData(KEYS.notes)[key]||[];
+  const f=noteFilter[key]||'all';
+  let filtered=notes;
+  if(f==='dse') filtered=notes.filter(n=>n.dse==='是');
+  if(f==='low') filtered=notes.filter(n=>n.prof&&parseInt(n.prof)<=2);
+  const el=document.getElementById('note-list-'+key);
+  if(!filtered.length){ el.innerHTML='<div class="empty-state"><div class="icon">📖</div><div class="title">仲未有筆記</div><div class="desc">按「+ 新增筆記」開始記錄</div></div>'; return; }
+  el.innerHTML=filtered.map(n=>{
+    const tags=(n.dseType||'').split('/').filter(Boolean).map(t=>{
+      const cls={'MC':'tag-mc','短答':'tag-short','DBQ':'tag-dbq','論述':'tag-essay'}[t]||'tag-warm';
+      return `<span class="tag ${cls}">${t}</span>`;
+    }).join('');
+    const prof=n.prof?parseInt(n.prof):0;
+    const dots=[1,2,3,4,5].map(i=>`<span class="prof-dot ${i<=prof?(i<=2?'warn':'filled'):''}"></span>`).join('');
+    return `<div class="note-item">
+      <div style="display:flex;justify-content:space-between;align-items:start;">
+        <div><div class="note-title">${n.topic}</div><div class="note-subtitle">${n.subtopic}</div></div>
+        <div class="btn-group"><button class="btn btn-sm btn-outline" onclick="editNote('${key}','${n.id}')">✏️</button><button class="btn btn-sm btn-danger" onclick="deleteNote('${key}','${n.id}')">🗑️</button></div>
+      </div>
+      ${n.content?`<div class="note-content">${n.content}</div>`:''}
+      ${n.keywords?`<div class="note-keywords">🔑 ${n.keywords}</div>`:''}
+      <div class="note-meta">
+        ${n.dse==='是'?`<span class="tag" style="background:#FFEBEE;color:var(--danger);">📊 DSE已出現 ${n.dseYear||''}</span>`:''}
+        ${tags}
+        <div class="prof" title="熟練度 ${prof}/5">${dots}</div>
+      </div>
+      ${n.testQ?`<div class="self-test"><div class="q">❓ ${n.testQ}</div><div class="a" id="ans-${n.id}">💡 ${n.testA||''}</div><button class="btn btn-sm btn-outline" style="margin-top:6px;" onclick="document.getElementById('ans-${n.id}').classList.toggle('show');this.textContent=this.textContent==='👁️ 顯示答案'?'🙈 隱藏答案':'👁️ 顯示答案'">👁️ 顯示答案</button></div>`:''}
+      ${n.remarks?`<div style="margin-top:8px;font-size:12px;color:var(--gray-500);">📌 ${n.remarks}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function openNoteModal(subject, editData){
+  document.getElementById('note-edit-subject').value=subject;
+  document.getElementById('note-modal-title').textContent=editData?'編輯筆記':'新增筆記 — '+subject;
+  const sKey=subject==='中史'?'chhist':subject==='世史'?'whist':'csd';
+  document.getElementById('note-edit-id').value=editData?editData.id:'';
+  ['topic','subtopic','content','keywords','dse','dseType','dseYear','testQ','testA','prof','remarks'].forEach(f=>{
+    const el=document.getElementById('nm-'+f.charAt(0).toLowerCase()+f.slice(1).replace(/([A-Z])/g,(m,l)=>l.toLowerCase()));
+    // Map field names to element IDs
+  });
+  if(editData){
+    document.getElementById('nm-topic').value=editData.topic||'';
+    document.getElementById('nm-subtopic').value=editData.subtopic||'';
+    document.getElementById('nm-content').value=editData.content||'';
+    document.getElementById('nm-keywords').value=editData.keywords||'';
+    document.getElementById('nm-dse').value=editData.dse||'否';
+    document.getElementById('nm-dse-type').value=editData.dseType||'';
+    document.getElementById('nm-dse-year').value=editData.dseYear||'';
+    document.getElementById('nm-testq').value=editData.testQ||'';
+    document.getElementById('nm-testa').value=editData.testA||'';
+    document.getElementById('nm-prof').value=editData.prof||'1';
+    document.getElementById('nm-remarks').value=editData.remarks||'';
+  } else {
+    ['nm-topic','nm-subtopic','nm-content','nm-keywords','nm-dse-type','nm-dse-year','nm-testq','nm-testa','nm-remarks'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('nm-dse').value='否';
+    document.getElementById('nm-prof').value='1';
+  }
+  document.getElementById('note-modal').classList.add('show');
+}
+
+function saveNote(){
+  const data=getData(KEYS.notes);
+  const subject=document.getElementById('note-edit-subject').value;
+  const sKey=subject==='中史'?'chhist':subject==='世史'?'whist':'csd';
+  if(!data[sKey]) data[sKey]=[];
+  const note={
+    id:document.getElementById('note-edit-id').value||uid(),
+    topic:document.getElementById('nm-topic').value,
+    subtopic:document.getElementById('nm-subtopic').value,
+    content:document.getElementById('nm-content').value,
+    keywords:document.getElementById('nm-keywords').value,
+    dse:document.getElementById('nm-dse').value,
+    dseType:document.getElementById('nm-dse-type').value,
+    dseYear:document.getElementById('nm-dse-year').value,
+    testQ:document.getElementById('nm-testq').value,
+    testA:document.getElementById('nm-testa').value,
+    prof:document.getElementById('nm-prof').value,
+    remarks:document.getElementById('nm-remarks').value,
+  };
+  const idx=data[sKey].findIndex(n=>n.id===note.id);
+  if(idx>=0) data[sKey][idx]=note; else data[sKey].push(note);
+  setData(KEYS.notes,data);
+  closeModal('note-modal');
+  renderNotes(sKey);
+}
+
+function editNote(key,id){
+  const notes=getData(KEYS.notes)[key]||[];
+  const n=notes.find(x=>x.id===id);
+  if(n) openNoteModal(subjMap[key],n);
+}
+
+function deleteNote(key,id){
+  if(!confirm('確定刪除呢條筆記？')) return;
+  const data=getData(KEYS.notes);
+  data[key]=data[key].filter(n=>n.id!==id);
+  setData(KEYS.notes,data);
+  renderNotes(key);
+}
+
+// ===== PRACTICE =====
+const pracMap={eng:'英文',math:'數學',chi:'中文'};
+const pracFields={
+  '英文':[
+    {id:'date',label:'日期',type:'date'},{id:'type',label:'操練類型',type:'select',opts:['Reading','Listening','Writing','Speaking','Integrated','Grammar','Vocab']},
+    {id:'paper',label:'DSE卷別',type:'select',opts:['Paper1','Paper2','Paper3','Paper4']},{id:'source',label:'題目來源',type:'select',opts:['DSE Past Paper','學校測驗','補習練習','其他']},
+    {id:'dseYear',label:'DSE年份',type:'text'},{id:'qNum',label:'題號',type:'text'},{id:'score',label:'得分/滿分',type:'text'},
+    {id:'errorType',label:'錯誤類型',type:'select',opts:['','Vocabulary','Grammar','Comprehension','Spelling','Time Management','Format','Content','Organization']},
+    {id:'errorDetail',label:'錯誤詳情',type:'textarea'},{id:'improve',label:'改善行動',type:'text'},{id:'reviewed',label:'已覆檢',type:'select',opts:['否','是']}
+  ],
+  '數學':[
+    {id:'date',label:'日期',type:'date'},{id:'topic',label:'課題',type:'select',opts:['百分比','率與比','恆等式','一元一次不等式','三角學','面積與體積','坐標幾何','統計學','概率','其他']},
+    {id:'paper',label:'DSE卷別',type:'select',opts:['Paper1','Paper2']},{id:'source',label:'題目來源',type:'select',opts:['DSE Past Paper','學校測驗','補習練習','教科書','其他']},
+    {id:'dseYear',label:'DSE年份',type:'text'},{id:'qNum',label:'題號',type:'text'},{id:'qType',label:'題型',type:'select',opts:['MC','短答','長題目','證明題']},
+    {id:'correct',label:'做對',type:'select',opts:['是','否']},{id:'errorType',label:'錯誤類型',type:'select',opts:['','計算錯誤','概念不清','看錯題目','公式記錯','時間不足','步驟遺漏','其他']},
+    {id:'errorDetail',label:'錯誤詳情',type:'textarea'},{id:'solution',label:'正確解法要點',type:'text'},{id:'reviewed',label:'已覆檢',type:'select',opts:['否','是']}
+  ],
+  '中文':[
+    {id:'date',label:'日期',type:'date'},{id:'type',label:'操練類型',type:'select',opts:['閱讀理解','寫作','文言文','語譯','實用文','綜合','說話','聆聽','其他']},
+    {id:'paper',label:'DSE卷別',type:'select',opts:['Paper1','Paper2','Paper3','Paper4']},{id:'source',label:'題目來源',type:'select',opts:['DSE Past Paper','學校測驗','補習練習','其他']},
+    {id:'dseYear',label:'DSE年份',type:'text'},{id:'qNum',label:'題號',type:'text'},{id:'score',label:'得分/滿分',type:'text'},
+    {id:'errorType',label:'錯誤類型',type:'select',opts:['','理解偏差','審題錯誤','表達不清','時間不足','格式錯誤','論點不足','論證薄弱','修辭誤判','其他']},
+    {id:'errorDetail',label:'錯誤詳情',type:'textarea'},{id:'improve',label:'改善行動',type:'text'},{id:'reviewed',label:'已覆檢',type:'select',opts:['否','是']}
+  ]
+};
+
+function openPracModal(subject, editData){
+  document.getElementById('prac-edit-subject').value=subject;
+  document.getElementById('prac-modal-title').textContent=editData?'編輯操練記錄':'新增操練記錄 — '+subject;
+  document.getElementById('prac-edit-id').value=editData?editData.id:'';
+  const fields=pracFields[subject];
+  document.getElementById('prac-form-fields').innerHTML=fields.map(f=>{
+    const val=editData?editData[f.id]||'':'';
+    if(f.type==='select') return `<div class="form-group"><label class="form-label">${f.label}</label><select class="form-select" id="pf-${f.id}">${f.opts.map(o=>`<option value="${o}" ${o===val?'selected':''}>${o||'—'}</option>`).join('')}</select></div>`;
+    if(f.type==='textarea') return `<div class="form-group" style="grid-column:span 2"><label class="form-label">${f.label}</label><textarea class="form-textarea" id="pf-${f.id}" rows="2">${val}</textarea></div>`;
+    return `<div class="form-group"><label class="form-label">${f.label}</label><input class="form-input" id="pf-${f.id}" type="${f.type==='date'?'date':'text'}" value="${val}"></div>`;
+  }).join('');
+  if(!editData && fields.find(f=>f.id==='date')){
+    document.getElementById('pf-date').value=new Date().toISOString().slice(0,10);
+  }
+  // Make it a grid layout
+  document.getElementById('prac-form-fields').style.display='grid';
+  document.getElementById('prac-form-fields').style.gridTemplateColumns='1fr 1fr';
+  document.getElementById('prac-form-fields').style.gap='10px';
+  document.getElementById('prac-modal').classList.add('show');
+}
+
+function savePrac(){
+  const data=getData(KEYS.prac);
+  const subject=document.getElementById('prac-edit-subject').value;
+  const sKey=subject==='英文'?'eng':subject==='數學'?'math':'chi';
+  if(!data[sKey]) data[sKey]=[];
+  const fields=pracFields[subject];
+  const record={id:document.getElementById('prac-edit-id').value||uid()};
+  fields.forEach(f=>{
+    const el=document.getElementById('pf-'+f.id);
+    record[f.id]=el?el.value:'';
+  });
+  const idx=data[sKey].findIndex(p=>p.id===record.id);
+  if(idx>=0) data[sKey][idx]=record; else data[sKey].push(record);
+  setData(KEYS.prac,data);
+  closeModal('prac-modal');
+  renderPrac(sKey);
+}
+
+function renderPrac(key){
+  const records=getData(KEYS.prac)[key]||[];
+  const subject=pracMap[key];
+  const tbody=document.querySelector('#prac-table-'+key+' tbody');
+  if(!records.length){ tbody.innerHTML='<tr><td colspan="12" style="text-align:center;color:var(--gray-500);padding:30px;">仲未有操練記錄，按「+ 新增記錄」開始</td></tr>'; return; }
+  tbody.innerHTML=records.map(r=>{
+    const editBtn=`<button class="btn btn-sm btn-outline" onclick="editPrac('${key}','${r.id}')">✏️</button>`;
+    const delBtn=`<button class="btn btn-sm btn-danger" onclick="deletePrac('${key}','${r.id}')">🗑️</button>`;
+    if(key==='math'){
+      return `<tr>
+        <td>${r.date||''}</td><td>${r.topic||''}</td><td>${r.paper||''}</td><td>${r.source||''}</td>
+        <td>${r.qNum||''}</td><td>${r.qType||''}</td><td>${r.correct==='是'?'✅':'❌'}</td>
+        <td>${r.errorType?`<span class="error-badge">${r.errorType}</span>`:''}</td>
+        <td>${r.errorDetail||''}</td><td>${r.solution||''}</td>
+        <td>${r.reviewed==='是'?'✅':'⬜'}</td><td>${editBtn}${delBtn}</td></tr>`;
+    }
+    return `<tr>
+      <td>${r.date||''}</td><td>${r.type||''}</td><td>${r.paper||''}</td><td>${r.source||''}</td>
+      <td>${r.qNum||''}</td><td>${r.score||''}</td>
+      <td>${r.errorType?`<span class="error-badge">${r.errorType}</span>`:''}</td>
+      <td>${r.errorDetail||''}</td>
+      <td>${r.improve?`<span class="improve-badge">${r.improve}</span>`:''}</td>
+      <td>${r.reviewed==='是'?'✅':'⬜'}</td><td>${editBtn}${delBtn}</td></tr>`;
+  }).join('');
+}
+
+function editPrac(key,id){
+  const records=getData(KEYS.prac)[key]||[];
+  const r=records.find(x=>x.id===id);
+  if(r) openPracModal(pracMap[key],r);
+}
+
+function deletePrac(key,id){
+  if(!confirm('確定刪除呢條記錄？')) return;
+  const data=getData(KEYS.prac);
+  data[key]=data[key].filter(p=>p.id!==id);
+  setData(KEYS.prac,data);
+  renderPrac(key);
+}
+
+// ===== DSE STATS =====
+function renderStats(key){
+  const notes=getData(KEYS.notes)[key]||[];
+  const tbody=document.querySelector('#stats-table tbody');
+  if(!notes.length){ tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--gray-500);">暫無數據</td></tr>'; return; }
+  // Aggregate by topic
+  const topicMap={};
+  notes.forEach(n=>{
+    const t=n.topic||'未分類';
+    if(!topicMap[t]) topicMap[t]={mc:0,short:0,dbq:0,essay:0};
+    const types=(n.dseType||'').split('/');
+    if(types.includes('MC')) topicMap[t].mc++;
+    if(types.includes('短答')) topicMap[t].short++;
+    if(types.includes('DBQ')) topicMap[t].dbq++;
+    if(types.includes('論述')) topicMap[t].essay++;
+  });
+  tbody.innerHTML=Object.entries(topicMap).map(([topic,counts])=>{
+    const total=counts.mc+counts.short+counts.dbq+counts.essay;
+    return `<tr><td><strong>${topic}</strong></td><td>${counts.mc}</td><td>${counts.short}</td><td>${counts.dbq}</td><td>${counts.essay}</td><td><strong>${total}</strong></td></tr>`;
+  }).join('');
+}
+
+function showStatTab(key,el){
+  document.querySelectorAll('#page-dse-stats .tab-item').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderStats(key);
+}
+
+// ===== NOTE GENERATOR =====
+let selectedFmt='1';
+document.querySelectorAll('.gen-format-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.gen-format-btn').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedFmt=btn.dataset.fmt;
+  });
+});
+
+function generateNote(){
+  const title=document.getElementById('gen-title').value||'未命名課題';
+  const time=document.getElementById('gen-time').value||'';
+  const people=document.getElementById('gen-people').value||'';
+  const region=document.getElementById('gen-region').value||'';
+  const subject=document.getElementById('gen-subject').value;
+  const subLabel=subject==='C&SD'?'概念/議題':'子課題';
+  let html='';
+  const info=`<div style="background:var(--warm-bg);padding:10px 16px;border-radius:8px;margin-bottom:14px;">
+    <strong>${subject}</strong> | ${title} | ${time} | ${people} | ${region}</div>`;
+
+  if(selectedFmt==='1'){
+    html=info+`
+    <h3 style="color:var(--success);margin-top:14px;">【背景描述】</h3>
+    <div class="form-group"><textarea class="form-textarea" id="gf-bg1" placeholder="這個事件發生之前是什麼狀況？"></textarea></div>
+    <h3 style="color:var(--success);margin-top:14px;">【事實經過】</h3>
+    <div class="form-group"><label class="form-label">階段一：起因</label><textarea class="form-textarea" id="gf-s1" placeholder="事件是怎樣開始的？導火線是什麼？"></textarea></div>
+    <div class="form-group"><label class="form-label">階段二：發展</label><textarea class="form-textarea" id="gf-s2" placeholder="事件如何演變？關鍵轉折點？"></textarea></div>
+    <div class="form-group"><label class="form-label">階段三：結果</label><textarea class="form-textarea" id="gf-s3" placeholder="事件最終如何結束？"></textarea></div>
+    <h3 style="color:var(--success);margin-top:14px;">【關鍵細節】</h3>
+    <div class="form-row"><div class="form-group"><label class="form-label">數據/數字</label><input class="form-input" id="gf-d1" placeholder="年份、人數等"></div><div class="form-group"><label class="form-label">重要條約/制度</label><input class="form-input" id="gf-d2"></div></div>
+    <h3 style="color:var(--success);margin-top:14px;">【即時影響】</h3>
+    <div class="form-group"><textarea class="form-textarea" id="gf-imp" placeholder="事件對當時的直接影響"></textarea></div>`;
+  } else if(selectedFmt==='2'){
+    html=info+`
+    <h3 style="color:var(--cool);margin-top:14px;">═══ 原因分析 ═══</h3>
+    <div class="form-group"><label class="form-label">政治原因</label><textarea class="form-textarea" id="gf-cp" placeholder="政治制度、權力鬥爭、政策失誤"></textarea></div>
+    <div class="form-group"><label class="form-label">經濟原因</label><textarea class="form-textarea" id="gf-ce" placeholder="經濟危機、資源爭奪"></textarea></div>
+    <div class="form-group"><label class="form-label">社會/文化原因</label><textarea class="form-textarea" id="gf-cs" placeholder="社會矛盾、文化衝突"></textarea></div>
+    <div class="form-group"><label class="form-label">外部/國際原因</label><textarea class="form-textarea" id="gf-co" placeholder="外國干涉、國際局勢"></textarea></div>
+    <div class="form-group" style="background:#FFF8E1;padding:10px;border-radius:8px;"><label class="form-label">🔑 最關鍵原因</label><textarea class="form-textarea" id="gf-ck" placeholder="哪個原因最重要？為什麼？DSE常問！"></textarea></div>
+    <h3 style="color:var(--cool);margin-top:14px;">═══ 過程描述 ═══</h3>
+    <div class="form-group"><label class="form-label">關鍵人物角色</label><textarea class="form-textarea" id="gf-pp" placeholder="人物1：做了什麼？\n人物2：做了什麼？"></textarea></div>
+    <div class="form-group"><label class="form-label">關鍵轉折點</label><textarea class="form-textarea" id="gf-tp" placeholder="轉折1：什麼事？為何重要？\n轉折2：..."></textarea></div>
+    <h3 style="color:var(--cool);margin-top:14px;">═══ 影響分析 ═══</h3>
+    <div class="form-row"><div class="form-group"><label class="form-label">短期影響</label><textarea class="form-textarea" id="gf-is" rows="2" placeholder="當時-10年內"></textarea></div><div class="form-group"><label class="form-label">長期影響</label><textarea class="form-textarea" id="gf-il" rows="2" placeholder="10年以上"></textarea></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">正面影響</label><textarea class="form-textarea" id="gf-ip" rows="2"></textarea></div><div class="form-group"><label class="form-label">負面影響</label><textarea class="form-textarea" id="gf-in" rows="2"></textarea></div></div>
+    <div class="form-group" style="background:#FFF8E1;padding:10px;border-radius:8px;"><label class="form-label">🔑 歷史意義/評價</label><textarea class="form-textarea" id="gf-ev" placeholder="這個事件在歷史上的地位，DSE論述題必備"></textarea></div>`;
+  } else if(selectedFmt==='3'){
+    html=info+`
+    <div style="background:var(--gray-50);padding:14px;border-radius:8px;margin-bottom:14px;font-size:12px;color:var(--gray-500);">
+      PEEL = <span style="color:var(--peel-p);font-weight:700;">P論點</span> + <span style="color:var(--peel-e1);font-weight:700;">E論據</span> + <span style="color:var(--peel-e2);font-weight:700;">E解釋</span> + <span style="color:var(--peel-l);font-weight:700;">L扣題</span>
+    </div>
+    <div class="form-group"><label class="form-label">DSE常見問題</label><input class="form-input" id="gf-dseq" placeholder="這個課題DSE通常怎樣問？如：X是否Y的主因？"></div>
+    ${[1,2].map(i=>`
+    <h3 style="color:var(--primary);margin-top:16px;">═══ 論點${i} ═══</h3>
+    <div class="peel-section peel-p"><label style="color:var(--peel-p);">P — 論點</label><textarea class="form-textarea" id="gf-p${i}" placeholder="${i===1?'例：秦始皇的統一措施有助加強中央集權':'例：然而，統一措施也帶來負面影響'}" rows="2"></textarea></div>
+    <div class="peel-section peel-e1"><label style="color:var(--peel-e1);">E — 論據</label><textarea class="form-textarea" id="gf-e1-${i}" placeholder="具體史實/數據" rows="2"></textarea></div>
+    <div class="peel-section peel-e2"><label style="color:var(--peel-e2);">E — 解釋</label><textarea class="form-textarea" id="gf-e2-${i}" placeholder="解釋論據如何支持論點" rows="2"></textarea></div>
+    <div class="peel-section peel-l"><label style="color:var(--peel-l);">L — 扣題</label><textarea class="form-textarea" id="gf-l${i}" placeholder="總結並扣回題目" rows="2"></textarea></div>
+    `).join('')}
+    <div class="form-group" style="background:#FFF8E1;padding:10px;border-radius:8px;margin-top:14px;"><label class="form-label">🔑 總結立場</label><textarea class="form-textarea" id="gf-conc" placeholder="綜合所有論點，你的最終立場是什麼？要明確回應題目！"></textarea></div>`;
+  } else {
+    html=info+`
+    <h3 style="color:var(--warm-accent);margin-top:14px;">╔══ 第一部分：事實描述 ══╗</h3>
+    <div class="form-group"><label class="form-label">背景</label><textarea class="form-textarea" id="gf-mbg" placeholder="簡述事件背景"></textarea></div>
+    <div class="form-group"><label class="form-label">經過</label><textarea class="form-textarea" id="gf-mpc" placeholder="按時間順序記錄"></textarea></div>
+    <div class="form-group"><label class="form-label">關鍵數據/條約/制度</label><textarea class="form-textarea" id="gf-mdt" placeholder="必須記住的具體內容"></textarea></div>
+    <h3 style="color:var(--cool);margin-top:14px;">╔══ 第二部分：原因-過程-影響 ══╗</h3>
+    <div class="form-row-3">
+      <div class="form-group"><label class="form-label">政治原因</label><textarea class="form-textarea" id="gf-mcp" rows="2"></textarea></div>
+      <div class="form-group"><label class="form-label">經濟原因</label><textarea class="form-textarea" id="gf-mce" rows="2"></textarea></div>
+      <div class="form-group"><label class="form-label">社會/外部原因</label><textarea class="form-textarea" id="gf-mcs" rows="2"></textarea></div>
+    </div>
+    <div class="form-row"><div class="form-group"><label class="form-label">短期影響</label><textarea class="form-textarea" id="gf-mis" rows="2"></textarea></div><div class="form-group"><label class="form-label">長期影響</label><textarea class="form-textarea" id="gf-mil" rows="2"></textarea></div></div>
+    <h3 style="color:var(--peel-l);margin-top:14px;">╔══ 第三部分：PEEL論述 ══╗</h3>
+    <div class="form-group"><label class="form-label">DSE常見問題</label><input class="form-input" id="gf-mdseq" placeholder="這個課題DSE通常怎樣問？"></div>
+    ${[1,2].map(i=>`
+    <h4 style="margin-top:12px;">論點${i}</h4>
+    <div class="peel-section peel-p"><label style="color:var(--peel-p);">P — 論點</label><textarea class="form-textarea" id="gf-mp${i}" rows="1"></textarea></div>
+    <div class="peel-section peel-e1"><label style="color:var(--peel-e1);">E — 論據</label><textarea class="form-textarea" id="gf-me1-${i}" rows="1"></textarea></div>
+    <div class="peel-section peel-e2"><label style="color:var(--peel-e2);">E — 解釋</label><textarea class="form-textarea" id="gf-me2-${i}" rows="1"></textarea></div>
+    <div class="peel-section peel-l"><label style="color:var(--peel-l);">L — 扣題</label><textarea class="form-textarea" id="gf-ml${i}" rows="1"></textarea></div>
+    `).join('')}
+    <div class="form-group" style="background:#FFF8E1;padding:10px;border-radius:8px;margin-top:14px;"><label class="form-label">🔑 總結立場</label><textarea class="form-textarea" id="gf-mconc" placeholder="明確回應題目"></textarea></div>`;
+  }
+  document.getElementById('gen-result-content').innerHTML=html;
+  document.getElementById('gen-output').style.display='block';
+}
+
+function saveGeneratedNote(){
+  const subject=document.getElementById('gen-subject').value;
+  const title=document.getElementById('gen-title').value||'未命名課題';
+  const sKey=subject==='中史'?'chhist':subject==='世史'?'whist':'csd';
+  // Collect all textarea/input values from the generated form
+  const contentParts=[];
+  document.querySelectorAll('#gen-result-content textarea, #gen-result-content input[type=text]').forEach(el=>{
+    if(el.value.trim()){
+      const label=el.previousElementSibling||el.parentElement.querySelector('label');
+      const labelText=label?label.textContent.replace(/[：:]$/,'').trim():'';
+      if(labelText) contentParts.push(`【${labelText}】${el.value.trim()}`);
+      else contentParts.push(el.value.trim());
+    }
+  });
+  const data=getData(KEYS.notes);
+  if(!data[sKey]) data[sKey]=[];
+  data[sKey].push({
+    id:uid(), topic:title, subtopic:document.getElementById('gen-time').value||'',
+    content:contentParts.join('\n'), keywords:document.getElementById('gen-people').value||'',
+    dse:'否', dseType:'', dseYear:'', testQ:'', testA:'', prof:'1', remarks:'由筆記生成器建立'
+  });
+  setData(KEYS.notes,data);
+  alert('✅ 已儲存到'+subject+'筆記！');
+}
+
+function copyGenOutput(){
+  const el=document.getElementById('gen-result-content');
+  const text=el.innerText;
+  navigator.clipboard.writeText(text).then(()=>alert('已複製到剪貼簿！'));
+}
+
+// ===== EXPORT =====
+let exportType='pdf';
+function selectExport(el){
+  document.querySelectorAll('.export-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  exportType=el.dataset.exp;
+}
+
+function doExport(){
+  const subject=document.getElementById('exp-subject').value;
+  const filter=document.getElementById('exp-filter').value;
+  const notes=getData(KEYS.notes);
+  const prac=getData(KEYS.prac);
+  const sKeys=subject==='全部'?['chhist','whist','csd']:[subject==='中史'?'chhist':subject==='世史'?'whist':'csd'];
+  const pKeys=subject==='全部'?['eng','math','chi']:[];
+
+  let html=`<html><head><meta charset="UTF-8"><title>DSE筆記匯出</title>
+  <style>body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;padding:30px;color:#333;max-width:800px;margin:0 auto;}
+  h1{color:#1B3A5C;text-align:center;border-bottom:3px solid #1B3A5C;padding-bottom:10px;}
+  h2{color:#8B4513;margin-top:24px;} h3{color:#2E5090;margin-top:16px;}
+  .note{border-left:4px solid #8B4513;padding:10px 16px;margin:10px 0;background:#FFF8E1;border-radius:0 8px 8px 0;}
+  .note .title{font-weight:700;font-size:15px;color:#1B3A5C;} .note .content{margin-top:6px;white-space:pre-wrap;font-size:13px;line-height:1.7;}
+  .dse-tag{display:inline-block;background:#FFEBEE;color:#C0392B;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;margin:2px;}
+  .self-test{background:#F5F5F5;padding:8px 12px;border-radius:6px;margin-top:8px;font-size:13px;}
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px;}
+  th{background:#1B3A5C;color:#fff;padding:8px;text-align:left;} td{padding:8px;border-bottom:1px solid #ddd;}
+  .error{color:#C0392B;font-weight:600;} .improve{color:#2E7D32;font-weight:600;}
+  .meta{font-size:11px;color:#999;margin-top:10px;text-align:center;}
+  </style></head><body>`;
+  html+=`<h1>DSE 筆記匯出</h1><div class="meta">匯出日期：${new Date().toLocaleString('zh-HK')} | 科目：${subject} | 篩選：${filter==='all'?'全部':filter==='dse'?'DSE曾出現':'熟練度1-2'}</div>`;
+
+  sKeys.forEach(key=>{
+    let items=notes[key]||[];
+    if(filter==='dse') items=items.filter(n=>n.dse==='是');
+    if(filter==='low') items=items.filter(n=>n.prof&&parseInt(n.prof)<=2);
+    if(!items.length) return;
+    html+=`<h2>📖 ${subjMap[key]} 筆記</h2>`;
+    items.forEach(n=>{
+      html+=`<div class="note"><div class="title">${n.topic} — ${n.subtopic}</div>`;
+      if(n.content) html+=`<div class="content">${n.content}</div>`;
+      if(n.keywords) html+=`<div style="margin-top:4px;font-size:12px;color:#8B4513;">🔑 ${n.keywords}</div>`;
+      if(n.dse==='是'){
+        html+=`<div style="margin-top:4px;">`;
+        html+=`<span class="dse-tag">📊 DSE已出現 ${n.dseYear||''}</span>`;
+        (n.dseType||'').split('/').filter(Boolean).forEach(t=>html+=`<span class="dse-tag">${t}</span>`);
+        html+=`</div>`;
+      }
+      if(n.testQ) html+=`<div class="self-test">❓ ${n.testQ}<br>💡 ${n.testA||''}</div>`;
+      if(n.prof) html+=`<div style="margin-top:4px;font-size:12px;color:#666;">熟練度：${n.prof}/5</div>`;
+      html+=`</div>`;
+    });
+  });
+
+  pKeys.forEach(key=>{
+    const records=prac[key]||[];
+    if(!records.length) return;
+    html+=`<h2>✏️ ${pracMap[key]} 操練記錄</h2><table><tr><th>日期</th><th>類型</th><th>題號</th><th>得分</th><th>錯誤</th><th>改善</th></tr>`;
+    records.forEach(r=>{
+      html+=`<tr><td>${r.date||''}</td><td>${r.type||r.topic||''}</td><td>${r.qNum||''}</td><td>${r.score||''}</td><td class="error">${r.errorType||''}</td><td class="improve">${r.improve||r.solution||''}</td></tr>`;
+    });
+    html+=`</table>`;
+  });
+
+  html+=`</body></html>`;
+
+  if(exportType==='print'){
+    const w=window.open('','_blank');
+    w.document.write(html);
+    w.document.close();
+    setTimeout(()=>w.print(),500);
+  } else {
+    const blob=new Blob([html],{type:'text/html'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`DSE筆記_${subject}_${new Date().toISOString().slice(0,10)}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    alert('✅ 已下載！用瀏覽器開啟後可按 Ctrl+P 列印為 PDF');
+  }
+}
+
+// ===== MODAL HELPERS =====
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('show'); });
+});
+
+// ===== INIT =====
+function seedData(){
+  const notes=getData(KEYS.notes);
+  if(!Object.keys(notes).length){
+    notes.chhist=[
+      {id:uid(),topic:'秦朝',subtopic:'統一措施',content:'統一文字（小篆）、貨幣（半兩錢）、度量衡、車軌；修長城、築馳道、設郡縣制',keywords:'秦始皇/小篆/半兩錢/郡縣制',dse:'是',dseType:'DBQ/論述',dseYear:'2021',testQ:'秦始皇統一措施有哪些？對後世有何影響？',testA:'統一文字貨幣度量衡車軌，影響：促進經濟文化交流，加強中央集權',prof:'2',remarks:''},
+      {id:uid(),topic:'漢朝',subtopic:'漢武帝施政',content:'罷黜百家獨尊儒術、設太學、推行推恩令削弱諸侯、鹽鐵官營、均輸平準',keywords:'董仲舒/太學/推恩令/鹽鐵官營',dse:'是',dseType:'MC/短答',dseYear:'2022',testQ:'漢武帝如何加強中央集權？',testA:'思想上獨尊儒術、政治上推恩令削藩、經濟上鹽鐵官營',prof:'1',remarks:''},
+      {id:uid(),topic:'唐朝',subtopic:'安史之亂',content:'安祿山以討楊國忠為名起兵、洛陽長安相繼失守、郭子儀平亂、藩鎮割據局面形成',keywords:'安祿山/楊國忠/郭子儀/藩鎮',dse:'否',dseType:'',dseYear:'',testQ:'安史之亂的成因是什麼？',testA:'節度使權力過大、朝廷腐敗、楊國忠專權',prof:'3',remarks:''},
+    ];
+    notes.whist=[
+      {id:uid(),topic:'第一次世界大戰',subtopic:'戰爭起因',content:'極端民族主義、殖民競爭、軍備競賽、同盟制度（三國同盟vs三國協約）、塞拉耶佛事件為導火線',keywords:'同盟國/協約國/塞拉耶佛事件',dse:'是',dseType:'DBQ/論述',dseYear:'2023',testQ:'一戰的主因是什麼？哪個因素最關鍵？',testA:'主因包括民族主義、軍備競賽、同盟制度；最關鍵是極端民族主義',prof:'1',remarks:''},
+      {id:uid(),topic:'第二次世界大戰',subtopic:'綏靖政策',content:'張伯倫的綏靖政策：慕尼黑協定（1938）容許德國吞併蘇台德區',keywords:'張伯倫/慕尼黑協定/希特勒',dse:'是',dseType:'DBQ/短答',dseYear:'2022',testQ:'綏靖政策是否導致二戰爆發的主因？',testA:'綏靖政策鼓勵了希特勒擴張，但非唯一原因',prof:'2',remarks:''},
+    ];
+    notes.csd=[
+      {id:uid(),topic:'一國兩制',subtopic:'一國兩制的內涵',content:'一國是前提兩制是實踐、《基本法》保障香港高度自治、港人治港',keywords:'基本法/高度自治/港人治港',dse:'是',dseType:'短答/DBQ',dseYear:'2024',testQ:'「一國兩制」的核心理念是什麼？',testA:'一國是前提，兩制是實踐',prof:'2',remarks:''},
+    ];
+    setData(KEYS.notes,notes);
+  }
+  const prac=getData(KEYS.prac);
+  if(!Object.keys(prac).length){
+    prac.eng=[
+      {id:uid(),date:'2026-05-20',type:'Reading',paper:'Paper1',source:'DSE Past Paper',dseYear:'2023',qNum:'1A',score:'5/8',errorType:'Comprehension',errorDetail:'推斷題未能從文中找線索',improve:'練習找key words再推斷',reviewed:'否'},
+    ];
+    prac.math=[
+      {id:uid(),date:'2026-05-18',topic:'百分比',paper:'Paper2',source:'DSE Past Paper',dseYear:'2023',qNum:'Q5',qType:'MC',correct:'否',errorType:'概念不清',errorDetail:'混淆折舊與增值',solution:'折舊用乘法遞減，增值用(1+r%)^n',reviewed:'否'},
+    ];
+    prac.chi=[
+      {id:uid(),date:'2026-05-19',type:'閱讀理解',paper:'Paper1',source:'DSE Past Paper',dseYear:'2023',qNum:'1.4',score:'3/6',errorType:'理解偏差',errorDetail:'未能準確概括作者情感轉變',improve:'注意文中轉折詞標記情感變化',reviewed:'否'},
+    ];
+    setData(KEYS.prac,prac);
+  }
+}
+
+seedData();
+renderDashboard();
+</script>
+</body>
+</html>
+
+</script>
+</body></html>
