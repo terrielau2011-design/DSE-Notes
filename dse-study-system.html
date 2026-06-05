@@ -645,7 +645,7 @@ tr:hover td { background:var(--gray-50); }
           </select>
         </div>
         <div class="form-group" id="exp-subj-group"><label class="form-label">科目</label>
-          <select class="form-select" id="exp-subject" onchange="loadExpItems()"><option value="中史">中史</option><option value="世史">世史</option><option value="C&SD">C&SD</option><option value="數學">數學</option><option value="中文">中文</option><option value="英文">英文</option></select>
+          <select class="form-select" id="exp-subject" onchange="loadExpItems()"><option value="all">📚 全部科目</option><option value="中史">中史</option><option value="世史">世史</option><option value="C&SD">C&SD</option><option value="數學">數學</option><option value="中文">中文</option><option value="英文">英文</option></select>
         </div>
         <div class="form-group" id="exp-format-group" style="display:none;"><label class="form-label">筆記格式</label>
           <select class="form-select" id="exp-format" onchange="loadExpItems()">
@@ -657,7 +657,7 @@ tr:hover td { background:var(--gray-50); }
           </select>
         </div>
         <div class="form-group" id="exp-pracsubj-group" style="display:none;"><label class="form-label">操練科目</label>
-          <select class="form-select" id="exp-pracsubj" onchange="loadExpItems()"><option value="eng">英文操練</option><option value="math">數學操練</option><option value="chi">中文操練</option></select>
+          <select class="form-select" id="exp-pracsubj" onchange="loadExpItems()"><option value="all">📋 全部操練</option><option value="eng">英文操練</option><option value="math">數學操練</option><option value="chi">中文操練</option></select>
         </div>
         <div class="form-group" id="exp-filter-group"><label class="form-label">篩選</label>
           <select class="form-select" id="exp-filter" onchange="loadExpItems()"><option value="all">全部</option><option value="dse">只看DSE曾出現</option><option value="low">只看熟練度1-2</option></select>
@@ -7514,38 +7514,46 @@ function backToExpStep1(){
   document.getElementById('export-step2').style.display='none';
 }
 
+function getKbKey(subj){return subj==='中史'?'chhist':subj==='世史'?'whist':subj==='C&SD'?'csd':subj==='數學'?'math':subj==='中文'?'chi':'eng';}
+const allSubjects=['中史','世史','C&SD','數學','中文','英文'];
+const allPracKeys=['eng','math','chi'];
+
 function loadExpItems(){
   const source=document.getElementById('exp-source').value;
   const filter=document.getElementById('exp-filter').value;
   const format=document.getElementById('exp-format').value;
+  const subjVal=document.getElementById('exp-subject').value;
+  const pracVal=document.getElementById('exp-pracsubj').value;
 
-  let subject, pracKey;
-  if(source==='prac'){
-    pracKey=document.getElementById('exp-pracsubj').value;
-    subject=pracMap[pracKey];
-  } else {
-    subject=document.getElementById('exp-subject').value;
-  }
-
-  const kbKey=subject==='中史'?'chhist':subject==='世史'?'whist':subject==='C&SD'?'csd':subject==='數學'?'math':subject==='中文'?'chi':'eng';
-  const kbData=knowledgeBase[subject]||[];
-  const userNotes=(getData(KEYS.notes)[kbKey])||[];
-  const pracRecords=(getData(KEYS.prac)[pracKey||kbKey])||[];
+  const subjects=subjVal==='all'?allSubjects:[subjVal];
+  const pracKeys=pracVal==='all'?allPracKeys:[pracVal];
 
   exportPreviewItems=[];
 
   if(source==='kb'){
-    let items=kbData.map((k,i)=>({...k,_src:'kb',_idx:i,_format:format}));
-    if(filter==='dse') items=items.filter(n=>n.dse==='是'||n.dseRecord);
-    if(filter==='low') items=items.filter(n=>n.prof&&parseInt(n.prof)<=2);
-    items.forEach(it=>exportPreviewItems.push(it));
+    subjects.forEach(subj=>{
+      const kbData=knowledgeBase[subj]||[];
+      let items=kbData.map((k,i)=>({...k,_src:'kb',_format:format,_subj:subj}));
+      if(filter==='dse') items=items.filter(n=>n.dse==='是'||n.dseRecord);
+      if(filter==='low') items=items.filter(n=>n.prof&&parseInt(n.prof)<=2);
+      items.forEach(it=>{it._idx=exportPreviewItems.length; exportPreviewItems.push(it);});
+    });
   } else if(source==='user'){
-    let items=userNotes.map((n,i)=>({...n,_src:'user',_idx:i,_format:format}));
-    if(filter==='dse') items=items.filter(n=>n.dse==='是');
-    if(filter==='low') items=items.filter(n=>n.prof&&parseInt(n.prof)<=2);
-    items.forEach(it=>exportPreviewItems.push(it));
+    const notes=getData(KEYS.notes);
+    subjects.forEach(subj=>{
+      const kbKey=getKbKey(subj);
+      const userNotes=(notes[kbKey])||[];
+      let items=userNotes.map((n,i)=>({...n,_src:'user',_format:format,_subj:subj}));
+      if(filter==='dse') items=items.filter(n=>n.dse==='是');
+      if(filter==='low') items=items.filter(n=>n.prof&&parseInt(n.prof)<=2);
+      items.forEach(it=>{it._idx=exportPreviewItems.length; exportPreviewItems.push(it);});
+    });
   } else if(source==='prac'){
-    pracRecords.forEach((r,i)=>exportPreviewItems.push({...r,_src:'prac',_idx:i}));
+    const prac=getData(KEYS.prac);
+    pracKeys.forEach(pk=>{
+      const pracRecords=(prac[pk])||[];
+      pracRecords.forEach(r=>{exportPreviewItems.push({...r,_src:'prac',_idx:exportPreviewItems.length,_pracKey:pk,_subj:pracMap[pk]});});
+    });
   }
 
   const listEl=document.getElementById('exp-item-list');
@@ -7562,11 +7570,17 @@ function loadExpItems(){
     return;
   }
 
+  const subjLabel=subjVal==='all'?'全部科目':subjVal;
+  const pracLabel=pracVal==='all'?'全部操練':pracMap[pracVal];
   const srcLabel=source==='kb'?'📚 知識庫':source==='user'?'✏️ 用戶筆記':'📋 操練記錄';
   const fmtLabel=format!=='all'&&source!=='prac'?` · 格式${format}`:'';
-  infoEl.textContent=`${subject} · ${srcLabel}${fmtLabel} · 共 ${exportPreviewItems.length} 條`;
+  const displaySubject=source==='prac'?pracLabel:subjLabel;
+  infoEl.textContent=`${displaySubject} · ${srcLabel}${fmtLabel} · 共 ${exportPreviewItems.length} 條`;
   toggleBtns.style.display='block';
   previewBtn.disabled=false;
+
+  const showSubjTag=(source==='kb'||source==='user')&&subjVal==='all';
+  const showPracTag=source==='prac'&&pracVal==='all';
 
   let listHtml='';
   exportPreviewItems.forEach((item,i)=>{
@@ -7583,6 +7597,8 @@ function loadExpItems(){
     } else if(item._src==='prac'){
       tags=`📋 ${item.date||''} ${item.type||item.topic||''}`;
     }
+    if(showSubjTag) tags=`📖 ${item._subj} `+tags;
+    if(showPracTag) tags=`📖 ${item._subj} `+tags;
     listHtml+=`<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--gray-100);cursor:pointer;" class="exp-item-label">
       <input type="checkbox" checked class="exp-check" data-exp-idx="${i}" style="width:18px;height:18px;accent-color:var(--primary);flex-shrink:0;">
       <div style="flex:1;min-width:0;">
@@ -7779,55 +7795,63 @@ function showExportPreview(){
 
   const source=document.getElementById('exp-source').value;
   const format=document.getElementById('exp-format').value;
-
-  let subject, pracKey;
-  if(source==='prac'){
-    pracKey=document.getElementById('exp-pracsubj').value;
-    subject=pracMap[pracKey];
-  } else {
-    subject=document.getElementById('exp-subject').value;
-  }
+  const subjVal=document.getElementById('exp-subject').value;
+  const pracVal=document.getElementById('exp-pracsubj').value;
+  exportType=document.getElementById('exp-type').value;
 
   const selectedItems=selectedIdxs.map(i=>exportPreviewItems[i]);
   const srcLabel=source==='kb'?'知識庫':source==='user'?'用戶筆記':'操練記錄';
   const fmtLabel=format!=='all'&&source!=='prac'?` | 格式：${format}`:'';
-  exportType=document.getElementById('exp-type').value;
+  const subjLabel=subjVal==='all'?'全部科目':subjVal;
+  const pracLabel=pracVal==='all'?'全部操練':pracMap[pracVal];
+  const displaySubj=source==='prac'?pracLabel:subjLabel;
 
-  // Build preview HTML
+  // Build preview HTML — group by subject
   let html=`<h1 style="color:#1B3A5C;text-align:center;border-bottom:3px solid #1B3A5C;padding-bottom:8pt;font-size:18pt;margin-bottom:6pt;">DSE 筆記匯出</h1>`;
-  html+=`<div style="font-size:10pt;color:#888;text-align:center;margin-bottom:12pt;">匯出日期：${new Date().toLocaleString('zh-HK')} | 科目：${subject} | 來源：${srcLabel}${fmtLabel} | 共 ${selectedItems.length} 條</div>`;
+  html+=`<div style="font-size:10pt;color:#888;text-align:center;margin-bottom:12pt;">匯出日期：${new Date().toLocaleString('zh-HK')} | 科目：${displaySubj} | 來源：${srcLabel}${fmtLabel} | 共 ${selectedItems.length} 條</div>`;
 
-  const pracItems=selectedItems.filter(it=>it._src==='prac');
-  const noteItems=selectedItems.filter(it=>it._src!=='prac');
+  // Group items by subject
+  const subjGroups={};
+  selectedItems.forEach(item=>{
+    const s=item._subj||'';
+    if(!subjGroups[s]) subjGroups[s]=[];
+    subjGroups[s].push(item);
+  });
 
-  if(noteItems.length){
-    html+=`<h2 style="color:#1B3A5C;margin-top:20pt;margin-bottom:8pt;font-size:15pt;border-bottom:1px solid #ccc;padding-bottom:4pt;">📖 ${subject} ${srcLabel}</h2>`;
-    noteItems.forEach(item=>{ html+=renderExportItem(item,subject); });
-  }
+  Object.keys(subjGroups).forEach(subj=>{
+    const items=subjGroups[subj];
+    const noteItems=items.filter(it=>it._src!=='prac');
+    const pracItems=items.filter(it=>it._src==='prac');
 
-  if(pracItems.length){
-    const isMath=pracKey==='math';
-    html+=`<h2 style="color:#1B3A5C;margin-top:20pt;margin-bottom:8pt;font-size:15pt;border-bottom:1px solid #ccc;padding-bottom:4pt;">📋 ${subject} 操練記錄</h2>`;
-    html+=`<table style="width:100%;border-collapse:collapse;margin:8pt 0;font-size:10pt;"><tr>`;
-    if(isMath) html+=`<th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">日期</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">課題</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">卷別</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">來源</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">題號</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">題型</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">做對</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">錯誤類型</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">錯誤詳情</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">正確解法</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">覆檢</th>`;
-    else html+=`<th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">日期</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">類型</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">卷別</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">來源</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">題號</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">得分</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">錯誤類型</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">錯誤詳情</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">改善行動</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">覆檢</th>`;
-    html+=`</tr>`;
-    pracItems.forEach(r=>{
-      html+=`<tr>`;
-      if(isMath) html+=`<td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.date||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.topic||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.paper||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.source||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.qNum||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.qType||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.correct==='是'?'✅':'❌'}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.errorType||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.errorDetail||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.solution||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.reviewed==='是'?'✅':'⬜'}</td>`;
-      else html+=`<td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.date||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.type||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.paper||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.source||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.qNum||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.score||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.errorType||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.errorDetail||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.improve||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.reviewed==='是'?'✅':'⬜'}</td>`;
+    if(noteItems.length){
+      html+=`<h2 style="color:#1B3A5C;margin-top:20pt;margin-bottom:8pt;font-size:15pt;border-bottom:1px solid #ccc;padding-bottom:4pt;">📖 ${subj} ${srcLabel}</h2>`;
+      noteItems.forEach(item=>{ html+=renderExportItem(item,subj); });
+    }
+
+    if(pracItems.length){
+      const pk=pracItems[0]._pracKey||'eng';
+      const isMath=pk==='math';
+      html+=`<h2 style="color:#1B3A5C;margin-top:20pt;margin-bottom:8pt;font-size:15pt;border-bottom:1px solid #ccc;padding-bottom:4pt;">📋 ${subj} 操練記錄</h2>`;
+      html+=`<table style="width:100%;border-collapse:collapse;margin:8pt 0;font-size:10pt;"><tr>`;
+      if(isMath) html+=`<th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">日期</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">課題</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">卷別</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">來源</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">題號</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">題型</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">做對</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">錯誤類型</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">錯誤詳情</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">正確解法</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">覆檢</th>`;
+      else html+=`<th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">日期</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">類型</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">卷別</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">來源</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">題號</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">得分</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">錯誤類型</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">錯誤詳情</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">改善行動</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">覆檢</th>`;
       html+=`</tr>`;
-    });
-    html+=`</table>`;
-  }
+      pracItems.forEach(r=>{
+        html+=`<tr>`;
+        if(isMath) html+=`<td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.date||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.topic||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.paper||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.source||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.qNum||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.qType||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.correct==='是'?'✅':'❌'}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.errorType||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.errorDetail||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.solution||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.reviewed==='是'?'✅':'⬜'}</td>`;
+        else html+=`<td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.date||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.type||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.paper||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.source||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.qNum||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.score||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.errorType||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.errorDetail||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.improve||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.reviewed==='是'?'✅':'⬜'}</td>`;
+        html+=`</tr>`;
+      });
+      html+=`</table>`;
+    }
+  });
 
   expPreviewHTML=html;
 
   // Update preview info
   const fmtLabel2=format!=='all'&&source!=='prac'?` · 格式${format}`:'';
-  document.getElementById('exp-preview-info').textContent=`${subject} · ${srcLabel}${fmtLabel2} · 已選 ${selectedItems.length} 條 · ${exportType==='pdf'?'PDF':'Word'} 格式`;
+  document.getElementById('exp-preview-info').textContent=`${displaySubj} · ${srcLabel}${fmtLabel2} · 已選 ${selectedItems.length} 條 · ${exportType==='pdf'?'PDF':'Word'} 格式`;
 
-  // Render preview content with inline styles for preview
   document.getElementById('exp-preview-content').innerHTML=html;
 
   document.getElementById('export-step1').style.display='none';
@@ -7838,13 +7862,8 @@ function doExport(){
   if(!expPreviewHTML){alert('⚠️ 沒有可匯出的內容');return;}
 
   const source=document.getElementById('exp-source').value;
-  let subject, pracKey;
-  if(source==='prac'){
-    pracKey=document.getElementById('exp-pracsubj').value;
-    subject=pracMap[pracKey];
-  } else {
-    subject=document.getElementById('exp-subject').value;
-  }
+  const subjVal=document.getElementById('exp-source').value==='prac'?document.getElementById('exp-pracsubj').value:document.getElementById('exp-subject').value;
+  const subjLabel=subjVal==='all'?'全部科目':subjVal==='all'?'全部操練':(pracMap[subjVal]||subjVal);
 
   const html=`<html><head><meta charset="UTF-8"><title>DSE筆記匯出</title><style>${expPrintCSS}</style></head><body>${expPreviewHTML}</body></html>`;
 
@@ -7858,7 +7877,7 @@ function doExport(){
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
     a.href=url;
-    a.download=`DSE筆記_${subject}_${new Date().toISOString().slice(0,10)}.doc`;
+    a.download=`DSE筆記_${subjLabel}_${new Date().toISOString().slice(0,10)}.doc`;
     a.click();
     URL.revokeObjectURL(url);
     alert('✅ Word 檔案已下載！用 Microsoft Word 開啟即可編輯。');
