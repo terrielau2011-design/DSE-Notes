@@ -7663,6 +7663,31 @@ td { padding:5pt 8pt; border-bottom:1px solid #ddd; }
 @media print { body { padding:0; } h2 { page-break-before:auto; } .note-card,.peel-block { page-break-inside:avoid; } }
 `;
 
+function renderInstitution(inst){
+  if(!inst) return '';
+  if(typeof inst==='string') return inst;
+  let h='';
+  if(inst.name) h+=`<strong>${inst.name}</strong><br>`;
+  if(inst.description) h+=`${inst.description}<br>`;
+  if(inst.structure && Array.isArray(inst.structure)){
+    inst.structure.forEach(s=>{
+      h+=`<div style="margin:6pt 0 2pt 0;padding-left:8pt;border-left:3pt solid #1B3A5C;">`;
+      h+=`<strong>${s.level}</strong>`;
+      if(s.description) h+=`：${s.description}`;
+      h+=`<br>`;
+      if(s.officials && Array.isArray(s.officials)){
+        h+=`<table style="width:100%;border-collapse:collapse;font-size:10pt;margin:4pt 0;"><tr><th style="background:#2E5090;color:#fff;padding:4pt 6pt;text-align:left;">職位</th><th style="background:#2E5090;color:#fff;padding:4pt 6pt;text-align:left;">品秩</th><th style="background:#2E5090;color:#fff;padding:4pt 6pt;text-align:left;">職掌</th></tr>`;
+        s.officials.forEach(o=>{
+          h+=`<tr><td style="padding:3pt 6pt;border-bottom:1px solid #ddd;">${o.title||''}</td><td style="padding:3pt 6pt;border-bottom:1px solid #ddd;">${o.rank||''}</td><td style="padding:3pt 6pt;border-bottom:1px solid #ddd;">${o.duty||''}</td></tr>`;
+        });
+        h+=`</table>`;
+      }
+      h+=`</div>`;
+    });
+  }
+  return h;
+}
+
 function renderExportItem(item,subj){
   const isKB=item._src==='kb';
   const fmt=item._format||'all';
@@ -7690,7 +7715,7 @@ function renderExportItem(item,subj){
     if(showFact){
       if(item.bg) html+=`<div class="nt-section"><div class="nt-label">📖 背景</div><div class="nt-content">${item.bg}</div></div>`;
       if(item.factDetail) html+=`<div class="nt-section"><div class="nt-label">📝 史實細節</div><div class="nt-content">${item.factDetail}</div></div>`;
-      if(item.institutionDetail) html+=`<div class="nt-section"><div class="nt-label">🏛️ 制度細節</div><div class="nt-content">${item.institutionDetail}</div></div>`;
+      if(item.institutionDetail) html+=`<div class="nt-section"><div class="nt-label">🏛️ 制度細節</div><div class="nt-content">${renderInstitution(item.institutionDetail)}</div></div>`;
     }
 
     // 格式② 原因-過程-影響
