@@ -7520,14 +7520,14 @@ function loadExpItems(){
           if(engDB.Paper1 && engDB.Paper1.passages){
             engDB.Paper1.passages.forEach(p=>{
               if(p.questions) p.questions.forEach((q,i)=>{
-                exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'英文',_pqType:'Paper1 Reading',title:p.title||'',qNum:`Q${i+1}`,question:q.question||q.q||'',options:q.options||q.opts||null,answer:q.answer||'',explanation:q.explanation||''});
+                exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'英文',_pqType:'Paper1 Reading',title:p.title||'',qNum:`Q${i+1}`,question:q.question||q.q||'',options:q.options||q.opts||null,answer:q.answer||q.ans||'',explanation:q.explanation||q.explain||''});
               });
             });
           }
           if(engDB.Paper3 && engDB.Paper3.recordings){
             engDB.Paper3.recordings.forEach(r=>{
               if(r.questions) r.questions.forEach((q,i)=>{
-                exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'英文',_pqType:'Paper3 Listening',title:r.title||'',qNum:`Q${i+1}`,question:q.question||q.q||'',options:q.options||q.opts||null,answer:q.answer||'',explanation:q.explanation||''});
+                exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'英文',_pqType:'Paper3 Listening',title:r.title||'',qNum:`Q${i+1}`,question:q.question||q.q||'',options:q.options||q.opts||null,answer:q.answer||q.ans||'',explanation:q.explanation||q.explain||''});
               });
             });
           }
@@ -7539,7 +7539,7 @@ function loadExpItems(){
           mathDB.topics.forEach(topic=>{
             const topicName=topic.name||topic.id||'';
             if(topic.questions) topic.questions.forEach((q,i)=>{
-              exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'數學',_pqType:topicName,qNum:`Q${i+1}`,question:q.question||q.text||'',options:q.options||null,answer:q.answer||q.correct||'',explanation:q.explanation||q.solution||''});
+              exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'數學',_pqType:topicName,qNum:`Q${i+1}`,question:q.question||q.q||q.text||'',options:q.options||q.opts||null,answer:q.answer||q.ans||q.ansValue||q.correct||'',explanation:q.explanation||q.solution||q.explain||q.steps||''});
             });
           });
         }
@@ -7943,7 +7943,7 @@ function renderExportItem(item,subj){
       html+=`<div class="q-options">`;
       item.options.forEach((opt,oi)=>{
         const letter=String.fromCharCode(65+oi);
-        const isCorrect=item.answer===letter||item.answer===opt||opt===item.answer;
+        const isCorrect=item.answer===letter||item.answer===opt||item.answer===oi||item.answer===String(oi)||opt===item.answer;
         html+=`<div class="q-opt${isCorrect?' correct':''}"><span class="q-opt-label">${letter}.</span> ${opt}</div>`;
       });
       html+=`</div>`;
