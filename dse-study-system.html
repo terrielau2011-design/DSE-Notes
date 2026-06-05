@@ -276,13 +276,7 @@ tr:hover td { background:var(--gray-50); }
 .quiz-history-item { display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border-bottom:1px solid var(--gray-200); font-size:13px; }
 
 /* Export */
-.export-options { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:14px; }
-.export-card { background:#fff; border:2px solid var(--gray-200); border-radius:var(--radius); padding:20px; text-align:center; cursor:pointer; transition:all .2s; }
-.export-card:hover { border-color:var(--primary); box-shadow:var(--shadow); }
-.export-card.selected { border-color:var(--primary); background:var(--cool-bg); }
-.export-card .ec-icon { font-size:36px; margin-bottom:8px; }
-.export-card .ec-title { font-size:15px; font-weight:700; }
-.export-card .ec-desc { font-size:11px; color:var(--gray-500); margin-top:4px; }
+.exp-item-label:hover { background:var(--cool-bg); }
 
 /* Modal */
 .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; display:none; justify-content:center; align-items:flex-start; padding-top:60px; }
@@ -634,28 +628,27 @@ tr:hover td { background:var(--gray-50); }
 
 <!-- ============ EXPORT ============ -->
 <div class="page" id="page-export">
-  <!-- Step 1: 選擇匯出範圍 -->
+  <!-- Step 1: 篩選與選擇條目 -->
   <div id="export-step1">
     <div class="card">
       <div class="card-header">
         <button class="btn btn-sm btn-outline" onclick="navigateTo('dashboard')">◀ 返回</button>
         <h2>📤 匯出筆記</h2>
       </div>
-      <div style="margin-bottom:16px;font-size:13px;color:var(--gray-500);">第一步：選擇要匯出的科目和內容類型</div>
-      <div class="form-row" style="margin-bottom:16px;">
+      <!-- 篩選選項 -->
+      <div class="form-row" style="margin-bottom:12px;">
         <div class="form-group"><label class="form-label">內容類型</label>
-          <select class="form-select" id="exp-source" onchange="toggleExpSubOptions()">
+          <select class="form-select" id="exp-source" onchange="toggleExpSubOptions();loadExpItems();">
             <option value="kb">📚 知識庫筆記</option>
             <option value="user">✏️ 用戶筆記</option>
             <option value="prac">📋 操練記錄</option>
           </select>
         </div>
-        <!-- 動態子選項：科目 / 筆記格式 / 操練科目 -->
         <div class="form-group" id="exp-subj-group"><label class="form-label">科目</label>
-          <select class="form-select" id="exp-subject"><option value="中史">中史</option><option value="世史">世史</option><option value="C&SD">C&SD</option><option value="數學">數學</option><option value="中文">中文</option><option value="英文">英文</option></select>
+          <select class="form-select" id="exp-subject" onchange="loadExpItems()"><option value="中史">中史</option><option value="世史">世史</option><option value="C&SD">C&SD</option><option value="數學">數學</option><option value="中文">中文</option><option value="英文">英文</option></select>
         </div>
         <div class="form-group" id="exp-format-group" style="display:none;"><label class="form-label">筆記格式</label>
-          <select class="form-select" id="exp-format">
+          <select class="form-select" id="exp-format" onchange="loadExpItems()">
             <option value="all">全部格式</option>
             <option value="1">① 事實型（背景＋史實＋評價）</option>
             <option value="2">② 原因-過程-影響</option>
@@ -664,45 +657,48 @@ tr:hover td { background:var(--gray-50); }
           </select>
         </div>
         <div class="form-group" id="exp-pracsubj-group" style="display:none;"><label class="form-label">操練科目</label>
-          <select class="form-select" id="exp-pracsubj"><option value="eng">英文操練</option><option value="math">數學操練</option><option value="chi">中文操練</option></select>
+          <select class="form-select" id="exp-pracsubj" onchange="loadExpItems()"><option value="eng">英文操練</option><option value="math">數學操練</option><option value="chi">中文操練</option></select>
         </div>
         <div class="form-group" id="exp-filter-group"><label class="form-label">篩選</label>
-          <select class="form-select" id="exp-filter"><option value="all">全部</option><option value="dse">只看DSE曾出現</option><option value="low">只看熟練度1-2</option></select>
+          <select class="form-select" id="exp-filter" onchange="loadExpItems()"><option value="all">全部</option><option value="dse">只看DSE曾出現</option><option value="low">只看熟練度1-2</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">匯出格式</label>
+          <select class="form-select" id="exp-type">
+            <option value="pdf">📄 PDF（排版列印）</option>
+            <option value="word">📝 Word（可編輯）</option>
+          </select>
         </div>
       </div>
-      <div class="export-options">
-        <div class="export-card selected" data-exp="pdf" onclick="selectExport(this)">
-          <div class="ec-icon">📄</div><div class="ec-title">匯出 PDF</div><div class="ec-desc">排版列印 / 另存為PDF</div>
-        </div>
-        <div class="export-card" data-exp="word" onclick="selectExport(this)">
-          <div class="ec-icon">📝</div><div class="ec-title">匯出 Word</div><div class="ec-desc">下載.doc 可在Word編輯</div>
-        </div>
-      </div>
-      <div style="margin-top:16px;text-align:center;">
-        <button class="btn btn-primary" onclick="showExportPreview()" style="padding:12px 36px;font-size:15px;">📋 預覽並選擇條目</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Step 2: 預覽與勾選 -->
-  <div id="export-step2" style="display:none;">
-    <div class="card">
-      <div class="card-header">
-        <button class="btn btn-sm btn-outline" onclick="backToExpStep1()">◀ 返回選擇</button>
-        <h2>📤 匯出預覽</h2>
-      </div>
-      <div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
-        <div style="font-size:13px;color:var(--gray-500);" id="exp-preview-info"></div>
-        <div>
+      <!-- 條目勾選 -->
+      <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:13px;color:var(--gray-500);" id="exp-item-info">請選擇篩選條件以載入條目</div>
+        <div id="exp-toggle-btns" style="display:none;">
           <button class="btn btn-sm btn-outline" onclick="toggleAllExport(true)">✅ 全選</button>
           <button class="btn btn-sm btn-outline" onclick="toggleAllExport(false)">⬜ 全不選</button>
         </div>
       </div>
-      <div id="exp-preview-list" style="max-height:50vh;overflow-y:auto;border:1px solid var(--gray-200);border-radius:8px;padding:8px;"></div>
-      <div style="margin-top:16px;display:flex;justify-content:center;gap:12px;align-items:center;">
-        <span id="exp-selected-count" style="font-size:13px;color:var(--gray-500);"></span>
-        <button class="btn btn-primary" onclick="doExport()" style="padding:12px 36px;font-size:15px;">📤 開始匯出</button>
+      <div id="exp-item-list" style="max-height:45vh;overflow-y:auto;border:1px solid var(--gray-200);border-radius:8px;padding:4px;min-height:60px;display:flex;align-items:center;justify-content:center;">
+        <span style="color:var(--gray-400);font-size:13px;">👆 請先選擇篩選條件</span>
       </div>
+      <div style="margin-top:14px;display:flex;justify-content:center;gap:16px;align-items:center;">
+        <span id="exp-selected-count" style="font-size:13px;color:var(--gray-500);"></span>
+        <button class="btn btn-primary" id="exp-preview-btn" onclick="showExportPreview()" style="padding:12px 36px;font-size:15px;" disabled>📋 預覽</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: 排版預覽 -->
+  <div id="export-step2" style="display:none;">
+    <div class="card">
+      <div class="card-header">
+        <button class="btn btn-sm btn-outline" onclick="backToExpStep1()">◀ 返回篩選</button>
+        <h2>📤 匯出預覽</h2>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-sm btn-success" onclick="doExport()">🖨️ 列印/下載</button>
+        </div>
+      </div>
+      <div style="margin-bottom:8px;font-size:12px;color:var(--gray-500);" id="exp-preview-info"></div>
+      <div id="exp-preview-content" style="border:1px solid var(--gray-200);border-radius:8px;padding:16px;max-height:70vh;overflow-y:auto;background:#fff;"></div>
     </div>
   </div>
 </div>
@@ -5809,6 +5805,7 @@ document.querySelectorAll('.nav-item').forEach(item=>{
     document.getElementById('page-'+page).classList.add('active');
     document.querySelector('.sidebar').classList.remove('open');
     if(page==='dashboard') renderDashboard();
+    if(page==='export'){ toggleExpSubOptions(); loadExpItems(); document.getElementById('export-step1').style.display='block'; document.getElementById('export-step2').style.display='none'; }
     if(page.startsWith('notes-')) renderNotes(page.replace('notes-',''));
     if(page.startsWith('prac-')){ renderPrac(page.replace('prac-','')); if(page==='prac-math') renderMathStrand('all'); }
     if(page==='dse-stats') renderStats('chhist');
@@ -7470,12 +7467,7 @@ function copyGenOutput(){
 // ===== EXPORT =====
 let exportType='pdf';
 let exportPreviewItems=[];
-
-function selectExport(el){
-  document.querySelectorAll('.export-card').forEach(c=>c.classList.remove('selected'));
-  el.classList.add('selected');
-  exportType=el.dataset.exp;
-}
+let expPreviewHTML='';
 
 function toggleExpSubOptions(){
   const source=document.getElementById('exp-source').value;
@@ -7484,7 +7476,6 @@ function toggleExpSubOptions(){
   const pracGrp=document.getElementById('exp-pracsubj-group');
   const filterGrp=document.getElementById('exp-filter-group');
 
-  // Reset all
   subjGrp.style.display='none';
   fmtGrp.style.display='none';
   pracGrp.style.display='none';
@@ -7509,6 +7500,13 @@ function navigateTo(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   if(page==='dashboard') renderDashboard();
+  // Reset export to step1
+  if(page==='export'){
+    document.getElementById('export-step1').style.display='block';
+    document.getElementById('export-step2').style.display='none';
+    toggleExpSubOptions();
+    loadExpItems();
+  }
 }
 
 function backToExpStep1(){
@@ -7516,7 +7514,7 @@ function backToExpStep1(){
   document.getElementById('export-step2').style.display='none';
 }
 
-function showExportPreview(){
+function loadExpItems(){
   const source=document.getElementById('exp-source').value;
   const filter=document.getElementById('exp-filter').value;
   const format=document.getElementById('exp-format').value;
@@ -7550,14 +7548,25 @@ function showExportPreview(){
     pracRecords.forEach((r,i)=>exportPreviewItems.push({...r,_src:'prac',_idx:i}));
   }
 
+  const listEl=document.getElementById('exp-item-list');
+  const infoEl=document.getElementById('exp-item-info');
+  const toggleBtns=document.getElementById('exp-toggle-btns');
+  const previewBtn=document.getElementById('exp-preview-btn');
+
   if(!exportPreviewItems.length){
-    alert('⚠️ 沒有符合條件的條目可匯出'); return;
+    listEl.innerHTML='<span style="color:var(--gray-400);font-size:13px;">⚠️ 沒有符合條件的條目</span>';
+    infoEl.textContent='沒有符合條件的條目';
+    toggleBtns.style.display='none';
+    previewBtn.disabled=true;
+    updateExpCount();
+    return;
   }
 
-  // Build preview list
   const srcLabel=source==='kb'?'📚 知識庫':source==='user'?'✏️ 用戶筆記':'📋 操練記錄';
   const fmtLabel=format!=='all'&&source!=='prac'?` · 格式${format}`:'';
-  document.getElementById('exp-preview-info').textContent=`${subject} · ${srcLabel}${fmtLabel} · 共 ${exportPreviewItems.length} 條`;
+  infoEl.textContent=`${subject} · ${srcLabel}${fmtLabel} · 共 ${exportPreviewItems.length} 條`;
+  toggleBtns.style.display='block';
+  previewBtn.disabled=false;
 
   let listHtml='';
   exportPreviewItems.forEach((item,i)=>{
@@ -7582,20 +7591,19 @@ function showExportPreview(){
       </div>
     </label>`;
   });
-  document.getElementById('exp-preview-list').innerHTML=listHtml;
-  updateExpCount();
-
+  listEl.innerHTML=listHtml;
   document.querySelectorAll('.exp-check').forEach(cb=>{
     cb.addEventListener('change',updateExpCount);
   });
-
-  document.getElementById('export-step1').style.display='none';
-  document.getElementById('export-step2').style.display='block';
+  updateExpCount();
 }
 
 function updateExpCount(){
   const checked=document.querySelectorAll('.exp-check:checked').length;
-  document.getElementById('exp-selected-count').textContent=`已選 ${checked} 條`;
+  const total=exportPreviewItems.length;
+  document.getElementById('exp-selected-count').textContent=total?`已選 ${checked} / ${total} 條`:'';
+  const previewBtn=document.getElementById('exp-preview-btn');
+  if(previewBtn) previewBtn.disabled=!checked;
 }
 
 function toggleAllExport(val){
@@ -7762,7 +7770,13 @@ function renderExportItem(item,subj){
   return html;
 }
 
-function doExport(){
+function showExportPreview(){
+  const selectedIdxs=[];
+  document.querySelectorAll('.exp-check:checked').forEach(cb=>{
+    selectedIdxs.push(parseInt(cb.dataset.expIdx));
+  });
+  if(!selectedIdxs.length){alert('⚠️ 請至少選擇一條條目');return;}
+
   const source=document.getElementById('exp-source').value;
   const format=document.getElementById('exp-format').value;
 
@@ -7774,46 +7788,65 @@ function doExport(){
     subject=document.getElementById('exp-subject').value;
   }
 
-  // Get selected items from checkboxes
-  const selectedIdxs=[];
-  document.querySelectorAll('.exp-check:checked').forEach(cb=>{
-    selectedIdxs.push(parseInt(cb.dataset.expIdx));
-  });
-  if(!selectedIdxs.length){alert('⚠️ 請至少選擇一條條目');return;}
-
   const selectedItems=selectedIdxs.map(i=>exportPreviewItems[i]);
   const srcLabel=source==='kb'?'知識庫':source==='user'?'用戶筆記':'操練記錄';
   const fmtLabel=format!=='all'&&source!=='prac'?` | 格式：${format}`:'';
+  exportType=document.getElementById('exp-type').value;
 
-  let html=`<html><head><meta charset="UTF-8"><title>DSE筆記匯出</title><style>${expPrintCSS}</style></head><body>`;
-  html+=`<h1>DSE 筆記匯出</h1>`;
-  html+=`<div class="meta">匯出日期：${new Date().toLocaleString('zh-HK')} | 科目：${subject} | 來源：${srcLabel}${fmtLabel} | 共 ${selectedItems.length} 條</div>`;
+  // Build preview HTML
+  let html=`<h1 style="color:#1B3A5C;text-align:center;border-bottom:3px solid #1B3A5C;padding-bottom:8pt;font-size:18pt;margin-bottom:6pt;">DSE 筆記匯出</h1>`;
+  html+=`<div style="font-size:10pt;color:#888;text-align:center;margin-bottom:12pt;">匯出日期：${new Date().toLocaleString('zh-HK')} | 科目：${subject} | 來源：${srcLabel}${fmtLabel} | 共 ${selectedItems.length} 條</div>`;
 
   const pracItems=selectedItems.filter(it=>it._src==='prac');
   const noteItems=selectedItems.filter(it=>it._src!=='prac');
 
   if(noteItems.length){
-    html+=`<h2>📖 ${subject} ${srcLabel}</h2>`;
+    html+=`<h2 style="color:#1B3A5C;margin-top:20pt;margin-bottom:8pt;font-size:15pt;border-bottom:1px solid #ccc;padding-bottom:4pt;">📖 ${subject} ${srcLabel}</h2>`;
     noteItems.forEach(item=>{ html+=renderExportItem(item,subject); });
   }
 
   if(pracItems.length){
     const isMath=pracKey==='math';
-    html+=`<h2>📋 ${subject} 操練記錄</h2>`;
-    html+=`<table><tr>`;
-    if(isMath) html+=`<th>日期</th><th>課題</th><th>卷別</th><th>來源</th><th>題號</th><th>題型</th><th>做對</th><th>錯誤類型</th><th>錯誤詳情</th><th>正確解法</th><th>覆檢</th>`;
-    else html+=`<th>日期</th><th>類型</th><th>卷別</th><th>來源</th><th>題號</th><th>得分</th><th>錯誤類型</th><th>錯誤詳情</th><th>改善行動</th><th>覆檢</th>`;
+    html+=`<h2 style="color:#1B3A5C;margin-top:20pt;margin-bottom:8pt;font-size:15pt;border-bottom:1px solid #ccc;padding-bottom:4pt;">📋 ${subject} 操練記錄</h2>`;
+    html+=`<table style="width:100%;border-collapse:collapse;margin:8pt 0;font-size:10pt;"><tr>`;
+    if(isMath) html+=`<th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">日期</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">課題</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">卷別</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">來源</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">題號</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">題型</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">做對</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">錯誤類型</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">錯誤詳情</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">正確解法</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">覆檢</th>`;
+    else html+=`<th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">日期</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">類型</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">卷別</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">來源</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">題號</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">得分</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">錯誤類型</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">錯誤詳情</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">改善行動</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">覆檢</th>`;
     html+=`</tr>`;
     pracItems.forEach(r=>{
       html+=`<tr>`;
-      if(isMath) html+=`<td>${r.date||''}</td><td>${r.topic||''}</td><td>${r.paper||''}</td><td>${r.source||''}</td><td>${r.qNum||''}</td><td>${r.qType||''}</td><td>${r.correct==='是'?'✅':'❌'}</td><td>${r.errorType||''}</td><td>${r.errorDetail||''}</td><td>${r.solution||''}</td><td>${r.reviewed==='是'?'✅':'⬜'}</td>`;
-      else html+=`<td>${r.date||''}</td><td>${r.type||''}</td><td>${r.paper||''}</td><td>${r.source||''}</td><td>${r.qNum||''}</td><td>${r.score||''}</td><td>${r.errorType||''}</td><td>${r.errorDetail||''}</td><td>${r.improve||''}</td><td>${r.reviewed==='是'?'✅':'⬜'}</td>`;
+      if(isMath) html+=`<td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.date||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.topic||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.paper||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.source||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.qNum||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.qType||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.correct==='是'?'✅':'❌'}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.errorType||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.errorDetail||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.solution||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.reviewed==='是'?'✅':'⬜'}</td>`;
+      else html+=`<td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.date||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.type||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.paper||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.source||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.qNum||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.score||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.errorType||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.errorDetail||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.improve||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.reviewed==='是'?'✅':'⬜'}</td>`;
       html+=`</tr>`;
     });
     html+=`</table>`;
   }
 
-  html+=`</body></html>`;
+  expPreviewHTML=html;
+
+  // Update preview info
+  const fmtLabel2=format!=='all'&&source!=='prac'?` · 格式${format}`:'';
+  document.getElementById('exp-preview-info').textContent=`${subject} · ${srcLabel}${fmtLabel2} · 已選 ${selectedItems.length} 條 · ${exportType==='pdf'?'PDF':'Word'} 格式`;
+
+  // Render preview content with inline styles for preview
+  document.getElementById('exp-preview-content').innerHTML=html;
+
+  document.getElementById('export-step1').style.display='none';
+  document.getElementById('export-step2').style.display='block';
+}
+
+function doExport(){
+  if(!expPreviewHTML){alert('⚠️ 沒有可匯出的內容');return;}
+
+  const source=document.getElementById('exp-source').value;
+  let subject, pracKey;
+  if(source==='prac'){
+    pracKey=document.getElementById('exp-pracsubj').value;
+    subject=pracMap[pracKey];
+  } else {
+    subject=document.getElementById('exp-subject').value;
+  }
+
+  const html=`<html><head><meta charset="UTF-8"><title>DSE筆記匯出</title><style>${expPrintCSS}</style></head><body>${expPreviewHTML}</body></html>`;
 
   if(exportType==='pdf'){
     const w=window.open('','_blank');
@@ -7825,7 +7858,7 @@ function doExport(){
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
     a.href=url;
-    a.download=`DSE筆記_${subject}_${srcLabel}_${new Date().toISOString().slice(0,10)}.doc`;
+    a.download=`DSE筆記_${subject}_${new Date().toISOString().slice(0,10)}.doc`;
     a.click();
     URL.revokeObjectURL(url);
     alert('✅ Word 檔案已下載！用 Microsoft Word 開啟即可編輯。');
