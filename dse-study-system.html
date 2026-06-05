@@ -317,7 +317,14 @@ tr:hover td { background:var(--gray-50); }
 @media (max-width: 768px) { .mobile-toggle { display:flex; align-items:center; justify-content:center; } }
 
 /* Print */
-@media print { .sidebar, .mobile-toggle { display:none!important; } .main { margin-left:0; } }
+@media print {
+  .sidebar, .mobile-toggle, .modal-overlay, #dl-banner { display:none!important; }
+  .main { margin-left:0!important; }
+  body { font-size:11pt; line-height:1.7; }
+  @page { margin:2cm; size:A4; }
+  h2 { page-break-after:avoid; }
+  .note-card, .peel-block { page-break-inside:avoid; }
+}
 </style>
 </head>
 <body>
@@ -631,7 +638,10 @@ tr:hover td { background:var(--gray-50); }
     <div class="card-header"><h2>📤 匯出筆記</h2></div>
     <div class="form-row" style="margin-bottom:16px;">
       <div class="form-group"><label class="form-label">科目</label>
-        <select class="form-select" id="exp-subject"><option value="全部">全部</option><option value="中史">中史</option><option value="世史">世史</option><option value="C&SD">C&SD</option></select>
+        <select class="form-select" id="exp-subject"><option value="全部">全部科目</option><option value="中史">中史</option><option value="世史">世史</option><option value="C&SD">C&SD</option><option value="數學">數學</option><option value="中文">中文</option><option value="英文">英文</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">內容範圍</label>
+        <select class="form-select" id="exp-source"><option value="kb">知識庫筆記（含PEEL答題結構）</option><option value="user">用戶筆記</option><option value="all">全部</option></select>
       </div>
       <div class="form-group"><label class="form-label">篩選</label>
         <select class="form-select" id="exp-filter"><option value="all">全部</option><option value="dse">只匯出DSE曾出現</option><option value="low">只匯出熟練度1-2</option></select>
@@ -639,10 +649,10 @@ tr:hover td { background:var(--gray-50); }
     </div>
     <div class="export-options">
       <div class="export-card selected" data-exp="pdf" onclick="selectExport(this)">
-        <div class="ec-icon">📄</div><div class="ec-title">匯出 PDF</div><div class="ec-desc">適合打印或手機覆習</div>
+        <div class="ec-icon">📄</div><div class="ec-title">匯出 PDF</div><div class="ec-desc">排版列印 / 另存為PDF</div>
       </div>
-      <div class="export-card" data-exp="print" onclick="selectExport(this)">
-        <div class="ec-icon">🖨️</div><div class="ec-title">列印</div><div class="ec-desc">直接列印筆記</div>
+      <div class="export-card" data-exp="word" onclick="selectExport(this)">
+        <div class="ec-icon">📝</div><div class="ec-title">匯出 Word</div><div class="ec-desc">下載.doc 可在Word編輯</div>
       </div>
     </div>
     <div style="margin-top:16px;text-align:center;">
@@ -7419,77 +7429,266 @@ function selectExport(el){
   exportType=el.dataset.exp;
 }
 
+// Subject key mapping for export
+const expSubjKeys={
+  '全部':null,
+  '中史':'中史','世史':'世史','C&SD':'C&SD',
+  '數學':'數學','中文':'中文','英文':'英文'
+};
+
 function doExport(){
   const subject=document.getElementById('exp-subject').value;
+  const source=document.getElementById('exp-source').value;
   const filter=document.getElementById('exp-filter').value;
-  const notes=getData(KEYS.notes);
-  const prac=getData(KEYS.prac);
-  const sKeys=subject==='全部'?['chhist','whist','csd']:[subject==='中史'?'chhist':subject==='世史'?'whist':'csd'];
-  const pKeys=subject==='全部'?['eng','math','chi']:[];
 
-  let html=`<html><head><meta charset="UTF-8"><title>DSE筆記匯出</title>
-  <style>body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;padding:30px;color:#333;max-width:800px;margin:0 auto;}
-  h1{color:#1B3A5C;text-align:center;border-bottom:3px solid #1B3A5C;padding-bottom:10px;}
-  h2{color:#8B4513;margin-top:24px;} h3{color:#2E5090;margin-top:16px;}
-  .note{border-left:4px solid #8B4513;padding:10px 16px;margin:10px 0;background:#FFF8E1;border-radius:0 8px 8px 0;}
-  .note .title{font-weight:700;font-size:15px;color:#1B3A5C;} .note .content{margin-top:6px;white-space:pre-wrap;font-size:13px;line-height:1.7;}
-  .dse-tag{display:inline-block;background:#FFEBEE;color:#C0392B;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;margin:2px;}
-  .self-test{background:#F5F5F5;padding:8px 12px;border-radius:6px;margin-top:8px;font-size:13px;}
-  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px;}
-  th{background:#1B3A5C;color:#fff;padding:8px;text-align:left;} td{padding:8px;border-bottom:1px solid #ddd;}
-  .error{color:#C0392B;font-weight:600;} .improve{color:#2E7D32;font-weight:600;}
-  .meta{font-size:11px;color:#999;margin-top:10px;text-align:center;}
-  </style></head><body>`;
-  html+=`<h1>DSE 筆記匯出</h1><div class="meta">匯出日期：${new Date().toLocaleString('zh-HK')} | 科目：${subject} | 篩選：${filter==='all'?'全部':filter==='dse'?'DSE曾出現':'熟練度1-2'}</div>`;
+  // Common print-optimized CSS
+  const printCSS=`
+  @page { margin:2cm; size:A4; }
+  body { font-family:'PingFang SC','Microsoft YaHei','SimSun',sans-serif; color:#222; max-width:100%; margin:0 auto; padding:0 1cm; font-size:12pt; line-height:1.8; }
+  h1 { color:#1B3A5C; text-align:center; border-bottom:3px solid #1B3A5C; padding-bottom:8pt; font-size:18pt; margin-bottom:6pt; }
+  h2 { color:#1B3A5C; margin-top:20pt; margin-bottom:8pt; font-size:15pt; border-bottom:1px solid #ccc; padding-bottom:4pt; page-break-after:avoid; }
+  h3 { color:#2E5090; margin-top:14pt; margin-bottom:6pt; font-size:13pt; page-break-after:avoid; }
+  .meta { font-size:10pt; color:#888; text-align:center; margin-bottom:12pt; }
+  .note-card { border:1px solid #ddd; border-radius:6pt; padding:10pt 14pt; margin:10pt 0; page-break-inside:avoid; background:#FAFAFA; }
+  .note-card .nt-title { font-weight:700; font-size:13pt; color:#1B3A5C; margin-bottom:4pt; }
+  .note-card .nt-info { font-size:10pt; color:#666; margin-bottom:6pt; }
+  .note-card .nt-section { margin:8pt 0; }
+  .note-card .nt-label { font-weight:700; color:#8B4513; font-size:11pt; margin-bottom:2pt; }
+  .note-card .nt-content { white-space:pre-wrap; font-size:11pt; line-height:1.7; }
+  .dse-tag { display:inline-block; background:#FFEBEE; color:#C0392B; padding:1pt 6pt; border-radius:3pt; font-size:9pt; font-weight:600; margin:1pt 2pt; }
+  .dse-questions { background:#FFF8E1; border-left:4pt solid #FF9800; padding:8pt 12pt; margin:8pt 0; border-radius:0 4pt 4pt 0; }
+  .dse-questions ol { margin:4pt 0; padding-left:18pt; }
+  .dse-questions li { margin:3pt 0; font-size:11pt; }
+  .peel-block { border:1pt solid #ddd; border-radius:6pt; padding:10pt; margin:8pt 0; page-break-inside:avoid; }
+  .peel-block h3 { margin-top:0; }
+  .peel-p { border-left:4pt solid #C0392B; background:#FFEBEE; padding:6pt 10pt; margin:4pt 0; border-radius:0 4pt 4pt 0; }
+  .peel-e1 { border-left:4pt solid #2980B9; background:#E3F2FD; padding:6pt 10pt; margin:4pt 0; border-radius:0 4pt 4pt 0; }
+  .peel-e2 { border-left:4pt solid #27AE60; background:#E8F5E9; padding:6pt 10pt; margin:4pt 0; border-radius:0 4pt 4pt 0; }
+  .peel-l { border-left:4pt solid #8E44AD; background:#F3E5F5; padding:6pt 10pt; margin:4pt 0; border-radius:0 4pt 4pt 0; }
+  .peel-conc { background:#FFF3E0; border-left:4pt solid #FF9800; padding:6pt 10pt; margin:4pt 0; border-radius:0 4pt 4pt 0; }
+  .tip-box { background:#E8F5E9; border-left:4pt solid #4CAF50; padding:6pt 10pt; margin:4pt 0; border-radius:0 4pt 4pt 0; font-size:11pt; }
+  .warn-box { background:#FFEBEE; border-left:4pt solid #F44336; padding:6pt 10pt; margin:4pt 0; border-radius:0 4pt 4pt 0; font-size:11pt; }
+  table { width:100%; border-collapse:collapse; margin:8pt 0; font-size:10pt; }
+  th { background:#1B3A5C; color:#fff; padding:5pt 8pt; text-align:left; }
+  td { padding:5pt 8pt; border-bottom:1px solid #ddd; }
+  .self-test { background:#F5F5F5; padding:6pt 10pt; border-radius:4pt; margin-top:6pt; font-size:11pt; }
+  .error { color:#C0392B; font-weight:600; } .improve { color:#2E7D32; font-weight:600; }
+  .vocab-list { columns:2; column-gap:16pt; }
+  .vocab-item { margin:2pt 0; font-size:10pt; break-inside:avoid; }
+  @media print { body { padding:0; } h2 { page-break-before:auto; } .note-card,.peel-block { page-break-inside:avoid; } }
+  `;
 
-  sKeys.forEach(key=>{
-    let items=notes[key]||[];
-    if(filter==='dse') items=items.filter(n=>n.dse==='是');
+  let html=`<html><head><meta charset="UTF-8"><title>DSE筆記匯出</title><style>${printCSS}</style></head><body>`;
+  html+=`<h1>DSE 筆記匯出</h1>`;
+  html+=`<div class="meta">匯出日期：${new Date().toLocaleString('zh-HK')} | 科目：${subject} | 來源：${source==='kb'?'知識庫':source==='user'?'用戶筆記':'全部'} | 篩選：${filter==='all'?'全部':filter==='dse'?'DSE曾出現':'熟練度1-2'}</div>`;
+
+  // Determine which subjects to export
+  const subjList=subject==='全部'?['中史','世史','C&SD','數學','中文','英文']:[subject];
+
+  subjList.forEach(subj=>{
+    const kbData=knowledgeBase[subj]||[];
+    const userNotes=(getData(KEYS.notes)[subj==='中史'?'chhist':subj==='世史'?'whist':subj==='C&SD'?'csd':subj==='數學'?'math':subj==='中文'?'chi':'eng'])||[];
+
+    // Collect items based on source
+    let items=[];
+    if(source==='kb'||source==='all'){
+      kbData.forEach(k=>items.push({...k,_src:'kb'}));
+    }
+    if(source==='user'||source==='all'){
+      userNotes.forEach(n=>items.push({...n,_src:'user'}));
+    }
+
+    // Apply filters
+    if(filter==='dse') items=items.filter(n=>n.dse==='是'||n.dseRecord);
     if(filter==='low') items=items.filter(n=>n.prof&&parseInt(n.prof)<=2);
     if(!items.length) return;
-    html+=`<h2>📖 ${subjMap[key]} 筆記</h2>`;
-    items.forEach(n=>{
-      html+=`<div class="note"><div class="title">${n.topic} — ${n.subtopic}</div>`;
-      if(n.content) html+=`<div class="content">${n.content}</div>`;
-      if(n.keywords) html+=`<div style="margin-top:4px;font-size:12px;color:#8B4513;">🔑 ${n.keywords}</div>`;
-      if(n.dse==='是'){
-        html+=`<div style="margin-top:4px;">`;
-        html+=`<span class="dse-tag">📊 DSE已出現 ${n.dseYear||''}</span>`;
-        (n.dseType||'').split('/').filter(Boolean).forEach(t=>html+=`<span class="dse-tag">${t}</span>`);
-        html+=`</div>`;
+
+    html+=`<h2>📖 ${subj} 筆記</h2>`;
+
+    items.forEach(item=>{
+      const isKB=item._src==='kb';
+      const title=item.title||item.topic||'';
+      const subtopic=item.subtopic||item.category||'';
+
+      html+=`<div class="note-card">`;
+      html+=`<div class="nt-title">${isKB?'📚':'✏️'} ${title}${subtopic?' — '+subtopic:''}</div>`;
+
+      // === 文科（中史/世史/C&SD）知識庫模板 ===
+      if(isKB && ['中史','世史','C&SD'].includes(subj)){
+        // Basic info
+        const infoParts=[];
+        if(item.time) infoParts.push(item.time);
+        if(item.people) infoParts.push(item.people);
+        if(item.region) infoParts.push(item.region);
+        if(item.dynasty) infoParts.push(item.dynasty);
+        if(item.period) infoParts.push(item.period);
+        if(infoParts.length) html+=`<div class="nt-info">${infoParts.join(' ｜ ')}</div>`;
+
+        // Background
+        if(item.bg) html+=`<div class="nt-section"><div class="nt-label">📖 背景</div><div class="nt-content">${item.bg}</div></div>`;
+
+        // Causes
+        if(item.causeP) html+=`<div class="nt-section"><div class="nt-label">🔵 原因（政治）</div><div class="nt-content">${item.causeP}</div></div>`;
+        if(item.causeE) html+=`<div class="nt-section"><div class="nt-label">🟢 原因（經濟）</div><div class="nt-content">${item.causeE}</div></div>`;
+        if(item.causeS) html+=`<div class="nt-section"><div class="nt-label">🟡 原因（社會）</div><div class="nt-content">${item.causeS}</div></div>`;
+        if(item.causeO) html+=`<div class="nt-section"><div class="nt-label">⚪ 其他原因</div><div class="nt-content">${item.causeO}</div></div>`;
+        if(item.keyCause) html+=`<div class="nt-section"><div class="nt-label">🔑 關鍵原因</div><div class="nt-content">${item.keyCause}</div></div>`;
+
+        // Process
+        if(item.process) html+=`<div class="nt-section"><div class="nt-label">📋 過程</div><div class="nt-content">${item.process}</div></div>`;
+        if(item.factDetail) html+=`<div class="nt-section"><div class="nt-label">📝 史實細節</div><div class="nt-content">${item.factDetail}</div></div>`;
+        if(item.institutionDetail) html+=`<div class="nt-section"><div class="nt-label">🏛️ 制度細節</div><div class="nt-content">${item.institutionDetail}</div></div>`;
+        if(item.turningPoint) html+=`<div class="nt-section"><div class="nt-label">🔄 轉折點</div><div class="nt-content">${item.turningPoint}</div></div>`;
+
+        // Impacts
+        if(item.shortImpact) html+=`<div class="nt-section"><div class="nt-label">⚡ 短期影響</div><div class="nt-content">${item.shortImpact}</div></div>`;
+        if(item.longImpact) html+=`<div class="nt-section"><div class="nt-label">📈 長期影響</div><div class="nt-content">${item.longImpact}</div></div>`;
+        if(item.posImpact) html+=`<div class="nt-section"><div class="nt-label">✅ 正面影響</div><div class="nt-content">${item.posImpact}</div></div>`;
+        if(item.negImpact) html+=`<div class="nt-section"><div class="nt-label">❌ 負面影響</div><div class="nt-content">${item.negImpact}</div></div>`;
+        if(item.evaluation) html+=`<div class="nt-section"><div class="nt-label">⚖️ 評價</div><div class="nt-content">${item.evaluation}</div></div>`;
+
+        // DSE Questions
+        if(item.dseQ){
+          const questions=item.dseQ.split('|||').map(q=>q.trim()).filter(Boolean);
+          html+=`<div class="dse-questions"><div class="nt-label">🎯 DSE 常見問題</div><ol>`;
+          questions.forEach(q=>html+=`<li>${q}</li>`);
+          html+=`</ol></div>`;
+        }
+
+        // PEEL Structure
+        if(item.p1){
+          html+=`<div class="peel-block"><h3>📐 PEEL 答題結構</h3>`;
+          // Argument 1
+          html+=`<h3 style="color:#C0392B;">── 論點 1 ──</h3>`;
+          if(item.p1) html+=`<div class="peel-p"><strong>P（論點）：</strong>${item.p1}</div>`;
+          if(item.e1_1) html+=`<div class="peel-e1"><strong>E（論據）：</strong>${item.e1_1}</div>`;
+          if(item.e2_1) html+=`<div class="peel-e2"><strong>E（解釋）：</strong>${item.e2_1}</div>`;
+          if(item.l1) html+=`<div class="peel-l"><strong>L（扣題）：</strong>${item.l1}</div>`;
+          // Argument 2
+          if(item.p2){
+            html+=`<h3 style="color:#C0392B;">── 論點 2 ──</h3>`;
+            if(item.p2) html+=`<div class="peel-p"><strong>P（論點）：</strong>${item.p2}</div>`;
+            if(item.e1_2) html+=`<div class="peel-e1"><strong>E（論據）：</strong>${item.e1_2}</div>`;
+            if(item.e2_2) html+=`<div class="peel-e2"><strong>E（解釋）：</strong>${item.e2_2}</div>`;
+            if(item.l2) html+=`<div class="peel-l"><strong>L（扣題）：</strong>${item.l2}</div>`;
+          }
+          if(item.conclusion) html+=`<div class="peel-conc"><strong>🔑 總結立場：</strong>${item.conclusion}</div>`;
+          html+=`</div>`;
+        }
+
+        // Tips & Mistakes
+        if(item.commonMistakes) html+=`<div class="warn-box"><strong>⚠️ 常犯錯誤：</strong>${item.commonMistakes.replace(/\|\|\|/g,'；')}</div>`;
+        if(item.answerTips) html+=`<div class="tip-box"><strong>💡 答題貼士：</strong>${item.answerTips.replace(/\|\|\|/g,'；')}</div>`;
+        if(item.dseRecord) html+=`<div class="nt-section"><div class="nt-label">📊 DSE 出題記錄</div><div class="nt-content">${item.dseRecord}</div></div>`;
       }
-      if(n.testQ) html+=`<div class="self-test">❓ ${n.testQ}<br>💡 ${n.testA||''}</div>`;
-      if(n.prof) html+=`<div style="margin-top:4px;font-size:12px;color:#666;">熟練度：${n.prof}/5</div>`;
-      html+=`</div>`;
+
+      // === 數學知識庫模板 ===
+      else if(isKB && subj==='數學'){
+        if(item.formulas){
+          const flist=item.formulas.split('|||').filter(Boolean);
+          html+=`<div class="nt-section"><div class="nt-label">📐 公式</div><div class="nt-content">${flist.join('\n')}</div></div>`;
+        }
+        if(item.keyPoints) html+=`<div class="nt-section"><div class="nt-label">🔑 重點</div><div class="nt-content">${item.keyPoints.replace(/\|\|\|/g,'\n')}</div></div>`;
+        if(item.example) html+=`<div class="nt-section"><div class="nt-label">📝 例題</div><div class="nt-content">${item.example.replace(/\|\|\|/g,'\n')}</div></div>`;
+        if(item.dseQ){
+          const questions=item.dseQ.split('|||').map(q=>q.trim()).filter(Boolean);
+          html+=`<div class="dse-questions"><div class="nt-label">🎯 DSE 常見問題</div><ol>`;
+          questions.forEach(q=>html+=`<li>${q}</li>`);
+          html+=`</ol></div>`;
+        }
+        if(item.commonMistakes) html+=`<div class="warn-box"><strong>⚠️ Common Mistakes：</strong>${item.commonMistakes.replace(/\|\|\|/g,'；')}</div>`;
+        if(item.examTips) html+=`<div class="tip-box"><strong>💡 Exam Tips：</strong>${item.examTips.replace(/\|\|\|/g,'；')}</div>`;
+      }
+
+      // === 中文知識庫模板 ===
+      else if(isKB && subj==='中文'){
+        if(item.description) html+=`<div class="nt-section"><div class="nt-label">📖 簡介</div><div class="nt-content">${item.description}</div></div>`;
+        if(item.keyPoints) html+=`<div class="nt-section"><div class="nt-label">🔑 重點</div><div class="nt-content">${item.keyPoints.replace(/\|\|\|/g,'\n')}</div></div>`;
+        if(item.framework) html+=`<div class="nt-section"><div class="nt-label">📋 寫作框架</div><div class="nt-content">${item.framework.replace(/\|\|\|/g,'\n')}</div></div>`;
+        if(item.examples) html+=`<div class="nt-section"><div class="nt-label">📝 範例</div><div class="nt-content">${item.examples.replace(/\|\|\|/g,'\n')}</div></div>`;
+        if(item.dseQ){
+          const questions=item.dseQ.split('|||').map(q=>q.trim()).filter(Boolean);
+          html+=`<div class="dse-questions"><div class="nt-label">🎯 DSE 常見問題</div><ol>`;
+          questions.forEach(q=>html+=`<li>${q}</li>`);
+          html+=`</ol></div>`;
+        }
+        if(item.commonMistakes) html+=`<div class="warn-box"><strong>⚠️ 常犯錯誤：</strong>${item.commonMistakes.replace(/\|\|\|/g,'；')}</div>`;
+        if(item.examTips) html+=`<div class="tip-box"><strong>💡 考試貼士：</strong>${item.examTips.replace(/\|\|\|/g,'；')}</div>`;
+        if(item.level5standard) html+=`<div class="tip-box"><strong>🏆 5** 標準：</strong>${item.level5standard}</div>`;
+      }
+
+      // === 英文知識庫模板 ===
+      else if(isKB && subj==='英文'){
+        if(item.description) html+=`<div class="nt-section"><div class="nt-label">📖 Description</div><div class="nt-content">${item.description}</div></div>`;
+        if(item.keyPoints) html+=`<div class="nt-section"><div class="nt-label">🔑 Key Points</div><div class="nt-content">${item.keyPoints.replace(/\|\|\|/g,'\n')}</div></div>`;
+        if(item.framework) html+=`<div class="nt-section"><div class="nt-label">📋 Framework</div><div class="nt-content">${item.framework.replace(/\|\|\|/g,'\n')}</div></div>`;
+        if(item.vocabulary){
+          const vlist=item.vocabulary.split('|||').filter(Boolean);
+          html+=`<div class="nt-section"><div class="nt-label">📚 Vocabulary</div><div class="vocab-list">`;
+          vlist.forEach(v=>html+=`<div class="vocab-item">• ${v}</div>`);
+          html+=`</div></div>`;
+        }
+        if(item.dseQ){
+          const questions=item.dseQ.split('|||').map(q=>q.trim()).filter(Boolean);
+          html+=`<div class="dse-questions"><div class="nt-label">🎯 DSE Questions</div><ol>`;
+          questions.forEach(q=>html+=`<li>${q}</li>`);
+          html+=`</ol></div>`;
+        }
+        if(item.commonMistakes) html+=`<div class="warn-box"><strong>⚠️ Common Mistakes：</strong>${item.commonMistakes.replace(/\|\|\|/g,'；')}</div>`;
+        if(item.examTips) html+=`<div class="tip-box"><strong>💡 Exam Tips：</strong>${item.examTips.replace(/\|\|\|/g,'；')}</div>`;
+        if(item.level5standard) html+=`<div class="tip-box"><strong>🏆 5** Standard：</strong>${item.level5standard}</div>`;
+      }
+
+      // === 用戶筆記模板 ===
+      else if(!isKB){
+        if(item.content) html+=`<div class="nt-section"><div class="nt-content">${item.content}</div></div>`;
+        if(item.keywords) html+=`<div class="nt-section" style="font-size:10pt;color:#8B4513;">🔑 ${item.keywords}</div>`;
+        if(item.dse==='是'){
+          html+=`<div style="margin-top:4pt;">`;
+          html+=`<span class="dse-tag">📊 DSE已出現 ${item.dseYear||''}</span>`;
+          (item.dseType||'').split('/').filter(Boolean).forEach(t=>html+=`<span class="dse-tag">${t}</span>`);
+          html+=`</div>`;
+        }
+        if(item.testQ) html+=`<div class="self-test">❓ ${item.testQ}<br>💡 ${item.testA||''}</div>`;
+        if(item.prof) html+=`<div style="margin-top:4pt;font-size:10pt;color:#666;">熟練度：${item.prof}/5</div>`;
+      }
+
+      html+=`</div>`; // close note-card
     });
   });
 
-  pKeys.forEach(key=>{
-    const records=prac[key]||[];
-    if(!records.length) return;
-    html+=`<h2>✏️ ${pracMap[key]} 操練記錄</h2><table><tr><th>日期</th><th>類型</th><th>題號</th><th>得分</th><th>錯誤</th><th>改善</th></tr>`;
-    records.forEach(r=>{
-      html+=`<tr><td>${r.date||''}</td><td>${r.type||r.topic||''}</td><td>${r.qNum||''}</td><td>${r.score||''}</td><td class="error">${r.errorType||''}</td><td class="improve">${r.improve||r.solution||''}</td></tr>`;
+  // Practice records (only when exporting all subjects)
+  if(subject==='全部'){
+    const prac=getData(KEYS.prac);
+    const pKeys=['eng','math','chi'];
+    pKeys.forEach(key=>{
+      const records=prac[key]||[];
+      if(!records.length) return;
+      html+=`<h2>✏️ ${pracMap[key]} 操練記錄</h2><table><tr><th>日期</th><th>類型</th><th>題號</th><th>得分</th><th>錯誤</th><th>改善</th></tr>`;
+      records.forEach(r=>{
+        html+=`<tr><td>${r.date||''}</td><td>${r.type||r.topic||''}</td><td>${r.qNum||''}</td><td>${r.score||r.correct||''}</td><td class="error">${r.errorType||''}</td><td class="improve">${r.improve||r.solution||''}</td></tr>`;
+      });
+      html+=`</table>`;
     });
-    html+=`</table>`;
-  });
+  }
 
   html+=`</body></html>`;
 
-  if(exportType==='print'){
+  // Export based on type
+  if(exportType==='pdf'){
     const w=window.open('','_blank');
     w.document.write(html);
     w.document.close();
-    setTimeout(()=>w.print(),500);
-  } else {
-    const blob=new Blob([html],{type:'text/html'});
+    setTimeout(()=>w.print(),600);
+  } else if(exportType==='word'){
+    const blob=new Blob(['\ufeff'+html],{type:'application/msword'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
     a.href=url;
-    a.download=`DSE筆記_${subject}_${new Date().toISOString().slice(0,10)}.html`;
+    a.download=`DSE筆記_${subject}_${new Date().toISOString().slice(0,10)}.doc`;
     a.click();
     URL.revokeObjectURL(url);
-    alert('✅ 已下載！用瀏覽器開啟後可按 Ctrl+P 列印為 PDF');
+    alert('✅ Word 檔案已下載！用 Microsoft Word 開啟即可編輯。');
   }
 }
 
