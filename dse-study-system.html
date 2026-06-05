@@ -7530,41 +7530,102 @@ function loadExpItems(){
       items.forEach(it=>{it._idx=exportPreviewItems.length; exportPreviewItems.push(it);});
     });
   } else if(source==='quiz'){
-    // 小測驗：根據科目篩選英文/數學題目
-    const loadEng=subjVal==='all'||subjVal==='英文';
-    const loadMath=subjVal==='all'||subjVal==='數學';
-    if(loadEng){
-      const engDB=typeof engPracticeDB!=='undefined'?engPracticeDB:null;
-      if(engDB){
-        if(engDB.Paper1 && engDB.Paper1.passages){
-          engDB.Paper1.passages.forEach(p=>{
-            const pTitle=p.title||'';
-            if(p.questions) p.questions.forEach((q,i)=>{
-              exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'英文',_pqType:'Paper1 Reading',title:pTitle,qNum:`Q${i+1}`,question:q.question||'',options:q.options||null,answer:q.answer||'',explanation:q.explanation||''});
+    // 小測驗：根據科目從不同來源生成題目
+    subjects.forEach(subj=>{
+      if(subj==='英文'){
+        // 英文：從 engPracticeDB 讀取
+        const engDB=typeof engPracticeDB!=='undefined'?engPracticeDB:null;
+        if(engDB){
+          if(engDB.Paper1 && engDB.Paper1.passages){
+            engDB.Paper1.passages.forEach(p=>{
+              if(p.questions) p.questions.forEach((q,i)=>{
+                exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'英文',_pqType:'Paper1 Reading',title:p.title||'',qNum:`Q${i+1}`,question:q.question||q.q||'',options:q.options||q.opts||null,answer:q.answer||'',explanation:q.explanation||''});
+              });
+            });
+          }
+          if(engDB.Paper3 && engDB.Paper3.recordings){
+            engDB.Paper3.recordings.forEach(r=>{
+              if(r.questions) r.questions.forEach((q,i)=>{
+                exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'英文',_pqType:'Paper3 Listening',title:r.title||'',qNum:`Q${i+1}`,question:q.question||q.q||'',options:q.options||q.opts||null,answer:q.answer||'',explanation:q.explanation||''});
+              });
+            });
+          }
+        }
+      } else if(subj==='數學'){
+        // 數學：從 mathPracticeDB 讀取
+        const mathDB=typeof mathPracticeDB!=='undefined'?mathPracticeDB:null;
+        if(mathDB && mathDB.topics){
+          mathDB.topics.forEach(topic=>{
+            const topicName=topic.name||topic.id||'';
+            if(topic.questions) topic.questions.forEach((q,i)=>{
+              exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'數學',_pqType:topicName,qNum:`Q${i+1}`,question:q.question||q.text||'',options:q.options||null,answer:q.answer||q.correct||'',explanation:q.explanation||q.solution||''});
             });
           });
         }
-        if(engDB.Paper3 && engDB.Paper3.recordings){
-          engDB.Paper3.recordings.forEach(r=>{
-            const rTitle=r.title||'';
-            if(r.questions) r.questions.forEach((q,i)=>{
-              exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'英文',_pqType:'Paper3 Listening',title:rTitle,qNum:`Q${i+1}`,question:q.question||'',options:q.options||null,answer:q.answer||'',explanation:q.explanation||''});
+      } else {
+        // 文科（中史/世史/C&SD/中文）：從知識庫生成小測驗題目
+        const kbData=knowledgeBase[subj]||[];
+        const isEn=subj==='英文';
+        kbData.forEach(item=>{
+          // 生成填充/MC題
+          const fillFields=isEn?[
+            {field:'people',label:'Who are the key figures related to "__TOPIC__"?'},
+            {field:'time',label:'When did "__TOPIC__" take place?'},
+            {field:'region',label:'Where did "__TOPIC__" take place?'},
+            {field:'keyCause',label:'What is the key cause of "__TOPIC__"?'},
+            {field:'factDetail',label:'What are the key details of "__TOPIC__"?'},
+          ]:[
+            {field:'people',label:'「__課題__」的相關人物是誰？'},
+            {field:'time',label:'「__課題__」發生在什麼時候？'},
+            {field:'region',label:'「__課題__」發生在哪個地區？'},
+            {field:'dynasty',label:'「__課題__」屬於哪個朝代？'},
+            {field:'keyCause',label:'「__課題__」的最關鍵原因是什麼？'},
+            {field:'factDetail',label:'「__課題__」中有哪些重要細節？'},
+            {field:'shortImpact',label:'「__課題__」的短期影響是什麼？'},
+            {field:'posImpact',label:'「__課題__」有哪些正面影響？'},
+            {field:'negImpact',label:'「__課題__」有哪些負面影響？'},
+            {field:'evaluation',label:'歷史對「__課題__」的評價如何？'},
+          ];
+          fillFields.forEach(ff=>{
+            const val=item[ff.field];
+            if(val&&val.trim()){
+              const qText=ff.label.replace(isEn?'__TOPIC__':'__課題__',isEn?item.title:'「'+item.title+'」');
+              // 生成MC選項：正確答案 + 從其他KB項目取干擾項
+              const distractors=kbData.filter(t2=>t2.title!==item.title&&t2[ff.field]&&t2[ff.field].trim()).map(t2=>t2[ff.field]).filter(d=>d!==val);
+              const uniqueDistractors=[...new Set(distractors)].slice(0,3);
+              const opts=uniqueDistractors.length>=2?[val,...uniqueDistractors.slice(0,3)]:[];
+              exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:subj,_pqType:'填充題',title:item.title,qNum:'',question:qText,options:opts.length>=3?opts:null,answer:val,explanation:''});
+            }
+          });
+          // 生成短答題
+          const shortFields=isEn?[
+            {field:'causeP',label:'What were the political causes of "__TOPIC__"?'},
+            {field:'causeE',label:'What were the economic causes of "__TOPIC__"?'},
+            {field:'longImpact',label:'What were the long-term impacts of "__TOPIC__"?'},
+          ]:[
+            {field:'causeP',label:'「__課題__」的政治原因是什麼？'},
+            {field:'causeE',label:'「__課題__」的經濟原因是什麼？'},
+            {field:'causeS',label:'「__課題__」的社會原因是什麼？'},
+            {field:'process',label:'簡述「__課題__」的發展過程'},
+            {field:'longImpact',label:'「__課題__」的長期影響是什麼？'},
+          ];
+          shortFields.forEach(sf=>{
+            const val=item[sf.field];
+            if(val&&val.trim()){
+              const qText=sf.label.replace(isEn?'__TOPIC__':'__課題__',isEn?item.title:'「'+item.title+'」');
+              exportPreviewItems.push({_src:'pq-short',_idx:exportPreviewItems.length,_subj:subj,_pqType:'短答題',title:item.title,qNum:'',question:qText,options:null,answer:val,explanation:''});
+            }
+          });
+          // 生成PEEL題
+          if(item.dseQ&&item.dseQ.trim()){
+            const qs=(item.dseQ||'').split('|||').map(q=>q.trim()).filter(Boolean);
+            qs.forEach(qText=>{
+              exportPreviewItems.push({_src:'pq-peel',_idx:exportPreviewItems.length,_subj:subj,_pqType:'PEEL論述題',title:item.title,qNum:'',question:qText,options:null,answer:'',explanation:'',peelData:item});
             });
-          });
-        }
-      }
-    }
-    if(loadMath){
-      const mathDB=typeof mathPracticeDB!=='undefined'?mathPracticeDB:null;
-      if(mathDB && mathDB.topics){
-        mathDB.topics.forEach(topic=>{
-          const topicName=topic.name||topic.id||'';
-          if(topic.questions) topic.questions.forEach((q,i)=>{
-            exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'數學',_pqType:topicName,qNum:`Q${i+1}`,question:q.question||q.text||'',options:q.options||null,answer:q.answer||q.correct||'',explanation:q.explanation||q.solution||''});
-          });
+          }
         });
       }
-    }
+    });
   } else if(source==='prac'){
     const prac=getData(KEYS.prac);
     // 根據科目篩選操練記錄
@@ -7652,16 +7713,35 @@ h1 { color:#1B3A5C; text-align:center; border-bottom:3px solid #1B3A5C; padding-
 h2 { color:#1B3A5C; margin-top:20pt; margin-bottom:8pt; font-size:15pt; border-bottom:1px solid #ccc; padding-bottom:4pt; }
 h3 { color:#2E5090; margin-top:14pt; margin-bottom:6pt; font-size:13pt; }
 .meta { font-size:10pt; color:#888; text-align:center; margin-bottom:12pt; }
-.note-card { border:1px solid #ddd; border-radius:6pt; padding:12pt 16pt; margin:12pt 0; background:#FAFAFA; }
-.note-card .nt-title { font-weight:700; font-size:14pt; color:#1B3A5C; margin-bottom:8pt; padding-bottom:6pt; border-bottom:2px solid #1B3A5C; }
-.note-card .nt-info { font-size:10pt; color:#666; margin-bottom:10pt; }
+/* 筆記卡片 - 匹配app內 note-item 樣式 */
+.note-card { border-left:4px solid #8B4513; background:#fff; border-radius:8pt; padding:12pt 16pt; margin:12pt 0; box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+.note-card .nt-title { font-weight:700; font-size:15pt; color:#1B3A5C; margin-bottom:4pt; }
+.note-card .nt-subtitle { font-size:12pt; color:#9E9E9E; margin-bottom:8pt; }
+.note-card .nt-info { font-size:10pt; color:#666; margin-bottom:8pt; }
+.note-card .nt-content { white-space:pre-wrap; font-size:12pt; line-height:1.8; margin:6pt 0; }
+.note-card .nt-keywords { display:inline-block; background:#FFF8E1; color:#8B4513; padding:3pt 10pt; border-radius:12pt; font-size:10pt; margin:4pt 0; }
 .note-card .nt-section { margin:10pt 0; }
 .note-card .nt-label { font-weight:700; color:#8B4513; font-size:12pt; margin-bottom:4pt; padding:2pt 0; }
-.note-card .nt-content { white-space:pre-wrap; font-size:11pt; line-height:1.8; }
-.dse-tag { display:inline-block; background:#FFEBEE; color:#C0392B; padding:1pt 6pt; border-radius:3pt; font-size:9pt; font-weight:600; margin:1pt 2pt; }
+/* DSE tags */
+.dse-tag { display:inline-block; background:#FFEBEE; color:#C0392B; padding:2pt 8pt; border-radius:4pt; font-size:9pt; font-weight:600; margin:1pt 2pt; }
+.dse-tag.tag-mc { background:#E3F2FD; color:#1565C0; }
+.dse-tag.tag-short { background:#E8F5E9; color:#2E7D32; }
+.dse-tag.tag-dbq { background:#FFF8E1; color:#E65100; }
+.dse-tag.tag-essay { background:#F3E5F5; color:#8E44AD; }
+/* Proficiency dots */
+.prof-dots { display:inline-flex; gap:3pt; margin:2pt 0; }
+.prof-dot { width:10pt; height:10pt; border-radius:50%; border:1pt solid #ccc; }
+.prof-dot.filled { background:#4CAF50; border-color:#4CAF50; }
+.prof-dot.warn { background:#FF9800; border-color:#FF9800; }
+/* Self-test */
+.self-test-box { background:#F5F5F5; padding:8pt 12pt; border-radius:8pt; margin:8pt 0; }
+.self-test-box .st-q { font-weight:600; font-size:11pt; }
+.self-test-box .st-a { color:#2E7D32; font-size:11pt; margin-top:4pt; }
+/* DSE questions block */
 .dse-questions { background:#FFF8E1; border-left:4pt solid #FF9800; padding:8pt 12pt; margin:8pt 0; border-radius:0 4pt 4pt 0; }
 .dse-questions ol { margin:4pt 0; padding-left:18pt; }
 .dse-questions li { margin:3pt 0; font-size:11pt; }
+/* PEEL blocks */
 .peel-block { border:1pt solid #ddd; border-radius:6pt; padding:10pt; margin:8pt 0; }
 .peel-block h3 { margin-top:0; }
 .peel-p { border-left:4pt solid #C0392B; background:#FFEBEE; padding:6pt 10pt; margin:4pt 0; border-radius:0 4pt 4pt 0; }
@@ -7669,16 +7749,40 @@ h3 { color:#2E5090; margin-top:14pt; margin-bottom:6pt; font-size:13pt; }
 .peel-e2 { border-left:4pt solid #27AE60; background:#E8F5E9; padding:6pt 10pt; margin:4pt 0; border-radius:0 4pt 4pt 0; }
 .peel-l { border-left:4pt solid #8E44AD; background:#F3E5F5; padding:6pt 10pt; margin:4pt 0; border-radius:0 4pt 4pt 0; }
 .peel-conc { background:#FFF3E0; border-left:4pt solid #FF9800; padding:6pt 10pt; margin:4pt 0; border-radius:0 4pt 4pt 0; }
+/* Tip/Warning boxes */
 .tip-box { background:#E8F5E9; border-left:4pt solid #4CAF50; padding:6pt 10pt; margin:4pt 0; border-radius:0 4pt 4pt 0; font-size:11pt; }
 .warn-box { background:#FFEBEE; border-left:4pt solid #F44336; padding:6pt 10pt; margin:4pt 0; border-radius:0 4pt 4pt 0; font-size:11pt; }
+/* Quiz question cards - 匹配app內 quiz-q-card */
+.quiz-card { background:#fff; border-left:5px solid #2E7D32; border-radius:8pt; padding:14pt 18pt; margin:10pt 0; box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+.quiz-card.q-fill { border-left-color:#2E7D32; }
+.quiz-card.q-short { border-left-color:#8E44AD; }
+.quiz-card.q-peel { border-left-color:#E65100; border-left-width:5px; }
+.quiz-card .q-num { display:inline-block; background:#2E7D32; color:#fff; width:22pt; height:22pt; line-height:22pt; text-align:center; border-radius:50%; font-weight:700; font-size:10pt; margin-right:6pt; }
+.quiz-card.q-peel .q-num { background:#E65100; }
+.quiz-card .q-text { font-weight:700; font-size:12pt; color:#1B3A5C; }
+.quiz-card .q-type { display:inline-block; background:#E3F2FD; color:#1565C0; padding:2pt 8pt; border-radius:4pt; font-size:9pt; font-weight:600; margin-left:6pt; }
+.quiz-card.q-peel .q-type { background:#FFF8E1; color:#E65100; }
+.quiz-card.q-short .q-type { background:#F3E5F5; color:#8E44AD; }
+.quiz-card .q-topic { font-size:10pt; color:#888; margin-top:2pt; }
+/* MC options */
+.q-options { margin:8pt 0; }
+.q-opt { padding:6pt 12pt; margin:3pt 0; border:1pt solid #ddd; border-radius:6pt; font-size:11pt; }
+.q-opt.correct { background:#E8F5E9; border-color:#4CAF50; font-weight:700; }
+.q-opt-label { font-weight:700; margin-right:4pt; }
+/* Answer area */
+.q-answer { background:#E8F5E9; padding:8pt 12pt; border-radius:6pt; margin:8pt 0; font-size:11pt; }
+.q-answer-label { font-weight:700; color:#2E7D32; }
+/* PEEL hints in quiz */
+.q-peel-hints { background:linear-gradient(135deg,#E8EAF6,#EDE7F6); padding:10pt 14pt; border-radius:8pt; margin:8pt 0; font-size:11pt; }
+/* Practice table */
 table { width:100%; border-collapse:collapse; margin:8pt 0; font-size:10pt; }
 th { background:#1B3A5C; color:#fff; padding:5pt 8pt; text-align:left; }
 td { padding:5pt 8pt; border-bottom:1px solid #ddd; }
-.self-test { background:#F5F5F5; padding:6pt 10pt; border-radius:4pt; margin-top:6pt; font-size:11pt; }
-.error { color:#C0392B; font-weight:600; } .improve { color:#2E7D32; font-weight:600; }
+.error-badge { display:inline-block; background:#FFEBEE; color:#C0392B; padding:2pt 6pt; border-radius:4pt; font-size:9pt; font-weight:600; }
+.improve-badge { display:inline-block; background:#E8F5E9; color:#2E7D32; padding:2pt 6pt; border-radius:4pt; font-size:9pt; font-weight:600; }
 .vocab-list { columns:2; column-gap:16pt; }
 .vocab-item { margin:2pt 0; font-size:10pt; break-inside:avoid; }
-@media print { body { padding:0; } .note-card { page-break-inside:auto; } .peel-block { page-break-inside:auto; } h2,h3 { page-break-after:avoid; } }
+@media print { body { padding:0; } .note-card,.quiz-card { page-break-inside:auto; } .peel-block { page-break-inside:auto; } h2,h3 { page-break-after:avoid; } }
 `;
 
 function renderInstitution(inst){
@@ -7729,10 +7833,93 @@ function renderExportItem(item,subj){
   const fmt=item._format||'all';
   const title=item.title||item.topic||'';
   const subtopic=item.subtopic||item.category||'';
-  const fmtTag=fmt!=='all'&&isKB?` <span style="font-size:10pt;color:var(--gray-500);">[格式${fmt}]</span>`:'';
-  let html=`<div class="note-card"><div class="nt-title">${isKB?'📚':'✏️'} ${title}${subtopic?' — '+subtopic:''}${fmtTag}</div>`;
+  let html='';
 
-  // === 文科（中史/世史/C&SD）知識庫模板 ===
+  // === 用戶筆記模板 - 匹配app內 renderNotes() 格式 ===
+  if(item._src==='user'){
+    html+=`<div class="note-card">`;
+    html+=`<div class="nt-title">${title}</div>`;
+    if(subtopic) html+=`<div class="nt-subtitle">${subtopic}</div>`;
+    if(item.content) html+=`<div class="nt-content">${item.content}</div>`;
+    if(item.keywords) html+=`<div class="nt-keywords">🔑 ${item.keywords}</div>`;
+    // DSE tags
+    if(item.dse==='是'){
+      html+=`<div style="margin:4pt 0;">`;
+      html+=`<span class="dse-tag">📊 DSE已出現 ${item.dseYear||''}</span>`;
+      (item.dseType||'').split('/').filter(Boolean).forEach(t=>{
+        const cls={'MC':'tag-mc','短答':'tag-short','DBQ':'tag-dbq','論述':'tag-essay'}[t]||'';
+        html+=`<span class="dse-tag ${cls}">${t}</span>`;
+      });
+      html+=`</div>`;
+    }
+    // Proficiency dots
+    if(item.prof){
+      const prof=parseInt(item.prof)||0;
+      html+=`<div class="prof-dots" title="熟練度 ${prof}/5">`;
+      [1,2,3,4,5].forEach(i=>{
+        html+=`<span class="prof-dot ${i<=prof?(i<=2?'warn':'filled'):''}"></span>`;
+      });
+      html+=` ${prof}/5</div>`;
+    }
+    // Self-test
+    if(item.testQ) html+=`<div class="self-test-box"><div class="st-q">❓ ${item.testQ}</div><div class="st-a">💡 ${item.testA||''}</div></div>`;
+    // Remarks
+    if(item.remarks) html+=`<div style="margin-top:6pt;font-size:10pt;color:#9E9E9E;">📌 ${item.remarks}</div>`;
+    html+=`</div>`;
+    return html;
+  }
+
+  // === 小測驗題目模板 - 匹配app內 quiz-q-card 格式 ===
+  if(item._src==='pq'||item._src==='pq-short'||item._src==='pq-peel'){
+    const isShort=item._src==='pq-short';
+    const isPeel=item._src==='pq-peel';
+    const qType=isPeel?'q-peel':isShort?'q-short':'q-fill';
+    const typeLabel=item._pqType||'';
+    html+=`<div class="quiz-card ${qType}">`;
+    html+=`<div><span class="q-num">${item.qNum||'Q'}</span><span class="q-text">${item.question||''}</span>`;
+    html+=`<span class="q-type">${typeLabel}</span></div>`;
+    if(item.title) html+=`<div class="q-topic">📖 ${item.title}</div>`;
+    // MC options
+    if(item.options && Array.isArray(item.options) && item.options.length>=3){
+      html+=`<div class="q-options">`;
+      item.options.forEach((opt,oi)=>{
+        const letter=String.fromCharCode(65+oi);
+        const isCorrect=item.answer===letter||item.answer===opt||opt===item.answer;
+        html+=`<div class="q-opt${isCorrect?' correct':''}"><span class="q-opt-label">${letter}.</span> ${opt}</div>`;
+      });
+      html+=`</div>`;
+    } else if(item.answer){
+      html+=`<div class="q-answer"><span class="q-answer-label">✅ 答案：</span>${item.answer}</div>`;
+    }
+    // PEEL hints
+    if(isPeel && item.peelData){
+      const p=item.peelData;
+      html+=`<div class="q-peel-hints">`;
+      html+=`<div style="font-weight:700;margin-bottom:6pt;">📐 PEEL 答題結構提示</div>`;
+      if(p.p1) html+=`<div style="margin:3pt 0;"><span style="color:#C0392B;font-weight:700;">P（論點1）：</span>${p.p1}</div>`;
+      if(p.e1_1) html+=`<div style="margin:3pt 0;padding-left:12pt;"><span style="color:#2980B9;font-weight:700;">E（論據1）：</span>${p.e1_1}</div>`;
+      if(p.e2_1) html+=`<div style="margin:3pt 0;padding-left:12pt;"><span style="color:#27AE60;font-weight:700;">E（解釋1）：</span>${p.e2_1}</div>`;
+      if(p.l1) html+=`<div style="margin:3pt 0;padding-left:12pt;"><span style="color:#8E44AD;font-weight:700;">L（扣題1）：</span>${p.l1}</div>`;
+      if(p.p2){
+        html+=`<div style="margin:6pt 0 3pt;"><span style="color:#C0392B;font-weight:700;">P（論點2）：</span>${p.p2}</div>`;
+        if(p.e1_2) html+=`<div style="margin:3pt 0;padding-left:12pt;"><span style="color:#2980B9;font-weight:700;">E（論據2）：</span>${p.e1_2}</div>`;
+        if(p.e2_2) html+=`<div style="margin:3pt 0;padding-left:12pt;"><span style="color:#27AE60;font-weight:700;">E（解釋2）：</span>${p.e2_2}</div>`;
+        if(p.l2) html+=`<div style="margin:3pt 0;padding-left:12pt;"><span style="color:#8E44AD;font-weight:700;">L（扣題2）：</span>${p.l2}</div>`;
+      }
+      if(p.conclusion) html+=`<div style="margin:6pt 0;background:#FFF3E0;border-left:4pt solid #FF9800;padding:4pt 10pt;border-radius:0 4pt 4pt 0;"><strong>🔑 總結立場：</strong>${p.conclusion}</div>`;
+      html+=`</div>`;
+    }
+    if(item.explanation) html+=`<div class="tip-box"><strong>💡 解析：</strong>${item.explanation}</div>`;
+    html+=`</div>`;
+    return html;
+  }
+
+  // === 知識庫模板 ===
+  html+=`<div class="note-card">`;
+  html+=`<div class="nt-title">${isKB?'📚':'✏️'} ${title}</div>`;
+  if(subtopic) html+=`<div class="nt-subtitle">${subtopic}</div>`;
+
+  // 文科（中史/世史/C&SD）知識庫
   if(isKB && ['中史','世史','C&SD'].includes(subj)){
     const showFact=(fmt==='all'||fmt==='1'||fmt==='4');
     const showCPI=(fmt==='all'||fmt==='2'||fmt==='4');
@@ -7773,7 +7960,7 @@ function renderExportItem(item,subj){
       if(item.evaluation) html+=`<div class="nt-section"><div class="nt-label">⚖️ 評價</div><div class="nt-content">${item.evaluation}</div></div>`;
     }
 
-    // DSE Questions (always shown)
+    // DSE Questions
     if(item.dseQ){
       const qs=item.dseQ.split('|||').map(q=>q.trim()).filter(Boolean);
       html+=`<div class="dse-questions"><div class="nt-label">🎯 DSE 常見問題</div><ol>`;qs.forEach(q=>html+=`<li>${q}</li>`);html+=`</ol></div>`;
@@ -7802,7 +7989,7 @@ function renderExportItem(item,subj){
     if(item.answerTips) html+=`<div class="tip-box"><strong>💡 答題貼士：</strong>${item.answerTips.replace(/\|\|\|/g,'；')}</div>`;
     if(item.dseRecord) html+=`<div class="nt-section"><div class="nt-label">📊 DSE 出題記錄</div><div class="nt-content">${item.dseRecord}</div></div>`;
   }
-  // === 數學知識庫模板 ===
+  // 數學知識庫
   else if(isKB && subj==='數學'){
     if(item.formulas) html+=`<div class="nt-section"><div class="nt-label">📐 公式</div><div class="nt-content">${item.formulas.split('|||').filter(Boolean).join('\n')}</div></div>`;
     if(item.keyPoints) html+=`<div class="nt-section"><div class="nt-label">🔑 重點</div><div class="nt-content">${item.keyPoints.replace(/\|\|\|/g,'\n')}</div></div>`;
@@ -7811,7 +7998,7 @@ function renderExportItem(item,subj){
     if(item.commonMistakes) html+=`<div class="warn-box"><strong>⚠️ Common Mistakes：</strong>${item.commonMistakes.replace(/\|\|\|/g,'；')}</div>`;
     if(item.examTips) html+=`<div class="tip-box"><strong>💡 Exam Tips：</strong>${item.examTips.replace(/\|\|\|/g,'；')}</div>`;
   }
-  // === 中文知識庫模板 ===
+  // 中文知識庫
   else if(isKB && subj==='中文'){
     if(item.description) html+=`<div class="nt-section"><div class="nt-label">📖 簡介</div><div class="nt-content">${item.description}</div></div>`;
     if(item.keyPoints) html+=`<div class="nt-section"><div class="nt-label">🔑 重點</div><div class="nt-content">${item.keyPoints.replace(/\|\|\|/g,'\n')}</div></div>`;
@@ -7822,7 +8009,7 @@ function renderExportItem(item,subj){
     if(item.examTips) html+=`<div class="tip-box"><strong>💡 考試貼士：</strong>${item.examTips.replace(/\|\|\|/g,'；')}</div>`;
     if(item.level5standard) html+=`<div class="tip-box"><strong>🏆 5** 標準：</strong>${item.level5standard}</div>`;
   }
-  // === 英文知識庫模板 ===
+  // 英文知識庫
   else if(isKB && subj==='英文'){
     if(item.description) html+=`<div class="nt-section"><div class="nt-label">📖 Description</div><div class="nt-content">${item.description}</div></div>`;
     if(item.keyPoints) html+=`<div class="nt-section"><div class="nt-label">🔑 Key Points</div><div class="nt-content">${item.keyPoints.replace(/\|\|\|/g,'\n')}</div></div>`;
@@ -7832,30 +8019,6 @@ function renderExportItem(item,subj){
     if(item.commonMistakes) html+=`<div class="warn-box"><strong>⚠️ Common Mistakes：</strong>${item.commonMistakes.replace(/\|\|\|/g,'；')}</div>`;
     if(item.examTips) html+=`<div class="tip-box"><strong>💡 Exam Tips：</strong>${item.examTips.replace(/\|\|\|/g,'；')}</div>`;
     if(item.level5standard) html+=`<div class="tip-box"><strong>🏆 5** Standard：</strong>${item.level5standard}</div>`;
-  }
-  // === 用戶筆記模板 ===
-  else if(item._src==='user'){
-    if(item.content) html+=`<div class="nt-section"><div class="nt-content">${item.content}</div></div>`;
-    if(item.keywords) html+=`<div class="nt-section" style="font-size:10pt;color:#8B4513;">🔑 ${item.keywords}</div>`;
-    if(item.dse==='是'){html+=`<div style="margin-top:4pt;"><span class="dse-tag">📊 DSE已出現 ${item.dseYear||''}</span>`;(item.dseType||'').split('/').filter(Boolean).forEach(t=>html+=`<span class="dse-tag">${t}</span>`);html+=`</div>`;}
-    if(item.testQ) html+=`<div class="self-test">❓ ${item.testQ}<br>💡 ${item.testA||''}</div>`;
-    if(item.prof) html+=`<div style="margin-top:4pt;font-size:10pt;color:#666;">熟練度：${item.prof}/5</div>`;
-  }
-  // === 操練題目模板 ===
-  else if(item._src==='pq'){
-    html+=`<div class="nt-section"><div class="nt-content" style="font-size:12pt;font-weight:600;">${item.question||''}</div></div>`;
-    if(item.options && Array.isArray(item.options)){
-      html+=`<div class="nt-section"><table style="width:100%;border-collapse:collapse;font-size:11pt;">`;
-      item.options.forEach((opt,oi)=>{
-        const letter=String.fromCharCode(65+oi);
-        const isCorrect=item.answer===letter||item.answer===opt;
-        html+=`<tr><td style="padding:4pt 8pt;${isCorrect?'background:#E8F5E9;font-weight:700;':''}">${letter}. ${opt}</td></tr>`;
-      });
-      html+=`</table></div>`;
-    } else if(item.answer){
-      html+=`<div class="nt-section"><div class="nt-label">✅ 答案</div><div class="nt-content">${item.answer}</div></div>`;
-    }
-    if(item.explanation) html+=`<div class="tip-box"><strong>💡 解析：</strong>${item.explanation}</div>`;
   }
 
   html+=`</div>`;
@@ -7910,8 +8073,8 @@ function showExportPreview(){
       html+=`</tr>`;
       pracItems.forEach(r=>{
         html+=`<tr>`;
-        if(isMath) html+=`<td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.date||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.topic||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.paper||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.source||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.qNum||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.qType||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.correct==='是'?'✅':'❌'}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.errorType||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.errorDetail||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.solution||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.reviewed==='是'?'✅':'⬜'}</td>`;
-        else html+=`<td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.date||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.type||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.paper||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.source||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.qNum||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.score||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.errorType||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.errorDetail||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.improve||''}</td><td style="padding:5pt 8pt;border-bottom:1px solid #ddd;">${r.reviewed==='是'?'✅':'⬜'}</td>`;
+        if(isMath) html+=`<td>${r.date||''}</td><td>${r.topic||''}</td><td>${r.paper||''}</td><td>${r.source||''}</td><td>${r.qNum||''}</td><td>${r.qType||''}</td><td>${r.correct==='是'?'✅':'❌'}</td><td>${r.errorType?`<span class="error-badge">${r.errorType}</span>`:''}</td><td>${r.errorDetail||''}</td><td>${r.solution||''}</td><td>${r.reviewed==='是'?'✅':'⬜'}</td>`;
+        else html+=`<td>${r.date||''}</td><td>${r.type||''}</td><td>${r.paper||''}</td><td>${r.source||''}</td><td>${r.qNum||''}</td><td>${r.score||''}</td><td>${r.errorType?`<span class="error-badge">${r.errorType}</span>`:''}</td><td>${r.errorDetail||''}</td><td>${r.improve?`<span class="improve-badge">${r.improve}</span>`:''}</td><td>${r.reviewed==='是'?'✅':'⬜'}</td>`;
         html+=`</tr>`;
       });
       html+=`</table>`;
