@@ -276,9 +276,6 @@ tr:hover td { background:var(--gray-50); }
 .quiz-history-item { display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border-bottom:1px solid var(--gray-200); font-size:13px; }
 
 /* Export */
-.exp-type-card { display:flex;align-items:center;justify-content:center;padding:10px 8px;border:2px solid var(--gray-200);border-radius:var(--radius);cursor:pointer;transition:all .2s;font-size:14px;font-weight:600;text-align:center; }
-.exp-type-card:hover { border-color:var(--primary);box-shadow:var(--shadow); }
-.exp-type-card:has(input:checked) { border-color:var(--primary);background:var(--cool-bg);color:var(--primary); }
 .exp-item-label:hover { background:var(--cool-bg); }
 
 /* Modal */
@@ -348,7 +345,7 @@ tr:hover td { background:var(--gray-50); }
   <div class="nav-item" data-page="prac-chi"><span class="icon">✏️</span>中文操練</div>
   <div class="nav-section">工具</div>
   <div class="nav-item" data-page="dse-stats"><span class="icon">📊</span>DSE題型分佈</div>
-  <div class="nav-item" data-page="export"><span class="icon">📤</span>匯出筆記</div>
+  <div class="nav-item" data-page="export"><span class="icon">🖨️</span>匯出列印</div>
 </nav>
 
 <div class="main">
@@ -636,27 +633,33 @@ tr:hover td { background:var(--gray-50); }
     <div class="card">
       <div class="card-header">
         <button class="btn btn-sm btn-outline" onclick="navigateTo('dashboard')">◀ 返回</button>
-        <h2>📤 匯出筆記</h2>
+        <h2>🖨️ 匯出列印</h2>
       </div>
-      <!-- 內容類型：用卡片式選擇 -->
-      <div style="margin-bottom:14px;">
-        <div class="form-label" style="margin-bottom:6px;">內容類型</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
-          <label class="exp-type-card" id="etc-kb"><input type="radio" name="exp-source" value="kb" checked onchange="toggleExpSubOptions();loadExpItems();" style="display:none;"><span>📚 知識庫</span></label>
-          <label class="exp-type-card" id="etc-user"><input type="radio" name="exp-source" value="user" onchange="toggleExpSubOptions();loadExpItems();" style="display:none;"><span>✏️ 用戶筆記</span></label>
-          <label class="exp-type-card" id="etc-prac"><input type="radio" name="exp-source" value="prac" onchange="toggleExpSubOptions();loadExpItems();" style="display:none;"><span>📋 操練記錄</span></label>
+      <!-- 三個下拉選項：直列排列 -->
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px;">
+        <div class="form-group">
+          <label class="form-label">📖 科目</label>
+          <select class="form-select" id="exp-subject" onchange="loadExpItems()">
+            <option value="all">📚 全部科目</option>
+            <option value="中史">中史</option>
+            <option value="世史">世史</option>
+            <option value="C&SD">C&SD</option>
+            <option value="數學">數學</option>
+            <option value="中文">中文</option>
+            <option value="英文">英文</option>
+          </select>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-          <label class="exp-type-card" id="etc-pq-eng"><input type="radio" name="exp-source" value="pq-eng" onchange="toggleExpSubOptions();loadExpItems();" style="display:none;"><span>📝 英文題目</span></label>
-          <label class="exp-type-card" id="etc-pq-math"><input type="radio" name="exp-source" value="pq-math" onchange="toggleExpSubOptions();loadExpItems();" style="display:none;"><span>🔢 數學題目</span></label>
+        <div class="form-group">
+          <label class="form-label">📂 匯出內容</label>
+          <select class="form-select" id="exp-content" onchange="toggleExpSubOptions();loadExpItems();">
+            <option value="kb">📚 知識庫</option>
+            <option value="user">✏️ 筆記</option>
+            <option value="quiz">📝 小測驗</option>
+            <option value="prac">📋 練習</option>
+          </select>
         </div>
-      </div>
-      <!-- 科目 / 格式 / 操練科目：下拉選項 -->
-      <div class="form-row" style="margin-bottom:14px;">
-        <div class="form-group" id="exp-subj-group"><label class="form-label">科目</label>
-          <select class="form-select" id="exp-subject" onchange="loadExpItems()"><option value="all">📚 全部科目</option><option value="中史">中史</option><option value="世史">世史</option><option value="C&SD">C&SD</option><option value="數學">數學</option><option value="中文">中文</option><option value="英文">英文</option></select>
-        </div>
-        <div class="form-group" id="exp-format-group" style="display:none;"><label class="form-label">筆記格式</label>
+        <div class="form-group" id="exp-format-group">
+          <label class="form-label">📋 筆記格式</label>
           <select class="form-select" id="exp-format" onchange="loadExpItems()">
             <option value="all">全部格式</option>
             <option value="1">① 事實型</option>
@@ -664,9 +667,6 @@ tr:hover td { background:var(--gray-50); }
             <option value="3">③ PEEL</option>
             <option value="4">④ 混合型</option>
           </select>
-        </div>
-        <div class="form-group" id="exp-pracsubj-group" style="display:none;"><label class="form-label">操練科目</label>
-          <select class="form-select" id="exp-pracsubj" onchange="loadExpItems()"><option value="all">📋 全部操練</option><option value="eng">英文</option><option value="math">數學</option><option value="chi">中文</option></select>
         </div>
       </div>
       <!-- 條目勾選 -->
@@ -692,7 +692,7 @@ tr:hover td { background:var(--gray-50); }
     <div class="card">
       <div class="card-header">
         <button class="btn btn-sm btn-outline" onclick="backToExpStep1()">◀ 返回</button>
-        <h2>📤 匯出預覽</h2>
+        <h2>🖨️ 匯出預覽</h2>
       </div>
       <div style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
         <div style="font-size:12px;color:var(--gray-500);" id="exp-preview-info"></div>
@@ -7472,28 +7472,13 @@ let exportType='pdf';
 let exportPreviewItems=[];
 let expPreviewHTML='';
 
-function getExpSource(){return document.querySelector('input[name="exp-source"]:checked')?.value||'kb';}
+function getExpSource(){return document.getElementById('exp-content').value;}
 
 function toggleExpSubOptions(){
   const source=getExpSource();
-  const subjGrp=document.getElementById('exp-subj-group');
   const fmtGrp=document.getElementById('exp-format-group');
-  const pracGrp=document.getElementById('exp-pracsubj-group');
-
-  subjGrp.style.display='none';
-  fmtGrp.style.display='none';
-  pracGrp.style.display='none';
-
-  if(source==='kb'){
-    subjGrp.style.display='block';
-    fmtGrp.style.display='block';
-  } else if(source==='user'){
-    subjGrp.style.display='block';
-    fmtGrp.style.display='block';
-  } else if(source==='prac'){
-    pracGrp.style.display='block';
-  }
-  // pq-eng and pq-math: no sub-options needed
+  // 筆記格式只在知識庫和筆記時顯示
+  fmtGrp.style.display=(source==='kb'||source==='user')?'block':'none';
 }
 
 function navigateTo(page){
@@ -7525,10 +7510,8 @@ function loadExpItems(){
   const source=getExpSource();
   const format=document.getElementById('exp-format').value;
   const subjVal=document.getElementById('exp-subject').value;
-  const pracVal=document.getElementById('exp-pracsubj').value;
 
   const subjects=subjVal==='all'?allSubjects:[subjVal];
-  const pracKeys=pracVal==='all'?allPracKeys:[pracVal];
 
   exportPreviewItems=[];
 
@@ -7546,42 +7529,50 @@ function loadExpItems(){
       let items=userNotes.map((n,i)=>({...n,_src:'user',_format:format,_subj:subj}));
       items.forEach(it=>{it._idx=exportPreviewItems.length; exportPreviewItems.push(it);});
     });
+  } else if(source==='quiz'){
+    // 小測驗：根據科目篩選英文/數學題目
+    const loadEng=subjVal==='all'||subjVal==='英文';
+    const loadMath=subjVal==='all'||subjVal==='數學';
+    if(loadEng){
+      const engDB=typeof engPracticeDB!=='undefined'?engPracticeDB:null;
+      if(engDB){
+        if(engDB.Paper1 && engDB.Paper1.passages){
+          engDB.Paper1.passages.forEach(p=>{
+            const pTitle=p.title||'';
+            if(p.questions) p.questions.forEach((q,i)=>{
+              exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'英文',_pqType:'Paper1 Reading',title:pTitle,qNum:`Q${i+1}`,question:q.question||'',options:q.options||null,answer:q.answer||'',explanation:q.explanation||''});
+            });
+          });
+        }
+        if(engDB.Paper3 && engDB.Paper3.recordings){
+          engDB.Paper3.recordings.forEach(r=>{
+            const rTitle=r.title||'';
+            if(r.questions) r.questions.forEach((q,i)=>{
+              exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'英文',_pqType:'Paper3 Listening',title:rTitle,qNum:`Q${i+1}`,question:q.question||'',options:q.options||null,answer:q.answer||'',explanation:q.explanation||''});
+            });
+          });
+        }
+      }
+    }
+    if(loadMath){
+      const mathDB=typeof mathPracticeDB!=='undefined'?mathPracticeDB:null;
+      if(mathDB && mathDB.topics){
+        mathDB.topics.forEach(topic=>{
+          const topicName=topic.name||topic.id||'';
+          if(topic.questions) topic.questions.forEach((q,i)=>{
+            exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'數學',_pqType:topicName,qNum:`Q${i+1}`,question:q.question||q.text||'',options:q.options||null,answer:q.answer||q.correct||'',explanation:q.explanation||q.solution||''});
+          });
+        });
+      }
+    }
   } else if(source==='prac'){
     const prac=getData(KEYS.prac);
+    // 根據科目篩選操練記錄
+    const pracKeys=subjVal==='all'?allPracKeys:(subjVal==='英文'?['eng']:subjVal==='數學'?['math']:subjVal==='中文'?['chi']:[]);
     pracKeys.forEach(pk=>{
       const pracRecords=(prac[pk])||[];
       pracRecords.forEach(r=>{exportPreviewItems.push({...r,_src:'prac',_idx:exportPreviewItems.length,_pracKey:pk,_subj:pracMap[pk]});});
     });
-  } else if(source==='pq-eng'){
-    const engDB=typeof engPracticeDB!=='undefined'?engPracticeDB:null;
-    if(engDB){
-      if(engDB.Paper1 && engDB.Paper1.passages){
-        engDB.Paper1.passages.forEach(p=>{
-          const pTitle=p.title||'';
-          if(p.questions) p.questions.forEach((q,i)=>{
-            exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'英文',_pqType:'Paper1 Reading',title:pTitle,qNum:`Q${i+1}`,question:q.question||'',options:q.options||null,answer:q.answer||'',explanation:q.explanation||''});
-          });
-        });
-      }
-      if(engDB.Paper3 && engDB.Paper3.recordings){
-        engDB.Paper3.recordings.forEach(r=>{
-          const rTitle=r.title||'';
-          if(r.questions) r.questions.forEach((q,i)=>{
-            exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'英文',_pqType:'Paper3 Listening',title:rTitle,qNum:`Q${i+1}`,question:q.question||'',options:q.options||null,answer:q.answer||'',explanation:q.explanation||''});
-          });
-        });
-      }
-    }
-  } else if(source==='pq-math'){
-    const mathDB=typeof mathPracticeDB!=='undefined'?mathPracticeDB:null;
-    if(mathDB && mathDB.topics){
-      mathDB.topics.forEach(topic=>{
-        const topicName=topic.name||topic.id||'';
-        if(topic.questions) topic.questions.forEach((q,i)=>{
-          exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'數學',_pqType:topicName,qNum:`Q${i+1}`,question:q.question||q.text||'',options:q.options||null,answer:q.answer||q.correct||'',explanation:q.explanation||q.solution||''});
-        });
-      });
-    }
   }
 
   const listEl=document.getElementById('exp-item-list');
@@ -7599,16 +7590,13 @@ function loadExpItems(){
   }
 
   const subjLabel=subjVal==='all'?'全部科目':subjVal;
-  const pracLabel=pracVal==='all'?'全部操練':pracMap[pracVal];
-  const srcLabel=source==='kb'?'📚 知識庫':source==='user'?'✏️ 用戶筆記':source==='prac'?'📋 操練記錄':source==='pq-eng'?'📝 英文題目':'🔢 數學題目';
-  const fmtLabel=format!=='all'&&source!=='prac'?` · 格式${format}`:'';
-  const displaySubject=source==='prac'?pracLabel:subjLabel;
-  infoEl.textContent=`${displaySubject} · ${srcLabel}${fmtLabel} · 共 ${exportPreviewItems.length} 條`;
+  const srcLabel=source==='kb'?'📚 知識庫':source==='user'?'✏️ 筆記':source==='quiz'?'📝 小測驗':'📋 練習';
+  const fmtLabel=format!=='all'&&(source==='kb'||source==='user')?` · 格式${format}`:'';
+  infoEl.textContent=`${subjLabel} · ${srcLabel}${fmtLabel} · 共 ${exportPreviewItems.length} 條`;
   toggleBtns.style.display='block';
   previewBtn.disabled=false;
 
-  const showSubjTag=(source==='kb'||source==='user')&&subjVal==='all';
-  const showPracTag=source==='prac'&&pracVal==='all';
+  const showSubjTag=subjVal==='all';
 
   let listHtml='';
   exportPreviewItems.forEach((item,i)=>{
@@ -7628,7 +7616,6 @@ function loadExpItems(){
       tags=`📝 ${item._pqType||''} ${item.qNum||''}`;
     }
     if(showSubjTag) tags=`📖 ${item._subj} `+tags;
-    if(showPracTag) tags=`📖 ${item._subj} `+tags;
     listHtml+=`<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--gray-100);cursor:pointer;" class="exp-item-label">
       <input type="checkbox" checked class="exp-check" data-exp-idx="${i}" style="width:18px;height:18px;accent-color:var(--primary);flex-shrink:0;">
       <div style="flex:1;min-width:0;">
@@ -7660,22 +7647,22 @@ function toggleAllExport(val){
 // ===== EXPORT CSS (shared for PDF & Word) =====
 const expPrintCSS=`
 @page { margin:2cm; size:A4; }
-body { font-family:'PingFang SC','Microsoft YaHei','SimSun',sans-serif; color:#222; max-width:100%; margin:0 auto; padding:0 1cm; font-size:12pt; line-height:1.8; }
+body { font-family:'PingFang SC','Microsoft YaHei','SimSun',sans-serif; color:#222; max-width:100%; margin:0 auto; padding:0; font-size:12pt; line-height:1.8; orphans:3; widows:3; }
 h1 { color:#1B3A5C; text-align:center; border-bottom:3px solid #1B3A5C; padding-bottom:8pt; font-size:18pt; margin-bottom:6pt; }
-h2 { color:#1B3A5C; margin-top:20pt; margin-bottom:8pt; font-size:15pt; border-bottom:1px solid #ccc; padding-bottom:4pt; page-break-after:avoid; }
-h3 { color:#2E5090; margin-top:14pt; margin-bottom:6pt; font-size:13pt; page-break-after:avoid; }
+h2 { color:#1B3A5C; margin-top:20pt; margin-bottom:8pt; font-size:15pt; border-bottom:1px solid #ccc; padding-bottom:4pt; }
+h3 { color:#2E5090; margin-top:14pt; margin-bottom:6pt; font-size:13pt; }
 .meta { font-size:10pt; color:#888; text-align:center; margin-bottom:12pt; }
-.note-card { border:1px solid #ddd; border-radius:6pt; padding:12pt 16pt; margin:16pt 0; page-break-inside:avoid; background:#FAFAFA; }
+.note-card { border:1px solid #ddd; border-radius:6pt; padding:12pt 16pt; margin:12pt 0; background:#FAFAFA; }
 .note-card .nt-title { font-weight:700; font-size:14pt; color:#1B3A5C; margin-bottom:8pt; padding-bottom:6pt; border-bottom:2px solid #1B3A5C; }
 .note-card .nt-info { font-size:10pt; color:#666; margin-bottom:10pt; }
-.note-card .nt-section { margin:12pt 0; }
+.note-card .nt-section { margin:10pt 0; }
 .note-card .nt-label { font-weight:700; color:#8B4513; font-size:12pt; margin-bottom:4pt; padding:2pt 0; }
 .note-card .nt-content { white-space:pre-wrap; font-size:11pt; line-height:1.8; }
 .dse-tag { display:inline-block; background:#FFEBEE; color:#C0392B; padding:1pt 6pt; border-radius:3pt; font-size:9pt; font-weight:600; margin:1pt 2pt; }
 .dse-questions { background:#FFF8E1; border-left:4pt solid #FF9800; padding:8pt 12pt; margin:8pt 0; border-radius:0 4pt 4pt 0; }
 .dse-questions ol { margin:4pt 0; padding-left:18pt; }
 .dse-questions li { margin:3pt 0; font-size:11pt; }
-.peel-block { border:1pt solid #ddd; border-radius:6pt; padding:10pt; margin:8pt 0; page-break-inside:avoid; }
+.peel-block { border:1pt solid #ddd; border-radius:6pt; padding:10pt; margin:8pt 0; }
 .peel-block h3 { margin-top:0; }
 .peel-p { border-left:4pt solid #C0392B; background:#FFEBEE; padding:6pt 10pt; margin:4pt 0; border-radius:0 4pt 4pt 0; }
 .peel-e1 { border-left:4pt solid #2980B9; background:#E3F2FD; padding:6pt 10pt; margin:4pt 0; border-radius:0 4pt 4pt 0; }
@@ -7691,7 +7678,7 @@ td { padding:5pt 8pt; border-bottom:1px solid #ddd; }
 .error { color:#C0392B; font-weight:600; } .improve { color:#2E7D32; font-weight:600; }
 .vocab-list { columns:2; column-gap:16pt; }
 .vocab-item { margin:2pt 0; font-size:10pt; break-inside:avoid; }
-@media print { body { padding:0; } h2 { page-break-before:auto; } .note-card,.peel-block { page-break-inside:avoid; } }
+@media print { body { padding:0; } .note-card { page-break-inside:auto; } .peel-block { page-break-inside:auto; } h2,h3 { page-break-after:avoid; } }
 `;
 
 function renderInstitution(inst){
@@ -7885,18 +7872,15 @@ function showExportPreview(){
   const source=getExpSource();
   const format=document.getElementById('exp-format').value;
   const subjVal=document.getElementById('exp-subject').value;
-  const pracVal=document.getElementById('exp-pracsubj').value;
 
   const selectedItems=selectedIdxs.map(i=>exportPreviewItems[i]);
-  const srcLabel=source==='kb'?'知識庫':source==='user'?'用戶筆記':source==='prac'?'操練記錄':source==='pq-eng'?'英文題目':'數學題目';
-  const fmtLabel=format!=='all'&&source!=='prac'?` | 格式：${format}`:'';
+  const srcLabel=source==='kb'?'知識庫':source==='user'?'筆記':source==='quiz'?'小測驗':'練習';
+  const fmtLabel=format!=='all'&&(source==='kb'||source==='user')?` | 格式：${format}`:'';
   const subjLabel=subjVal==='all'?'全部科目':subjVal;
-  const pracLabel=pracVal==='all'?'全部操練':pracMap[pracVal];
-  const displaySubj=source==='prac'?pracLabel:subjLabel;
 
   // Build preview HTML — group by subject
-  let html=`<h1 style="color:#1B3A5C;text-align:center;border-bottom:3px solid #1B3A5C;padding-bottom:8pt;font-size:18pt;margin-bottom:6pt;">DSE 筆記匯出</h1>`;
-  html+=`<div style="font-size:10pt;color:#888;text-align:center;margin-bottom:12pt;">匯出日期：${new Date().toLocaleString('zh-HK')} | 科目：${displaySubj} | 來源：${srcLabel}${fmtLabel} | 共 ${selectedItems.length} 條</div>`;
+  let html=`<h1 style="color:#1B3A5C;text-align:center;border-bottom:3px solid #1B3A5C;padding-bottom:8pt;font-size:18pt;margin-bottom:6pt;">DSE 匯出列印</h1>`;
+  html+=`<div style="font-size:10pt;color:#888;text-align:center;margin-bottom:12pt;">匯出日期：${new Date().toLocaleString('zh-HK')} | 科目：${subjLabel} | 來源：${srcLabel}${fmtLabel} | 共 ${selectedItems.length} 條</div>`;
 
   // Group items by subject
   const subjGroups={};
@@ -7937,8 +7921,8 @@ function showExportPreview(){
   expPreviewHTML=html;
 
   // Update preview info
-  const fmtLabel2=format!=='all'&&source!=='prac'?' · 格式'+format:'';
-  document.getElementById('exp-preview-info').textContent=`${displaySubj} · ${srcLabel}${fmtLabel2} · 已選 ${selectedItems.length} 條`;
+  const fmtLabel2=format!=='all'&&(source==='kb'||source==='user')?' · 格式'+format:'';
+  document.getElementById('exp-preview-info').textContent=`${subjLabel} · ${srcLabel}${fmtLabel2} · 已選 ${selectedItems.length} 條`;
 
   document.getElementById('exp-preview-content').innerHTML=html;
 
@@ -7948,7 +7932,7 @@ function showExportPreview(){
 
 function doExportPDF(){
   if(!expPreviewHTML){alert('⚠️ 沒有可匯出的內容');return;}
-  const html=`<html><head><meta charset="UTF-8"><title>DSE筆記匯出</title><style>${expPrintCSS}</style></head><body>${expPreviewHTML}</body></html>`;
+  const html=`<html><head><meta charset="UTF-8"><title>DSE匯出列印</title><style>${expPrintCSS}</style></head><body>${expPreviewHTML}</body></html>`;
   const w=window.open('','_blank','width=900,height=700');
   if(!w){alert('⚠️ 請允許彈出視窗以列印');return;}
   w.document.write(html);
@@ -7959,15 +7943,16 @@ function doExportPDF(){
 function doExportFile(){
   if(!expPreviewHTML){alert('⚠️ 沒有可匯出的內容');return;}
   const source=getExpSource();
-  const subjVal=source==='prac'?document.getElementById('exp-pracsubj').value:(source==='kb'||source==='user')?document.getElementById('exp-subject').value:'';
-  const subjLabel=subjVal==='all'?(source==='prac'?'全部操練':'全部科目'):(pracMap[subjVal]||subjVal||(source==='pq-eng'?'英文題目':source==='pq-math'?'數學題目':''));
-  const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><title>DSE筆記匯出</title><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]--><style>${expPrintCSS}</style></head><body>${expPreviewHTML}</body></html>`;
+  const subjVal=document.getElementById('exp-subject').value;
+  const srcLabel=source==='kb'?'知識庫':source==='user'?'筆記':source==='quiz'?'小測驗':'練習';
+  const subjLabel=subjVal==='all'?'全部科目':subjVal;
+  const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><title>DSE匯出列印</title><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]--><style>${expPrintCSS}</style></head><body>${expPreviewHTML}</body></html>`;
 
   const blob=new Blob(['\ufeff'+html],{type:'application/msword'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   a.href=url;
-  a.download=`DSE筆記_${subjLabel}_${new Date().toISOString().slice(0,10)}.doc`;
+  a.download=`DSE匯出列印_${subjLabel}_${srcLabel}_${new Date().toISOString().slice(0,10)}.doc`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
