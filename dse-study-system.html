@@ -643,15 +643,28 @@ tr:hover td { background:var(--gray-50); }
       </div>
       <div style="margin-bottom:16px;font-size:13px;color:var(--gray-500);">第一步：選擇要匯出的科目和內容類型</div>
       <div class="form-row" style="margin-bottom:16px;">
-        <div class="form-group"><label class="form-label">科目</label>
-          <select class="form-select" id="exp-subject"><option value="中史">中史</option><option value="世史">世史</option><option value="C&SD">C&SD</option><option value="數學">數學</option><option value="中文">中文</option><option value="英文">英文</option></select>
-        </div>
         <div class="form-group"><label class="form-label">內容類型</label>
-          <select class="form-select" id="exp-source" onchange="toggleExpFilter()">
-            <option value="kb">📚 知識庫筆記（含PEEL答題結構）</option>
+          <select class="form-select" id="exp-source" onchange="toggleExpSubOptions()">
+            <option value="kb">📚 知識庫筆記</option>
             <option value="user">✏️ 用戶筆記</option>
             <option value="prac">📋 操練記錄</option>
           </select>
+        </div>
+        <!-- 動態子選項：科目 / 筆記格式 / 操練科目 -->
+        <div class="form-group" id="exp-subj-group"><label class="form-label">科目</label>
+          <select class="form-select" id="exp-subject"><option value="中史">中史</option><option value="世史">世史</option><option value="C&SD">C&SD</option><option value="數學">數學</option><option value="中文">中文</option><option value="英文">英文</option></select>
+        </div>
+        <div class="form-group" id="exp-format-group" style="display:none;"><label class="form-label">筆記格式</label>
+          <select class="form-select" id="exp-format">
+            <option value="all">全部格式</option>
+            <option value="1">① 事實型（背景＋史實＋評價）</option>
+            <option value="2">② 原因-過程-影響</option>
+            <option value="3">③ DSE PEEL 結構</option>
+            <option value="4">④ 混合型（全部欄位）</option>
+          </select>
+        </div>
+        <div class="form-group" id="exp-pracsubj-group" style="display:none;"><label class="form-label">操練科目</label>
+          <select class="form-select" id="exp-pracsubj"><option value="eng">英文操練</option><option value="math">數學操練</option><option value="chi">中文操練</option></select>
         </div>
         <div class="form-group" id="exp-filter-group"><label class="form-label">篩選</label>
           <select class="form-select" id="exp-filter"><option value="all">全部</option><option value="dse">只看DSE曾出現</option><option value="low">只看熟練度1-2</option></select>
@@ -7464,10 +7477,29 @@ function selectExport(el){
   exportType=el.dataset.exp;
 }
 
-function toggleExpFilter(){
+function toggleExpSubOptions(){
   const source=document.getElementById('exp-source').value;
-  const fg=document.getElementById('exp-filter-group');
-  fg.style.display=source==='prac'?'none':'block';
+  const subjGrp=document.getElementById('exp-subj-group');
+  const fmtGrp=document.getElementById('exp-format-group');
+  const pracGrp=document.getElementById('exp-pracsubj-group');
+  const filterGrp=document.getElementById('exp-filter-group');
+
+  // Reset all
+  subjGrp.style.display='none';
+  fmtGrp.style.display='none';
+  pracGrp.style.display='none';
+  filterGrp.style.display='block';
+
+  if(source==='kb'){
+    subjGrp.style.display='block';
+    fmtGrp.style.display='block';
+  } else if(source==='user'){
+    subjGrp.style.display='block';
+    fmtGrp.style.display='block';
+  } else if(source==='prac'){
+    pracGrp.style.display='block';
+    filterGrp.style.display='none';
+  }
 }
 
 function navigateTo(page){
@@ -7485,24 +7517,32 @@ function backToExpStep1(){
 }
 
 function showExportPreview(){
-  const subject=document.getElementById('exp-subject').value;
   const source=document.getElementById('exp-source').value;
   const filter=document.getElementById('exp-filter').value;
+  const format=document.getElementById('exp-format').value;
+
+  let subject, pracKey;
+  if(source==='prac'){
+    pracKey=document.getElementById('exp-pracsubj').value;
+    subject=pracMap[pracKey];
+  } else {
+    subject=document.getElementById('exp-subject').value;
+  }
 
   const kbKey=subject==='中史'?'chhist':subject==='世史'?'whist':subject==='C&SD'?'csd':subject==='數學'?'math':subject==='中文'?'chi':'eng';
   const kbData=knowledgeBase[subject]||[];
   const userNotes=(getData(KEYS.notes)[kbKey])||[];
-  const pracRecords=(getData(KEYS.prac)[kbKey])||[];
+  const pracRecords=(getData(KEYS.prac)[pracKey||kbKey])||[];
 
   exportPreviewItems=[];
 
   if(source==='kb'){
-    let items=kbData.map((k,i)=>({...k,_src:'kb',_idx:i}));
+    let items=kbData.map((k,i)=>({...k,_src:'kb',_idx:i,_format:format}));
     if(filter==='dse') items=items.filter(n=>n.dse==='是'||n.dseRecord);
     if(filter==='low') items=items.filter(n=>n.prof&&parseInt(n.prof)<=2);
     items.forEach(it=>exportPreviewItems.push(it));
   } else if(source==='user'){
-    let items=userNotes.map((n,i)=>({...n,_src:'user',_idx:i}));
+    let items=userNotes.map((n,i)=>({...n,_src:'user',_idx:i,_format:format}));
     if(filter==='dse') items=items.filter(n=>n.dse==='是');
     if(filter==='low') items=items.filter(n=>n.prof&&parseInt(n.prof)<=2);
     items.forEach(it=>exportPreviewItems.push(it));
@@ -7516,7 +7556,8 @@ function showExportPreview(){
 
   // Build preview list
   const srcLabel=source==='kb'?'📚 知識庫':source==='user'?'✏️ 用戶筆記':'📋 操練記錄';
-  document.getElementById('exp-preview-info').textContent=`${subject} · ${srcLabel} · 共 ${exportPreviewItems.length} 條`;
+  const fmtLabel=format!=='all'&&source!=='prac'?` · 格式${format}`:'';
+  document.getElementById('exp-preview-info').textContent=`${subject} · ${srcLabel}${fmtLabel} · 共 ${exportPreviewItems.length} 條`;
 
   let listHtml='';
   exportPreviewItems.forEach((item,i)=>{
@@ -7524,7 +7565,7 @@ function showExportPreview(){
     const sub=item.subtopic||item.category||item.paper||'';
     let tags='';
     if(item._src==='kb'){
-      tags=subject==='中史'||subject==='世史'||subject==='C&SD'?'📚 知識庫':'';
+      tags='📚 知識庫';
       if(item.dseQ) tags+=' 🎯DSE題';
       if(item.p1) tags+=' 📐PEEL';
     } else if(item._src==='user'){
@@ -7544,7 +7585,6 @@ function showExportPreview(){
   document.getElementById('exp-preview-list').innerHTML=listHtml;
   updateExpCount();
 
-  // Listen for checkbox changes
   document.querySelectorAll('.exp-check').forEach(cb=>{
     cb.addEventListener('change',updateExpCount);
   });
@@ -7602,38 +7642,61 @@ td { padding:5pt 8pt; border-bottom:1px solid #ddd; }
 
 function renderExportItem(item,subj){
   const isKB=item._src==='kb';
+  const fmt=item._format||'all';
   const title=item.title||item.topic||'';
   const subtopic=item.subtopic||item.category||'';
-  let html=`<div class="note-card"><div class="nt-title">${isKB?'📚':'✏️'} ${title}${subtopic?' — '+subtopic:''}</div>`;
+  const fmtTag=fmt!=='all'&&isKB?` <span style="font-size:10pt;color:var(--gray-500);">[格式${fmt}]</span>`:'';
+  let html=`<div class="note-card"><div class="nt-title">${isKB?'📚':'✏️'} ${title}${subtopic?' — '+subtopic:''}${fmtTag}</div>`;
 
   // === 文科（中史/世史/C&SD）知識庫模板 ===
   if(isKB && ['中史','世史','C&SD'].includes(subj)){
-    const infoParts=[];
-    if(item.time) infoParts.push(item.time);
-    if(item.people) infoParts.push(item.people);
-    if(item.region) infoParts.push(item.region);
-    if(item.dynasty) infoParts.push(item.dynasty);
-    if(infoParts.length) html+=`<div class="nt-info">${infoParts.join(' ｜ ')}</div>`;
-    if(item.bg) html+=`<div class="nt-section"><div class="nt-label">📖 背景</div><div class="nt-content">${item.bg}</div></div>`;
-    if(item.causeP) html+=`<div class="nt-section"><div class="nt-label">🔵 原因（政治）</div><div class="nt-content">${item.causeP}</div></div>`;
-    if(item.causeE) html+=`<div class="nt-section"><div class="nt-label">🟢 原因（經濟）</div><div class="nt-content">${item.causeE}</div></div>`;
-    if(item.causeS) html+=`<div class="nt-section"><div class="nt-label">🟡 原因（社會）</div><div class="nt-content">${item.causeS}</div></div>`;
-    if(item.causeO) html+=`<div class="nt-section"><div class="nt-label">⚪ 其他原因</div><div class="nt-content">${item.causeO}</div></div>`;
-    if(item.keyCause) html+=`<div class="nt-section"><div class="nt-label">🔑 關鍵原因</div><div class="nt-content">${item.keyCause}</div></div>`;
-    if(item.process) html+=`<div class="nt-section"><div class="nt-label">📋 過程</div><div class="nt-content">${item.process}</div></div>`;
-    if(item.factDetail) html+=`<div class="nt-section"><div class="nt-label">📝 史實細節</div><div class="nt-content">${item.factDetail}</div></div>`;
-    if(item.institutionDetail) html+=`<div class="nt-section"><div class="nt-label">🏛️ 制度細節</div><div class="nt-content">${item.institutionDetail}</div></div>`;
-    if(item.turningPoint) html+=`<div class="nt-section"><div class="nt-label">🔄 轉折點</div><div class="nt-content">${item.turningPoint}</div></div>`;
-    if(item.shortImpact) html+=`<div class="nt-section"><div class="nt-label">⚡ 短期影響</div><div class="nt-content">${item.shortImpact}</div></div>`;
-    if(item.longImpact) html+=`<div class="nt-section"><div class="nt-label">📈 長期影響</div><div class="nt-content">${item.longImpact}</div></div>`;
-    if(item.posImpact) html+=`<div class="nt-section"><div class="nt-label">✅ 正面影響</div><div class="nt-content">${item.posImpact}</div></div>`;
-    if(item.negImpact) html+=`<div class="nt-section"><div class="nt-label">❌ 負面影響</div><div class="nt-content">${item.negImpact}</div></div>`;
-    if(item.evaluation) html+=`<div class="nt-section"><div class="nt-label">⚖️ 評價</div><div class="nt-content">${item.evaluation}</div></div>`;
+    const showFact=(fmt==='all'||fmt==='1'||fmt==='4');
+    const showCPI=(fmt==='all'||fmt==='2'||fmt==='4');
+    const showPEEL=(fmt==='all'||fmt==='3'||fmt==='4');
+
+    if(showFact||showCPI){
+      const infoParts=[];
+      if(item.time) infoParts.push(item.time);
+      if(item.people) infoParts.push(item.people);
+      if(item.region) infoParts.push(item.region);
+      if(item.dynasty) infoParts.push(item.dynasty);
+      if(infoParts.length) html+=`<div class="nt-info">${infoParts.join(' ｜ ')}</div>`;
+    }
+
+    // 格式① 事實型
+    if(showFact){
+      if(item.bg) html+=`<div class="nt-section"><div class="nt-label">📖 背景</div><div class="nt-content">${item.bg}</div></div>`;
+      if(item.factDetail) html+=`<div class="nt-section"><div class="nt-label">📝 史實細節</div><div class="nt-content">${item.factDetail}</div></div>`;
+      if(item.institutionDetail) html+=`<div class="nt-section"><div class="nt-label">🏛️ 制度細節</div><div class="nt-content">${item.institutionDetail}</div></div>`;
+    }
+
+    // 格式② 原因-過程-影響
+    if(showCPI){
+      if(item.causeP) html+=`<div class="nt-section"><div class="nt-label">🔵 原因（政治）</div><div class="nt-content">${item.causeP}</div></div>`;
+      if(item.causeE) html+=`<div class="nt-section"><div class="nt-label">🟢 原因（經濟）</div><div class="nt-content">${item.causeE}</div></div>`;
+      if(item.causeS) html+=`<div class="nt-section"><div class="nt-label">🟡 原因（社會）</div><div class="nt-content">${item.causeS}</div></div>`;
+      if(item.causeO) html+=`<div class="nt-section"><div class="nt-label">⚪ 其他原因</div><div class="nt-content">${item.causeO}</div></div>`;
+      if(item.keyCause) html+=`<div class="nt-section"><div class="nt-label">🔑 關鍵原因</div><div class="nt-content">${item.keyCause}</div></div>`;
+      if(item.process) html+=`<div class="nt-section"><div class="nt-label">📋 過程</div><div class="nt-content">${item.process}</div></div>`;
+      if(item.turningPoint) html+=`<div class="nt-section"><div class="nt-label">🔄 轉折點</div><div class="nt-content">${item.turningPoint}</div></div>`;
+      if(item.shortImpact) html+=`<div class="nt-section"><div class="nt-label">⚡ 短期影響</div><div class="nt-content">${item.shortImpact}</div></div>`;
+      if(item.longImpact) html+=`<div class="nt-section"><div class="nt-label">📈 長期影響</div><div class="nt-content">${item.longImpact}</div></div>`;
+      if(item.posImpact) html+=`<div class="nt-section"><div class="nt-label">✅ 正面影響</div><div class="nt-content">${item.posImpact}</div></div>`;
+      if(item.negImpact) html+=`<div class="nt-section"><div class="nt-label">❌ 負面影響</div><div class="nt-content">${item.negImpact}</div></div>`;
+    }
+
+    if(showFact||showCPI){
+      if(item.evaluation) html+=`<div class="nt-section"><div class="nt-label">⚖️ 評價</div><div class="nt-content">${item.evaluation}</div></div>`;
+    }
+
+    // DSE Questions (always shown)
     if(item.dseQ){
       const qs=item.dseQ.split('|||').map(q=>q.trim()).filter(Boolean);
       html+=`<div class="dse-questions"><div class="nt-label">🎯 DSE 常見問題</div><ol>`;qs.forEach(q=>html+=`<li>${q}</li>`);html+=`</ol></div>`;
     }
-    if(item.p1){
+
+    // 格式③ PEEL
+    if(showPEEL && item.p1){
       html+=`<div class="peel-block"><h3>📐 PEEL 答題結構</h3>`;
       html+=`<h3 style="color:#C0392B;">── 論點 1 ──</h3>`;
       if(item.p1) html+=`<div class="peel-p"><strong>P（論點）：</strong>${item.p1}</div>`;
@@ -7650,6 +7713,7 @@ function renderExportItem(item,subj){
       if(item.conclusion) html+=`<div class="peel-conc"><strong>🔑 總結立場：</strong>${item.conclusion}</div>`;
       html+=`</div>`;
     }
+
     if(item.commonMistakes) html+=`<div class="warn-box"><strong>⚠️ 常犯錯誤：</strong>${item.commonMistakes.replace(/\|\|\|/g,'；')}</div>`;
     if(item.answerTips) html+=`<div class="tip-box"><strong>💡 答題貼士：</strong>${item.answerTips.replace(/\|\|\|/g,'；')}</div>`;
     if(item.dseRecord) html+=`<div class="nt-section"><div class="nt-label">📊 DSE 出題記錄</div><div class="nt-content">${item.dseRecord}</div></div>`;
@@ -7699,8 +7763,16 @@ function renderExportItem(item,subj){
 }
 
 function doExport(){
-  const subject=document.getElementById('exp-subject').value;
   const source=document.getElementById('exp-source').value;
+  const format=document.getElementById('exp-format').value;
+
+  let subject, pracKey;
+  if(source==='prac'){
+    pracKey=document.getElementById('exp-pracsubj').value;
+    subject=pracMap[pracKey];
+  } else {
+    subject=document.getElementById('exp-subject').value;
+  }
 
   // Get selected items from checkboxes
   const selectedIdxs=[];
@@ -7711,12 +7783,12 @@ function doExport(){
 
   const selectedItems=selectedIdxs.map(i=>exportPreviewItems[i]);
   const srcLabel=source==='kb'?'知識庫':source==='user'?'用戶筆記':'操練記錄';
+  const fmtLabel=format!=='all'&&source!=='prac'?` | 格式：${format}`:'';
 
   let html=`<html><head><meta charset="UTF-8"><title>DSE筆記匯出</title><style>${expPrintCSS}</style></head><body>`;
   html+=`<h1>DSE 筆記匯出</h1>`;
-  html+=`<div class="meta">匯出日期：${new Date().toLocaleString('zh-HK')} | 科目：${subject} | 來源：${srcLabel} | 共 ${selectedItems.length} 條</div>`;
+  html+=`<div class="meta">匯出日期：${new Date().toLocaleString('zh-HK')} | 科目：${subject} | 來源：${srcLabel}${fmtLabel} | 共 ${selectedItems.length} 條</div>`;
 
-  // Separate practice records from notes
   const pracItems=selectedItems.filter(it=>it._src==='prac');
   const noteItems=selectedItems.filter(it=>it._src!=='prac');
 
@@ -7726,8 +7798,8 @@ function doExport(){
   }
 
   if(pracItems.length){
+    const isMath=pracKey==='math';
     html+=`<h2>📋 ${subject} 操練記錄</h2>`;
-    const isMath=subject==='數學';
     html+=`<table><tr>`;
     if(isMath) html+=`<th>日期</th><th>課題</th><th>卷別</th><th>來源</th><th>題號</th><th>題型</th><th>做對</th><th>錯誤類型</th><th>錯誤詳情</th><th>正確解法</th><th>覆檢</th>`;
     else html+=`<th>日期</th><th>類型</th><th>卷別</th><th>來源</th><th>題號</th><th>得分</th><th>錯誤類型</th><th>錯誤詳情</th><th>改善行動</th><th>覆檢</th>`;
