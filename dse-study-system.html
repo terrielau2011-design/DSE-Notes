@@ -651,21 +651,11 @@ tr:hover td { background:var(--gray-50); }
         </div>
         <div class="form-group">
           <label class="form-label">📂 匯出內容</label>
-          <select class="form-select" id="exp-content" onchange="toggleExpSubOptions();loadExpItems();">
+          <select class="form-select" id="exp-content" onchange="loadExpItems();">
             <option value="kb">📚 知識庫</option>
             <option value="user">✏️ 筆記</option>
             <option value="quiz">📝 小測驗</option>
             <option value="prac">📋 練習</option>
-          </select>
-        </div>
-        <div class="form-group" id="exp-format-group">
-          <label class="form-label">📋 筆記格式</label>
-          <select class="form-select" id="exp-format" onchange="loadExpItems()">
-            <option value="all">全部格式</option>
-            <option value="1">① 事實型</option>
-            <option value="2">② 原因-過程-影響</option>
-            <option value="3">③ PEEL</option>
-            <option value="4">④ 混合型</option>
           </select>
         </div>
       </div>
@@ -5808,7 +5798,7 @@ document.querySelectorAll('.nav-item').forEach(item=>{
     document.getElementById('page-'+page).classList.add('active');
     document.querySelector('.sidebar').classList.remove('open');
     if(page==='dashboard') renderDashboard();
-    if(page==='export'){ toggleExpSubOptions(); loadExpItems(); document.getElementById('export-step1').style.display='block'; document.getElementById('export-step2').style.display='none'; }
+    if(page==='export'){ loadExpItems(); document.getElementById('export-step1').style.display='block'; document.getElementById('export-step2').style.display='none'; }
     if(page.startsWith('notes-')) renderNotes(page.replace('notes-',''));
     if(page.startsWith('prac-')){ renderPrac(page.replace('prac-','')); if(page==='prac-math') renderMathStrand('all'); }
     if(page==='dse-stats') renderStats('chhist');
@@ -7474,13 +7464,6 @@ let expPreviewHTML='';
 
 function getExpSource(){return document.getElementById('exp-content').value;}
 
-function toggleExpSubOptions(){
-  const source=getExpSource();
-  const fmtGrp=document.getElementById('exp-format-group');
-  // 筆記格式只在知識庫和筆記時顯示
-  fmtGrp.style.display=(source==='kb'||source==='user')?'block':'none';
-}
-
 function navigateTo(page){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const navItem=document.querySelector(`.nav-item[data-page="${page}"]`);
@@ -7492,7 +7475,6 @@ function navigateTo(page){
   if(page==='export'){
     document.getElementById('export-step1').style.display='block';
     document.getElementById('export-step2').style.display='none';
-    toggleExpSubOptions();
     loadExpItems();
   }
 }
@@ -7508,7 +7490,6 @@ const allPracKeys=['eng','math','chi'];
 
 function loadExpItems(){
   const source=getExpSource();
-  const format=document.getElementById('exp-format').value;
   const subjVal=document.getElementById('exp-subject').value;
 
   const subjects=subjVal==='all'?allSubjects:[subjVal];
@@ -7518,7 +7499,7 @@ function loadExpItems(){
   if(source==='kb'){
     subjects.forEach(subj=>{
       const kbData=knowledgeBase[subj]||[];
-      let items=kbData.map((k,i)=>({...k,_src:'kb',_format:format,_subj:subj}));
+      let items=kbData.map((k,i)=>({...k,_src:'kb',_subj:subj}));
       items.forEach(it=>{it._idx=exportPreviewItems.length; exportPreviewItems.push(it);});
     });
   } else if(source==='user'){
@@ -7526,7 +7507,7 @@ function loadExpItems(){
     subjects.forEach(subj=>{
       const kbKey=getKbKey(subj);
       const userNotes=(notes[kbKey])||[];
-      let items=userNotes.map((n,i)=>({...n,_src:'user',_format:format,_subj:subj}));
+      let items=userNotes.map((n,i)=>({...n,_src:'user',_subj:subj}));
       items.forEach(it=>{it._idx=exportPreviewItems.length; exportPreviewItems.push(it);});
     });
   } else if(source==='quiz'){
@@ -7652,8 +7633,7 @@ function loadExpItems(){
 
   const subjLabel=subjVal==='all'?'全部科目':subjVal;
   const srcLabel=source==='kb'?'📚 知識庫':source==='user'?'✏️ 筆記':source==='quiz'?'📝 小測驗':'📋 練習';
-  const fmtLabel=format!=='all'&&(source==='kb'||source==='user')?` · 格式${format}`:'';
-  infoEl.textContent=`${subjLabel} · ${srcLabel}${fmtLabel} · 共 ${exportPreviewItems.length} 條`;
+  infoEl.textContent=`${subjLabel} · ${srcLabel} · 共 ${exportPreviewItems.length} 條`;
   toggleBtns.style.display='block';
   previewBtn.disabled=false;
 
@@ -7664,26 +7644,106 @@ function loadExpItems(){
     const title=item.title||item.topic||item.type||'';
     const sub=item.subtopic||item.category||item.paper||'';
     let tags='';
+    let fmtDesc='';
     if(item._src==='kb'){
+      // 顯示該條目有什麼格式內容
+      const fmts=[];
+      if(item.bg||item.factDetail||item.institutionDetail) fmts.push('①事實');
+      if(item.causeP||item.causeE||item.causeS||item.process||item.shortImpact||item.longImpact||item.posImpact||item.negImpact) fmts.push('②原因過程影響');
+      if(item.p1) fmts.push('③PEEL');
+      fmtDesc=fmts.join(' · ');
       tags='📚 知識庫';
       if(item.dseQ) tags+=' 🎯DSE題';
-      if(item.p1) tags+=' 📐PEEL';
     } else if(item._src==='user'){
-      tags='✏️ 用戶';
+      tags='✏️ 筆記';
       if(item.dse==='是') tags+=' 📊DSE';
     } else if(item._src==='prac'){
       tags=`📋 ${item.date||''} ${item.type||item.topic||''}`;
-    } else if(item._src==='pq'){
+    } else if(item._src==='pq'||item._src==='pq-short'||item._src==='pq-peel'){
       tags=`📝 ${item._pqType||''} ${item.qNum||''}`;
     }
     if(showSubjTag) tags=`📖 ${item._subj} `+tags;
-    listHtml+=`<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--gray-100);cursor:pointer;" class="exp-item-label">
-      <input type="checkbox" checked class="exp-check" data-exp-idx="${i}" style="width:18px;height:18px;accent-color:var(--primary);flex-shrink:0;">
-      <div style="flex:1;min-width:0;">
+    listHtml+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--gray-100);" class="exp-item-label">
+      <input type="checkbox" checked class="exp-check" data-exp-idx="${i}" style="width:18px;height:18px;accent-color:var(--primary);flex-shrink:0;cursor:pointer;">
+      <div style="flex:1;min-width:0;cursor:pointer;" onclick="this.previousElementSibling.click()">
         <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${title}${sub?' — '+sub:''}</div>
         ${tags?`<div style="font-size:11px;color:var(--gray-500);margin-top:2px;">${tags}</div>`:''}
+        ${fmtDesc?`<div style="font-size:11px;color:var(--cool-accent);margin-top:1px;">${fmtDesc}</div>`:''}
       </div>
-    </label>`;
+      <button onclick="removeExpItem(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0;" title="移除此項">✕</button>
+    </div>`;
+  });
+  listEl.innerHTML=listHtml;
+  document.querySelectorAll('.exp-check').forEach(cb=>{
+    cb.addEventListener('change',updateExpCount);
+  });
+  updateExpCount();
+}
+
+function removeExpItem(idx){
+  exportPreviewItems.splice(idx,1);
+  // 重新計算 _idx
+  exportPreviewItems.forEach((it,i)=>it._idx=i);
+  loadExpItemsFromCache();
+}
+
+function loadExpItemsFromCache(){
+  const listEl=document.getElementById('exp-item-list');
+  const infoEl=document.getElementById('exp-item-info');
+  const toggleBtns=document.getElementById('exp-toggle-btns');
+  const previewBtn=document.getElementById('exp-preview-btn');
+  const source=getExpSource();
+  const subjVal=document.getElementById('exp-subject').value;
+
+  if(!exportPreviewItems.length){
+    listEl.innerHTML='<div style="color:var(--gray-400);font-size:13px;text-align:center;padding:20px;">⚠️ 沒有符合條件的條目</div>';
+    infoEl.textContent='沒有符合條件的條目';
+    toggleBtns.style.display='none';
+    previewBtn.disabled=true;
+    updateExpCount();
+    return;
+  }
+
+  const subjLabel=subjVal==='all'?'全部科目':subjVal;
+  const srcLabel=source==='kb'?'📚 知識庫':source==='user'?'✏️ 筆記':source==='quiz'?'📝 小測驗':'📋 練習';
+  infoEl.textContent=`${subjLabel} · ${srcLabel} · 共 ${exportPreviewItems.length} 條`;
+  toggleBtns.style.display='block';
+  previewBtn.disabled=false;
+
+  const showSubjTag=subjVal==='all';
+
+  let listHtml='';
+  exportPreviewItems.forEach((item,i)=>{
+    const title=item.title||item.topic||item.type||'';
+    const sub=item.subtopic||item.category||item.paper||'';
+    let tags='';
+    let fmtDesc='';
+    if(item._src==='kb'){
+      const fmts=[];
+      if(item.bg||item.factDetail||item.institutionDetail) fmts.push('①事實');
+      if(item.causeP||item.causeE||item.causeS||item.process||item.shortImpact||item.longImpact||item.posImpact||item.negImpact) fmts.push('②原因過程影響');
+      if(item.p1) fmts.push('③PEEL');
+      fmtDesc=fmts.join(' · ');
+      tags='📚 知識庫';
+      if(item.dseQ) tags+=' 🎯DSE題';
+    } else if(item._src==='user'){
+      tags='✏️ 筆記';
+      if(item.dse==='是') tags+=' 📊DSE';
+    } else if(item._src==='prac'){
+      tags=`📋 ${item.date||''} ${item.type||item.topic||''}`;
+    } else if(item._src==='pq'||item._src==='pq-short'||item._src==='pq-peel'){
+      tags=`📝 ${item._pqType||''} ${item.qNum||''}`;
+    }
+    if(showSubjTag) tags=`📖 ${item._subj} `+tags;
+    listHtml+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--gray-100);" class="exp-item-label">
+      <input type="checkbox" checked class="exp-check" data-exp-idx="${i}" style="width:18px;height:18px;accent-color:var(--primary);flex-shrink:0;cursor:pointer;">
+      <div style="flex:1;min-width:0;cursor:pointer;" onclick="this.previousElementSibling.click()">
+        <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${title}${sub?' — '+sub:''}</div>
+        ${tags?`<div style="font-size:11px;color:var(--gray-500);margin-top:2px;">${tags}</div>`:''}
+        ${fmtDesc?`<div style="font-size:11px;color:var(--cool-accent);margin-top:1px;">${fmtDesc}</div>`:''}
+      </div>
+      <button onclick="removeExpItem(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0;" title="移除此項">✕</button>
+    </div>`;
   });
   listEl.innerHTML=listHtml;
   document.querySelectorAll('.exp-check').forEach(cb=>{
@@ -7830,7 +7890,6 @@ function renderSingleInstitution(inst){
 
 function renderExportItem(item,subj){
   const isKB=item._src==='kb';
-  const fmt=item._format||'all';
   const title=item.title||item.topic||'';
   const subtopic=item.subtopic||item.category||'';
   let html='';
@@ -7919,46 +7978,34 @@ function renderExportItem(item,subj){
   html+=`<div class="nt-title">${isKB?'📚':'✏️'} ${title}</div>`;
   if(subtopic) html+=`<div class="nt-subtitle">${subtopic}</div>`;
 
-  // 文科（中史/世史/C&SD）知識庫
+  // 文科（中史/世史/C&SD）知識庫 - 顯示所有格式
   if(isKB && ['中史','世史','C&SD'].includes(subj)){
-    const showFact=(fmt==='all'||fmt==='1'||fmt==='4');
-    const showCPI=(fmt==='all'||fmt==='2'||fmt==='4');
-    const showPEEL=(fmt==='all'||fmt==='3'||fmt==='4');
-
-    if(showFact||showCPI){
-      const infoParts=[];
-      if(item.time) infoParts.push(item.time);
-      if(item.people) infoParts.push(item.people);
-      if(item.region) infoParts.push(item.region);
-      if(item.dynasty) infoParts.push(item.dynasty);
-      if(infoParts.length) html+=`<div class="nt-info">${infoParts.join(' ｜ ')}</div>`;
-    }
+    const infoParts=[];
+    if(item.time) infoParts.push(item.time);
+    if(item.people) infoParts.push(item.people);
+    if(item.region) infoParts.push(item.region);
+    if(item.dynasty) infoParts.push(item.dynasty);
+    if(infoParts.length) html+=`<div class="nt-info">${infoParts.join(' ｜ ')}</div>`;
 
     // 格式① 事實型
-    if(showFact){
-      if(item.bg) html+=`<div class="nt-section"><div class="nt-label">📖 背景</div><div class="nt-content">${item.bg}</div></div>`;
-      if(item.factDetail) html+=`<div class="nt-section"><div class="nt-label">📝 史實細節</div><div class="nt-content">${item.factDetail}</div></div>`;
-      if(item.institutionDetail) html+=`<div class="nt-section"><div class="nt-label">🏛️ 制度細節</div><div class="nt-content">${renderInstitution(item.institutionDetail)}</div></div>`;
-    }
+    if(item.bg) html+=`<div class="nt-section"><div class="nt-label">📖 背景</div><div class="nt-content">${item.bg}</div></div>`;
+    if(item.factDetail) html+=`<div class="nt-section"><div class="nt-label">📝 史實細節</div><div class="nt-content">${item.factDetail}</div></div>`;
+    if(item.institutionDetail) html+=`<div class="nt-section"><div class="nt-label">🏛️ 制度細節</div><div class="nt-content">${renderInstitution(item.institutionDetail)}</div></div>`;
 
     // 格式② 原因-過程-影響
-    if(showCPI){
-      if(item.causeP) html+=`<div class="nt-section"><div class="nt-label">🔵 原因（政治）</div><div class="nt-content">${item.causeP}</div></div>`;
-      if(item.causeE) html+=`<div class="nt-section"><div class="nt-label">🟢 原因（經濟）</div><div class="nt-content">${item.causeE}</div></div>`;
-      if(item.causeS) html+=`<div class="nt-section"><div class="nt-label">🟡 原因（社會）</div><div class="nt-content">${item.causeS}</div></div>`;
-      if(item.causeO) html+=`<div class="nt-section"><div class="nt-label">⚪ 其他原因</div><div class="nt-content">${item.causeO}</div></div>`;
-      if(item.keyCause) html+=`<div class="nt-section"><div class="nt-label">🔑 關鍵原因</div><div class="nt-content">${item.keyCause}</div></div>`;
-      if(item.process) html+=`<div class="nt-section"><div class="nt-label">📋 過程</div><div class="nt-content">${item.process}</div></div>`;
-      if(item.turningPoint) html+=`<div class="nt-section"><div class="nt-label">🔄 轉折點</div><div class="nt-content">${item.turningPoint}</div></div>`;
-      if(item.shortImpact) html+=`<div class="nt-section"><div class="nt-label">⚡ 短期影響</div><div class="nt-content">${item.shortImpact}</div></div>`;
-      if(item.longImpact) html+=`<div class="nt-section"><div class="nt-label">📈 長期影響</div><div class="nt-content">${item.longImpact}</div></div>`;
-      if(item.posImpact) html+=`<div class="nt-section"><div class="nt-label">✅ 正面影響</div><div class="nt-content">${item.posImpact}</div></div>`;
-      if(item.negImpact) html+=`<div class="nt-section"><div class="nt-label">❌ 負面影響</div><div class="nt-content">${item.negImpact}</div></div>`;
-    }
+    if(item.causeP) html+=`<div class="nt-section"><div class="nt-label">🔵 原因（政治）</div><div class="nt-content">${item.causeP}</div></div>`;
+    if(item.causeE) html+=`<div class="nt-section"><div class="nt-label">🟢 原因（經濟）</div><div class="nt-content">${item.causeE}</div></div>`;
+    if(item.causeS) html+=`<div class="nt-section"><div class="nt-label">🟡 原因（社會）</div><div class="nt-content">${item.causeS}</div></div>`;
+    if(item.causeO) html+=`<div class="nt-section"><div class="nt-label">⚪ 其他原因</div><div class="nt-content">${item.causeO}</div></div>`;
+    if(item.keyCause) html+=`<div class="nt-section"><div class="nt-label">🔑 關鍵原因</div><div class="nt-content">${item.keyCause}</div></div>`;
+    if(item.process) html+=`<div class="nt-section"><div class="nt-label">📋 過程</div><div class="nt-content">${item.process}</div></div>`;
+    if(item.turningPoint) html+=`<div class="nt-section"><div class="nt-label">🔄 轉折點</div><div class="nt-content">${item.turningPoint}</div></div>`;
+    if(item.shortImpact) html+=`<div class="nt-section"><div class="nt-label">⚡ 短期影響</div><div class="nt-content">${item.shortImpact}</div></div>`;
+    if(item.longImpact) html+=`<div class="nt-section"><div class="nt-label">📈 長期影響</div><div class="nt-content">${item.longImpact}</div></div>`;
+    if(item.posImpact) html+=`<div class="nt-section"><div class="nt-label">✅ 正面影響</div><div class="nt-content">${item.posImpact}</div></div>`;
+    if(item.negImpact) html+=`<div class="nt-section"><div class="nt-label">❌ 負面影響</div><div class="nt-content">${item.negImpact}</div></div>`;
 
-    if(showFact||showCPI){
-      if(item.evaluation) html+=`<div class="nt-section"><div class="nt-label">⚖️ 評價</div><div class="nt-content">${item.evaluation}</div></div>`;
-    }
+    if(item.evaluation) html+=`<div class="nt-section"><div class="nt-label">⚖️ 評價</div><div class="nt-content">${item.evaluation}</div></div>`;
 
     // DSE Questions
     if(item.dseQ){
@@ -7966,8 +8013,8 @@ function renderExportItem(item,subj){
       html+=`<div class="dse-questions"><div class="nt-label">🎯 DSE 常見問題</div><ol>`;qs.forEach(q=>html+=`<li>${q}</li>`);html+=`</ol></div>`;
     }
 
-    // 格式③ PEEL
-    if(showPEEL && item.p1){
+    // PEEL 答題結構
+    if(item.p1){
       html+=`<div class="peel-block"><h3>📐 PEEL 答題結構</h3>`;
       html+=`<h3 style="color:#C0392B;">── 論點 1 ──</h3>`;
       if(item.p1) html+=`<div class="peel-p"><strong>P（論點）：</strong>${item.p1}</div>`;
@@ -8033,17 +8080,15 @@ function showExportPreview(){
   if(!selectedIdxs.length){alert('⚠️ 請至少選擇一條條目');return;}
 
   const source=getExpSource();
-  const format=document.getElementById('exp-format').value;
   const subjVal=document.getElementById('exp-subject').value;
 
   const selectedItems=selectedIdxs.map(i=>exportPreviewItems[i]);
   const srcLabel=source==='kb'?'知識庫':source==='user'?'筆記':source==='quiz'?'小測驗':'練習';
-  const fmtLabel=format!=='all'&&(source==='kb'||source==='user')?` | 格式：${format}`:'';
   const subjLabel=subjVal==='all'?'全部科目':subjVal;
 
   // Build preview HTML — group by subject
   let html=`<h1 style="color:#1B3A5C;text-align:center;border-bottom:3px solid #1B3A5C;padding-bottom:8pt;font-size:18pt;margin-bottom:6pt;">DSE 匯出列印</h1>`;
-  html+=`<div style="font-size:10pt;color:#888;text-align:center;margin-bottom:12pt;">匯出日期：${new Date().toLocaleString('zh-HK')} | 科目：${subjLabel} | 來源：${srcLabel}${fmtLabel} | 共 ${selectedItems.length} 條</div>`;
+  html+=`<div style="font-size:10pt;color:#888;text-align:center;margin-bottom:12pt;">匯出日期：${new Date().toLocaleString('zh-HK')} | 科目：${subjLabel} | 來源：${srcLabel} | 共 ${selectedItems.length} 條</div>`;
 
   // Group items by subject
   const subjGroups={};
@@ -8084,8 +8129,7 @@ function showExportPreview(){
   expPreviewHTML=html;
 
   // Update preview info
-  const fmtLabel2=format!=='all'&&(source==='kb'||source==='user')?' · 格式'+format:'';
-  document.getElementById('exp-preview-info').textContent=`${subjLabel} · ${srcLabel}${fmtLabel2} · 已選 ${selectedItems.length} 條`;
+  document.getElementById('exp-preview-info').textContent=`${subjLabel} · ${srcLabel} · 已選 ${selectedItems.length} 條`;
 
   document.getElementById('exp-preview-content').innerHTML=html;
 
