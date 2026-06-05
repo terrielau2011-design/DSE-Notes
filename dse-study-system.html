@@ -677,8 +677,8 @@ tr:hover td { background:var(--gray-50); }
           <button class="btn btn-sm btn-outline" onclick="toggleAllExport(false)">⬜ 全不選</button>
         </div>
       </div>
-      <div id="exp-item-list" style="max-height:42vh;overflow-y:auto;border:1px solid var(--gray-200);border-radius:8px;padding:4px;min-height:60px;display:flex;align-items:center;justify-content:center;">
-        <span style="color:var(--gray-400);font-size:13px;">載入中...</span>
+      <div id="exp-item-list" style="max-height:42vh;overflow-y:auto;border:1px solid var(--gray-200);border-radius:8px;padding:4px;min-height:60px;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;">
+        <span style="color:var(--gray-400);font-size:13px;text-align:center;padding:20px;">載入中...</span>
       </div>
       <div style="margin-top:14px;display:flex;justify-content:center;gap:16px;align-items:center;">
         <span id="exp-selected-count" style="font-size:13px;color:var(--gray-500);"></span>
@@ -7642,7 +7642,7 @@ function loadExpItems(){
   const previewBtn=document.getElementById('exp-preview-btn');
 
   if(!exportPreviewItems.length){
-    listEl.innerHTML='<span style="color:var(--gray-400);font-size:13px;">⚠️ 沒有符合條件的條目</span>';
+    listEl.innerHTML='<div style="color:var(--gray-400);font-size:13px;text-align:center;padding:20px;">⚠️ 沒有符合條件的條目</div>';
     infoEl.textContent='沒有符合條件的條目';
     toggleBtns.style.display='none';
     previewBtn.disabled=true;
