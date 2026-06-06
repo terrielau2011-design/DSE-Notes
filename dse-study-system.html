@@ -704,8 +704,6 @@ tr:hover td { background:var(--gray-50); }
   <div class="modal" style="max-width:460px;">
     <div class="modal-header"><h2>📤 分享檔案</h2><button class="modal-close" onclick="closeModal('share-modal')">✕</button></div>
     <div style="padding:10px 0;">
-      <div style="font-size:13px;color:var(--gray-500);margin-bottom:10px;">選擇檔案格式和分享平台</div>
-
       <!-- 檔案格式選擇 -->
       <div style="margin-bottom:14px;">
         <div style="font-size:12px;font-weight:600;color:var(--gray-700);margin-bottom:6px;">檔案格式：</div>
@@ -719,29 +717,36 @@ tr:hover td { background:var(--gray-50); }
         </div>
       </div>
 
-      <!-- 分享平台按鈕 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
-        <button class="btn" style="background:#25D366;color:#fff;justify-content:center;padding:14px;" onclick="shareFile('whatsapp')">
-          <span style="font-size:18px;margin-right:4px;">💬</span> WhatsApp
-        </button>
-        <button class="btn" style="background:#07C160;color:#fff;justify-content:center;padding:14px;" onclick="shareFile('wechat')">
-          <span style="font-size:18px;margin-right:4px;">💚</span> WeChat
-        </button>
-        <button class="btn" style="background:#EA4335;color:#fff;justify-content:center;padding:14px;" onclick="shareFile('email')">
-          <span style="font-size:18px;margin-right:4px;">📧</span> Email
-        </button>
-        <button class="btn" style="background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:#fff;justify-content:center;padding:14px;" onclick="shareFile('ig')">
-          <span style="font-size:18px;margin-right:4px;">📸</span> Instagram
+      <!-- 預覽區 -->
+      <div id="share-preview" style="border:1px solid var(--gray-200);border-radius:8px;padding:12px;max-height:200px;overflow-y:auto;background:#fff;margin-bottom:14px;font-size:12px;line-height:1.6;color:var(--gray-700);"></div>
+
+      <!-- 電腦場景 -->
+      <div id="share-desktop-section">
+        <div style="font-size:12px;color:var(--gray-500);margin-bottom:10px;">💻 下載檔案到電腦，再自行傳送給他人</div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:14px;" onclick="shareDownload()">
+          💾 下載檔案
         </button>
       </div>
 
-      <!-- 其他方式 -->
-      <div style="border-top:1px solid var(--gray-200);padding-top:12px;display:flex;flex-direction:column;gap:8px;">
-        <button class="btn btn-primary" style="justify-content:center;padding:10px;" onclick="shareFile('system')">
-          📱 系統分享（手機推薦，可直接傳檔）
-        </button>
-        <button class="btn btn-outline" style="justify-content:center;padding:10px;" onclick="shareFile('download')">
-          💾 先下載檔案，再自行傳送
+      <!-- 手機場景 -->
+      <div id="share-mobile-section" style="display:none;">
+        <div style="font-size:12px;color:var(--gray-500);margin-bottom:10px;">📱 選擇分享到哪個平台</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+          <button class="btn" style="background:#25D366;color:#fff;justify-content:center;padding:12px;" onclick="shareMobile('whatsapp')">
+            💬 WhatsApp
+          </button>
+          <button class="btn" style="background:#07C160;color:#fff;justify-content:center;padding:12px;" onclick="shareMobile('wechat')">
+            💚 WeChat
+          </button>
+          <button class="btn" style="background:#EA4335;color:#fff;justify-content:center;padding:12px;" onclick="shareMobile('email')">
+            📧 Email
+          </button>
+          <button class="btn" style="background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:#fff;justify-content:center;padding:12px;" onclick="shareMobile('ig')">
+            📸 Instagram
+          </button>
+        </div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px;" onclick="shareMobile('system')">
+          📱 更多分享選項
         </button>
       </div>
 
@@ -8483,6 +8488,8 @@ function doExportFile(){
 }
 
 // ===== SHARE FUNCTIONS =====
+const isMobile=/Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
 function getShareSubject(){
   const subjVal=document.getElementById('exp-subject').value;
   const source=getExpSource();
@@ -8505,132 +8512,109 @@ function showShareStatus(msg){
   setTimeout(()=>{if(el) el.textContent='';},4000);
 }
 
-function openShareModal(){
-  document.getElementById('share-status').textContent='';
-  document.getElementById('share-modal').classList.add('show');
+function getShareFmt(){
+  const checked=document.querySelector('input[name="share-fmt"]:checked');
+  return checked?checked.value:'word';
 }
 
-// 生成 Word 檔案 Blob
+// 生成 Word Blob
 function generateWordBlob(){
   if(!expPreviewHTML) return null;
   const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><title>DSE匯出列印</title><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]--><style>${expPrintCSS}</style></head><body>${expPreviewHTML}</body></html>`;
   return new Blob(['\ufeff'+html],{type:'application/msword'});
 }
 
-// 生成 PDF（用列印方式，無法直接生成 Blob，改用 HTML Blob）
-function generatePDFBlob(){
-  if(!expPreviewHTML) return null;
-  const html=`<html><head><meta charset="UTF-8"><title>DSE匯出列印</title><style>${expPrintCSS}</style></head><body>${expPreviewHTML}</body></html>`;
-  return new Blob([html],{type:'text/html'});
-}
-
-// 取得所選格式
-function getShareFmt(){
-  const checked=document.querySelector('input[name="share-fmt"]:checked');
-  return checked?checked.value:'word';
-}
-
-// 生成對應格式的 File 物件
+// 生成 File 物件（用於 Web Share API）
 function generateShareFile(){
   const fmt=getShareFmt();
-  if(fmt==='pdf'){
-    const blob=generatePDFBlob();
-    if(!blob) return null;
-    return new File([blob], getShareFileName('html'), {type:'text/html'});
+  const blob=fmt==='pdf'?new Blob([expPreviewHTML],{type:'text/html'}):generateWordBlob();
+  if(!blob) return null;
+  const ext=fmt==='pdf'?'html':'doc';
+  return new File([blob],getShareFileName(ext),{type:blob.type});
+}
+
+function openShareModal(){
+  if(!expPreviewHTML){alert('⚠️ 沒有可分享的內容');return;}
+  document.getElementById('share-status').textContent='';
+  // 顯示預覽
+  document.getElementById('share-preview').innerHTML=expPreviewHTML;
+  // 根據裝置顯示不同區塊
+  if(isMobile){
+    document.getElementById('share-desktop-section').style.display='none';
+    document.getElementById('share-mobile-section').style.display='block';
   } else {
-    const blob=generateWordBlob();
-    if(!blob) return null;
-    return new File([blob], getShareFileName('doc'), {type:'application/msword'});
+    document.getElementById('share-desktop-section').style.display='block';
+    document.getElementById('share-mobile-section').style.display='none';
   }
+  document.getElementById('share-modal').classList.add('show');
 }
 
-// 統一分享入口
-function shareFile(platform){
-  if(!expPreviewHTML){showShareStatus('⚠️ 沒有可分享的內容');return;}
-  const fmt=getShareFmt();
-  const subject=getShareSubject();
-
-  // 手機優先：Web Share API 支援分享檔案
-  if(navigator.share && navigator.canShare && platform!=='download'){
-    const file=generateShareFile();
-    if(file){
-      const shareData={title:subject, files:[file]};
-      if(navigator.canShare(shareData)){
-        navigator.share(shareData).then(()=>{
-          showShareStatus('✅ 分享成功！');
-        }).catch(err=>{
-          if(err.name==='AbortError') return;
-          // 如果系統分享失敗，fallback 到下載
-          showShareStatus('⚠️ 系統分享不支援，已改為下載檔案');
-          downloadShareFile();
-        });
-        return;
-      }
-    }
-  }
-
-  // Desktop 或不支援 Web Share API 的情況
-  switch(platform){
-    case 'whatsapp':
-      downloadShareFile();
-      showShareStatus('✅ 檔案已下載！請在 WhatsApp 附件中選擇此檔案傳送');
-      break;
-    case 'wechat':
-      downloadShareFile();
-      showShareStatus('✅ 檔案已下載！請在 WeChat 中傳送此檔案');
-      break;
-    case 'email':
-      downloadShareFile();
-      // 嘗試開啟郵件應用
-      try{
-        const mailUrl=`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent('請查看附件中的 DSE 筆記檔案')}`;
-        window.open(mailUrl,'_blank');
-        showShareStatus('✅ 檔案已下載！請在郵件中添加附件傳送');
-      }catch(e){
-        showShareStatus('✅ 檔案已下載！請在郵件中添加附件傳送');
-      }
-      break;
-    case 'ig':
-      downloadShareFile();
-      showShareStatus('✅ 檔案已下載！IG 不支援直接傳檔，建議截圖分享');
-      break;
-    case 'system':
-      downloadShareFile();
-      showShareStatus('⚠️ 此瀏覽器不支援系統分享，已改為下載檔案');
-      break;
-    case 'download':
-      downloadShareFile();
-      showShareStatus('✅ 檔案已下載！可自行傳送給別人');
-      break;
-  }
-}
-
-// 下載檔案
-function downloadShareFile(){
+// === 電腦場景：下載檔案 ===
+function shareDownload(){
   const fmt=getShareFmt();
   if(fmt==='pdf'){
-    // PDF 模式：開啟列印視窗讓用戶另存為 PDF
+    // PDF：開啟列印視窗讓用戶另存為 PDF
     const html=`<html><head><meta charset="UTF-8"><title>DSE匯出列印</title><style>${expPrintCSS}</style></head><body>${expPreviewHTML}</body></html>`;
     const w=window.open('','_blank','width=900,height=700');
-    if(w){
-      w.document.write(html);
-      w.document.close();
-      setTimeout(()=>{try{w.print();}catch(e){}},800);
-    }
-    showShareStatus('✅ 已開啟列印視窗，選擇「另存為 PDF」即可');
+    if(w){w.document.write(html);w.document.close();setTimeout(()=>{try{w.print();}catch(e){}},800);}
+    showShareStatus('✅ 已開啟預覽，選擇「另存為 PDF」即可下載');
   } else {
-    // Word 模式：直接下載 .doc 檔案
+    // Word：直接下載 .doc
     const blob=generateWordBlob();
     if(!blob){showShareStatus('⚠️ 生成檔案失敗');return;}
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
-    a.href=url;
-    a.download=getShareFileName('doc');
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    a.href=url; a.download=getShareFileName('doc');
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(()=>URL.revokeObjectURL(url),1000);
+    showShareStatus('✅ Word 檔案已下載！');
   }
+}
+
+// === 手機場景：用 Web Share API 分享檔案 ===
+function shareMobile(platform){
+  if(!expPreviewHTML){showShareStatus('⚠️ 沒有可分享的內容');return;}
+  const subject=getShareSubject();
+
+  // 嘗試用 Web Share API 分享檔案
+  if(navigator.share){
+    const file=generateShareFile();
+    if(file){
+      const shareData={title:subject,text:subject,files:[file]};
+      // 檢查是否支援檔案分享
+      if(navigator.canShare && navigator.canShare(shareData)){
+        navigator.share(shareData).then(()=>{
+          showShareStatus('✅ 分享成功！');
+        }).catch(err=>{
+          if(err.name==='AbortError'){showShareStatus('');return;}
+          // 不支援檔案分享，fallback 到不帶檔案的分享
+          fallbackShareNoFile(platform,subject);
+        });
+        return;
+      }
+    }
+    // 不支援檔案分享，嘗試不帶檔案
+    fallbackShareNoFile(platform,subject);
+    return;
+  }
+
+  // 完全不支援 Web Share API，fallback 到下載
+  showShareStatus('⚠️ 此瀏覽器不支援直接分享，已下載檔案');
+  shareDownload();
+}
+
+// 不支援檔案分享時的 fallback
+function fallbackShareNoFile(platform,subject){
+  // 只能下載檔案，再提示用戶去哪裡傳送
+  shareDownload();
+  const tips={
+    'whatsapp':'請在 WhatsApp 附件中選擇下載的檔案傳送',
+    'wechat':'請在 WeChat 中選擇下載的檔案傳送',
+    'email':'請在郵件中添加下載的檔案作為附件',
+    'ig':'IG 不支援直接傳檔，建議截圖分享',
+    'system':'請在其他應用中選擇下載的檔案傳送'
+  };
+  showShareStatus('📁 檔案已下載！'+(tips[platform]||''));
 }
 
 // 格式選擇高亮效果
@@ -8638,6 +8622,9 @@ document.querySelectorAll('input[name="share-fmt"]').forEach(radio=>{
   radio.addEventListener('change',()=>{
     document.getElementById('share-fmt-word').style.borderColor=radio.value==='word'?'var(--primary)':'var(--gray-300)';
     document.getElementById('share-fmt-pdf').style.borderColor=radio.value==='pdf'?'var(--primary)':'var(--gray-300)';
+    // 更新預覽
+    const preview=document.getElementById('share-preview');
+    if(preview && expPreviewHTML) preview.innerHTML=expPreviewHTML;
   });
 });
 // 初始化高亮
