@@ -761,6 +761,7 @@ tr:hover td { background:var(--gray-50); }
       <div id="sync-status" style="font-size:13px;color:var(--gray-500);">
         <div>尚未連接雲端</div>
       </div>
+      <button class="btn btn-sm btn-outline" style="margin-top:10px;" onclick="debugLocalData()">🔍 查看本機數據</button>
     </div>
 
     <!-- 推送程式更新 -->
@@ -8775,6 +8776,39 @@ function toggleAutoSync(){
   updateSyncStatus();
 }
 
+// 除錯：查看本機 localStorage 數據
+function debugLocalData(){
+  const notes=getData(KEYS.notes);
+  const prac=getData(KEYS.prac);
+  const subjNames={'chhist':'中史','whist':'世史','csd':'C&SD'};
+  let msg='📊 本機 localStorage 數據\n\n';
+  msg+='=== 筆記 ===\n';
+  if(Object.keys(notes).length===0){
+    msg+='（空白，沒有任何筆記數據）\n';
+  }else{
+    Object.keys(notes).forEach(k=>{
+      const items=notes[k]||[];
+      msg+=`${subjNames[k]||k}：${items.length} 條\n`;
+      items.forEach((n,i)=>{
+        msg+=`  ${i+1}. ${n.topic||n.id||'?'} ${n.fmtLabel||''}\n`;
+      });
+    });
+  }
+  msg+='\n=== 操練 ===\n';
+  if(Object.keys(prac).length===0){
+    msg+='（空白）\n';
+  }else{
+    Object.keys(prac).forEach(k=>{
+      const items=prac[k]||[];
+      msg+=`${subjNames[k]||k}：${items.length} 條\n`;
+    });
+  }
+  msg+='\n=== 其他 ===\n';
+  msg+=`Token：${getSyncToken()?'已設定':'未設定'}\n`;
+  msg+=`Gist ID：${getGistId()||'無'}\n`;
+  alert(msg);
+}
+
 // 上傳本機資料到 Gist
 async function syncUpload(){
   const token=getSyncToken();
@@ -8894,15 +8928,26 @@ async function syncDownload(){
 
     btn.disabled=false; btn.textContent='⬇️ 從雲端下載';
 
-    const noteCount=Object.values(mergedNotes).reduce((s,a)=>s+a.length,0);
-    const pracCount=Object.values(mergedPrac).reduce((s,a)=>s+a.length,0);
-    alert(`✅ 下載並合併成功！\n\n📝 筆記：${noteCount} 條\n✏️ 操練：${pracCount} 條\n📅 雲端上傳時間：${cloudData.uploadTime||'未知'}\n📱 來源裝置：${cloudData.device||'未知'}`);
+    // 詳細合併報告
+    let report='✅ 下載並合併成功！\n\n';
+    const subjNames={'chhist':'中史','whist':'世史','csd':'C&SD'};
+    Object.keys(mergedNotes).forEach(k=>{
+      const localN=(localNotes[k]||[]).length;
+      const cloudN=(cloudNotes[k]||[]).length;
+      const mergedN=mergedNotes[k].length;
+      report+=`📝 ${subjNames[k]||k}：本機${localN}條 + 雲端${cloudN}條 → 合併${mergedN}條\n`;
+    });
+    report+=`\n📅 雲端上傳時間：${cloudData.uploadTime||'未知'}`;
+    report+=`\n📱 來源裝置：${cloudData.device||'未知'}`;
+    alert(report);
     // 刷新所有頁面
     renderDashboard();
     renderNotes('chhist');
     renderNotes('whist');
     renderNotes('csd');
     updateSyncStatus();
+    // 自動跳轉到中史筆記頁面，讓用戶立即看到結果
+    navigateTo('notes-chhist');
   }catch(err){
     btn.disabled=false; btn.textContent='⬇️ 從雲端下載';
     alert('❌ 下載失敗：'+err.message);
