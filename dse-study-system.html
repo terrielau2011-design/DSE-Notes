@@ -5866,17 +5866,8 @@ function renderNotes(key){
     const prof=n.prof?parseInt(n.prof):0;
     const dots=[1,2,3,4,5].map(i=>`<span class="prof-dot ${i<=prof?(i<=2?'warn':'filled'):''}"></span>`).join('');
 
-    // 格式描述
-    let fmtDesc='';
-    if(n.kbData){
-      const fmts=[];
-      if(n.kbData.bg||n.kbData.factDetail||n.kbData.institutionDetail) fmts.push('①事實');
-      if(n.kbData.causeP||n.kbData.causeE||n.kbData.causeS||n.kbData.process||n.kbData.shortImpact||n.kbData.longImpact||n.kbData.posImpact||n.kbData.negImpact) fmts.push('②原因過程影響');
-      if(n.kbData.p1) fmts.push('③PEEL');
-      fmtDesc=fmts.join(' · ');
-    } else if(n.fmtLabel){
-      fmtDesc=n.fmtLabel;
-    }
+    // 格式描述 — 直接用儲存時的格式標記
+    let fmtDesc=n.fmtLabel||'';
 
     const noteId=`note-detail-${key}-${idx}`;
     return `<div class="note-item" style="cursor:pointer;" onclick="document.getElementById('${noteId}').classList.toggle('collapsed')">
@@ -7766,16 +7757,8 @@ function loadExpItems(){
     } else if(item._src==='user'){
       tags='✏️ 筆記';
       if(item.dse==='是') tags+=' 📊DSE';
-      // 顯示格式描述
-      if(item.kbData){
-        const ufmts=[];
-        if(item.kbData.bg||item.kbData.factDetail||item.kbData.institutionDetail) ufmts.push('①事實');
-        if(item.kbData.causeP||item.kbData.causeE||item.kbData.causeS||item.kbData.process||item.kbData.shortImpact||item.kbData.longImpact||item.kbData.posImpact||item.kbData.negImpact) ufmts.push('②原因過程影響');
-        if(item.kbData.p1) ufmts.push('③PEEL');
-        fmtDesc=ufmts.join(' · ');
-      } else if(item.fmtLabel){
-        fmtDesc=item.fmtLabel;
-      }
+      // 直接用儲存時的格式標記，不從kbData推斷
+      if(item.fmtLabel) fmtDesc=item.fmtLabel;
     } else if(item._src==='quiz-group'||item._src==='prac-group'){
       tags=`📝 ${item._pqType||''} · ${item.qCount||0}題`;
     } else if(item._src==='prac'){
@@ -7783,7 +7766,7 @@ function loadExpItems(){
     }
     if(showSubjTag) tags=`📖 ${item._subj} `+tags;
     listHtml+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--gray-100);" class="exp-item-label">
-      <input type="checkbox" checked class="exp-check" data-exp-idx="${i}" style="width:18px;height:18px;accent-color:var(--primary);flex-shrink:0;cursor:pointer;">
+      <input type="checkbox" class="exp-check" data-exp-idx="${i}" style="width:18px;height:18px;accent-color:var(--primary);flex-shrink:0;cursor:pointer;">
       <div style="flex:1;min-width:0;cursor:pointer;" onclick="this.previousElementSibling.click()">
         <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${title}${sub?' — '+sub:''}</div>
         ${tags?`<div style="font-size:11px;color:var(--gray-500);margin-top:2px;">${tags}</div>`:''}
@@ -7848,16 +7831,8 @@ function loadExpItemsFromCache(){
     } else if(item._src==='user'){
       tags='✏️ 筆記';
       if(item.dse==='是') tags+=' 📊DSE';
-      // 顯示格式描述
-      if(item.kbData){
-        const ufmts=[];
-        if(item.kbData.bg||item.kbData.factDetail||item.kbData.institutionDetail) ufmts.push('①事實');
-        if(item.kbData.causeP||item.kbData.causeE||item.kbData.causeS||item.kbData.process||item.kbData.shortImpact||item.kbData.longImpact||item.kbData.posImpact||item.kbData.negImpact) ufmts.push('②原因過程影響');
-        if(item.kbData.p1) ufmts.push('③PEEL');
-        fmtDesc=ufmts.join(' · ');
-      } else if(item.fmtLabel){
-        fmtDesc=item.fmtLabel;
-      }
+      // 直接用儲存時的格式標記，不從kbData推斷
+      if(item.fmtLabel) fmtDesc=item.fmtLabel;
     } else if(item._src==='quiz-group'||item._src==='prac-group'){
       tags=`📝 ${item._pqType||''} · ${item.qCount||0}題`;
     } else if(item._src==='prac'){
@@ -7865,7 +7840,7 @@ function loadExpItemsFromCache(){
     }
     if(showSubjTag) tags=`📖 ${item._subj} `+tags;
     listHtml+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--gray-100);" class="exp-item-label">
-      <input type="checkbox" checked class="exp-check" data-exp-idx="${i}" style="width:18px;height:18px;accent-color:var(--primary);flex-shrink:0;cursor:pointer;">
+      <input type="checkbox" class="exp-check" data-exp-idx="${i}" style="width:18px;height:18px;accent-color:var(--primary);flex-shrink:0;cursor:pointer;">
       <div style="flex:1;min-width:0;cursor:pointer;" onclick="this.previousElementSibling.click()">
         <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${title}${sub?' — '+sub:''}</div>
         ${tags?`<div style="font-size:11px;color:var(--gray-500);margin-top:2px;">${tags}</div>`:''}
@@ -8028,15 +8003,12 @@ function renderExportItem(item,subj){
     // 如果有知識庫結構化資料，用知識庫格式渲染
     if(item.kbData && ['中史','世史','C&SD'].includes(subj)){
       const kb=item.kbData;
-      const fmts=[];
-      if(kb.bg||kb.factDetail||kb.institutionDetail) fmts.push('①事實');
-      if(kb.causeP||kb.causeE||kb.causeS||kb.process||kb.shortImpact||kb.longImpact||kb.posImpact||kb.negImpact) fmts.push('②原因過程影響');
-      if(kb.p1) fmts.push('③PEEL');
-      const fmtStr=fmts.length?` <span style="font-size:10pt;color:var(--cool-accent);font-weight:400;">${fmts.join(' · ')}</span>`:'';
-      const fmtLabel=item.fmtLabel?` <span style="font-size:10pt;color:var(--warm-accent);font-weight:400;">[${item.fmtLabel}]</span>`:'';
+      // 格式描述：用儲存時的格式標記，不從kbData推斷
+      const fmtDesc=item.fmtLabel||'';
+      const fmtStr=fmtDesc?` <span style="font-size:10pt;color:var(--cool-accent);font-weight:400;">${fmtDesc}</span>`:'';
 
       html+=`<div class="note-card">`;
-      html+=`<div class="nt-title">✏️ ${title}${fmtStr}${fmtLabel}</div>`;
+      html+=`<div class="nt-title">✏️ ${title}${fmtStr}</div>`;
       if(subtopic) html+=`<div class="nt-subtitle">${subtopic}</div>`;
 
       // 信息行
