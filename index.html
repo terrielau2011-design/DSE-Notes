@@ -330,6 +330,7 @@ tr:hover td { background:var(--gray-50); }
 @keyframes bubbleIn{from{opacity:0;transform:translateY(10px) scale(0.9);}to{opacity:1;transform:translateY(0) scale(1);}}
 @keyframes jiwoongBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
 #jiwoong-avatar.bounce{animation:jiwoongBounce 0.5s ease 2;}
+.jiwoong-page-header img{object-fit:cover;object-position:center 20%;}
 </style>
 </head>
 <body>
@@ -909,25 +910,27 @@ tr:hover td { background:var(--gray-50); }
   </div>
 </div>
 
-<!-- ============ 金地雄鼓勵夥伴 ============ -->
+<!-- ============ ZB1 鼓勵夥伴 ============ -->
 <div id="jiwoong-companion" style="position:fixed;bottom:80px;left:20px;z-index:9997;touch-action:none;">
   <!-- 大頭像按鈕（可拖動） -->
   <div id="jiwoong-avatar" onclick="jiwoongClick()" style="width:80px;height:80px;border-radius:50%;overflow:hidden;cursor:grab;box-shadow:0 6px 20px rgba(0,0,0,0.25);border:3px solid #4CAF50;transition:transform 0.3s,box-shadow 0.3s;position:relative;" onmouseover="this.style.transform='scale(1.1)';this.style.boxShadow='0 8px 24px rgba(76,175,80,0.4)'" onmouseout="if(!jiwoongDragging){this.style.transform='scale(1)';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.25)'}">
-    <img src="https://i.imgur.com/CbHvdPq.jpeg" style="width:100%;height:100%;object-fit:cover;" alt="ZB1">
+    <img src="https://i.imgur.com/CbHvdPq.jpeg" style="width:100%;height:100%;object-fit:cover;object-position:center 20%;" alt="ZB1">
     <div style="position:absolute;bottom:2px;right:2px;background:#4CAF50;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;display:flex;align-items:center;justify-content:center;">💚</div>
   </div>
   <!-- 對話泡泡 -->
-  <div id="jiwoong-bubble" style="display:none;position:absolute;bottom:90px;left:0;background:#fff;border-radius:16px 16px 16px 4px;padding:14px 16px;max-width:260px;box-shadow:0 4px 16px rgba(0,0,0,0.15);font-size:13px;line-height:1.6;color:var(--gray-800);border:1px solid #E8F5E9;animation:bubbleIn 0.3s ease;">
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
-      <img src="https://i.imgur.com/CbHvdPq.jpeg" style="width:24px;height:24px;border-radius:50%;object-fit:cover;">
-      <span style="font-size:11px;font-weight:600;color:#4CAF50;">ZB1 💚</span>
+  <div id="jiwoong-bubble" style="display:none;position:absolute;bottom:90px;left:0;background:#fff;border-radius:16px 16px 16px 4px;padding:14px 16px;max-width:320px;box-shadow:0 4px 16px rgba(0,0,0,0.15);font-size:13px;line-height:1.6;color:var(--gray-800);border:1px solid #E8F5E9;animation:bubbleIn 0.3s ease;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+      <div style="width:80px;height:80px;border-radius:50%;overflow:hidden;border:3px solid #4CAF50;flex-shrink:0;box-shadow:0 4px 12px rgba(76,175,80,0.3);">
+        <img id="jiwoong-bubble-img" src="https://i.imgur.com/CbHvdPq.jpeg" style="width:100%;height:100%;object-fit:cover;object-position:center 20%;">
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:#4CAF50;margin-bottom:4px;">ZB1 💚</div>
+        <div id="jiwoong-msg"></div>
+        <div id="jiwoong-msg-kr" style="font-size:11px;color:#78909C;margin-top:4px;font-style:italic;"></div>
+      </div>
     </div>
-    <div id="jiwoong-msg" style="margin-bottom:6px;"></div>
-    <div id="jiwoong-msg-kr" style="font-size:11px;color:#78909C;margin-bottom:8px;font-style:italic;"></div>
     <div style="display:flex;gap:6px;justify-content:flex-end;">
-      <button onclick="jiwoongSpeak()" style="background:none;border:1px solid #4CAF50;color:#4CAF50;border-radius:12px;padding:2px 10px;cursor:pointer;font-size:11px;">🔊 韓語</button>
-      <button onclick="jiwoongSpeakZh()" style="background:none;border:1px solid var(--primary);color:var(--primary);border-radius:12px;padding:2px 10px;cursor:pointer;font-size:11px;">🔊 粵語</button>
-      <button onclick="jiwoongClose()" style="background:none;border:1px solid var(--gray-300);color:var(--gray-500);border-radius:12px;padding:2px 10px;cursor:pointer;font-size:11px;">✕</button>
+      <button onclick="jiwoongClose()" style="background:none;border:1px solid var(--gray-300);color:var(--gray-500);border-radius:12px;padding:2px 10px;cursor:pointer;font-size:11px;">✕ 關閉</button>
     </div>
   </div>
 </div>
@@ -9363,10 +9366,10 @@ function jiwoongClick(){
   document.getElementById('jiwoong-msg-kr').textContent=msg.kr;
   document.getElementById('jiwoong-bubble').style.display='block';
 
-  // 每次點擊隨機換浮動頭像
+  // 每次點擊隨機換浮動頭像和泡泡頭像
   const photo=zb1RandomPhoto();
   document.querySelector('#jiwoong-avatar img').src=photo;
-  document.querySelector('#jiwoong-bubble img').src=photo;
+  document.getElementById('jiwoong-bubble-img').src=photo;
 
   // 彈跳動畫
   const avatar=document.getElementById('jiwoong-avatar');
@@ -9377,51 +9380,6 @@ function jiwoongClick(){
 
 function jiwoongClose(){
   document.getElementById('jiwoong-bubble').style.display='none';
-}
-
-// 韓文語音
-function jiwoongSpeak(){
-  const krMsg=document.getElementById('jiwoong-msg-kr').textContent;
-  if(!krMsg) return;
-  if('speechSynthesis' in window){
-    window.speechSynthesis.cancel();
-    const utter=new SpeechSynthesisUtterance(krMsg);
-    utter.lang='ko-KR';
-    utter.rate=0.85;
-    utter.pitch=1.15;
-    const voices=window.speechSynthesis.getVoices();
-    const koVoice=voices.find(v=>v.lang.startsWith('ko'));
-    if(koVoice) utter.voice=koVoice;
-    window.speechSynthesis.speak(utter);
-  }else{
-    alert('此瀏覽器不支援語音功能');
-  }
-}
-
-// 粵語語音
-function jiwoongSpeakZh(){
-  const zhMsg=document.getElementById('jiwoong-msg').textContent;
-  if(!zhMsg) return;
-  if('speechSynthesis' in window){
-    window.speechSynthesis.cancel();
-    const utter=new SpeechSynthesisUtterance(zhMsg);
-    utter.lang='zh-HK';
-    utter.rate=0.9;
-    utter.pitch=1.1;
-    const voices=window.speechSynthesis.getVoices();
-    const zhVoice=voices.find(v=>v.lang==='zh-HK'||v.lang==='yue-Hant'||v.lang.startsWith('zh'));
-    if(zhVoice) utter.voice=zhVoice;
-    window.speechSynthesis.speak(utter);
-  }else{
-    alert('此瀏覽器不支援語音功能');
-  }
-}
-
-// 確保語音列表載入
-if('speechSynthesis' in window){
-  window.speechSynthesis.onvoiceschanged=function(){
-    window.speechSynthesis.getVoices();
-  };
 }
 
 // ============ 可拖動浮動頭像 ============
