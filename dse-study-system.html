@@ -756,10 +756,26 @@ tr:hover td { background:var(--gray-50); }
     </div>
 
     <!-- 同步狀態 -->
-    <div style="background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);padding:16px;">
+    <div style="background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);padding:16px;margin-bottom:16px;">
       <h3 style="font-size:14px;color:var(--gray-700);margin-bottom:10px;">📊 同步狀態</h3>
       <div id="sync-status" style="font-size:13px;color:var(--gray-500);">
         <div>尚未連接雲端</div>
+      </div>
+    </div>
+
+    <!-- 推送程式更新 -->
+    <div style="background:#FFF3E0;border-radius:var(--radius);padding:16px;border:1px solid #FFE0B2;">
+      <h3 style="font-size:14px;color:#E65100;margin-bottom:10px;">🚀 推送程式更新</h3>
+      <div style="font-size:12px;color:var(--gray-700);margin-bottom:10px;line-height:1.6;">
+        把最新版程式上傳到 Gist，手機可以從 Gist 載入更新，解決手機快取問題。
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+        <button class="btn btn-warm btn-sm" onclick="pushAppUpdate()" id="push-update-btn">🚀 推送最新版本</button>
+      </div>
+      <div id="update-link-area" style="display:none;background:#fff;padding:10px;border-radius:6px;border:1px solid #FFE0B2;margin-top:8px;">
+        <div style="font-size:12px;font-weight:600;color:var(--primary);margin-bottom:6px;">📱 手機請開啟以下連結：</div>
+        <div id="update-link" style="font-size:11px;word-break:break-all;color:var(--cool-accent);padding:6px;background:var(--gray-50);border-radius:4px;"></div>
+        <button class="btn btn-sm btn-outline" style="margin-top:6px;" onclick="copyUpdateLink()">📋 複製連結</button>
       </div>
     </div>
   </div>
@@ -8963,6 +8979,78 @@ function seedData(){
 seedData();
 renderDashboard();
 autoSyncOnLoad(); // 自動同步
+
+// 推送程式更新到 Gist
+async function pushAppUpdate(){
+  const token=getSyncToken();
+  if(!token){alert('⚠️ 請先設定 GitHub Token');return;}
+
+  const btn=document.getElementById('push-update-btn');
+  btn.disabled=true; btn.textContent='⏳ 推送中...';
+
+  try{
+    // 取得當前頁面的完整 HTML
+    const appHTML=document.documentElement.outerHTML;
+
+    const gistId=getGistId();
+    if(!gistId){alert('⚠️ 請先上傳一次筆記資料，建立 Gist 後才能推送程式');btn.disabled=false;btn.textContent='🚀 推送最新版本';return;}
+
+    // 更新 Gist，加入程式檔案
+    const body={
+      description:'DSE Study System Data + App',
+      files:{
+        'dse-study-data.json':{
+          content:JSON.stringify({notes:getData(KEYS.notes),prac:getData(KEYS.prac),uploadTime:new Date().toISOString(),device:navigator.userAgent.includes('Mobile')?'手機':'電腦'},null,2)
+        },
+        'dse-study-system.html':{
+          content:appHTML
+        }
+      }
+    };
+
+    const resp=await fetch(`https://api.github.com/gists/${gistId}`,{
+      method:'PATCH',
+      headers:{
+        'Authorization':`Bearer ${token}`,
+        'Accept':'application/vnd.github.v3+json',
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify(body)
+    });
+
+    if(!resp.ok){
+      const err=await resp.json();
+      throw new Error(err.message||`HTTP ${resp.status}`);
+    }
+
+    const data=await resp.json();
+
+    // 顯示手機載入連結
+    const updateUrl=`https://gist.githubusercontent.com/${data.owner.login}/${gistId}/raw/dse-study-system.html`;
+    document.getElementById('update-link').textContent=updateUrl;
+    document.getElementById('update-link-area').style.display='block';
+    localStorage.setItem('dse_update_url',updateUrl);
+
+    btn.disabled=false; btn.textContent='🚀 推送最新版本';
+    alert('✅ 程式已推送到雲端！\n\n📱 請在手機開啟下方顯示的連結，即可載入最新版本。');
+  }catch(err){
+    btn.disabled=false; btn.textContent='🚀 推送最新版本';
+    alert('❌ 推送失敗：'+err.message);
+  }
+}
+
+function copyUpdateLink(){
+  const url=document.getElementById('update-link').textContent;
+  navigator.clipboard.writeText(url).then(()=>{
+    alert('✅ 連結已複製！在手機瀏覽器貼上即可開啟最新版本');
+  }).catch(()=>{
+    // fallback
+    const ta=document.createElement('textarea');
+    ta.value=url;document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);
+    alert('✅ 連結已複製！在手機瀏覽器貼上即可開啟最新版本');
+  });
+}
 
 function initSyncPage(){
   const token=getSyncToken();
