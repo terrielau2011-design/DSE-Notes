@@ -714,17 +714,16 @@ tr:hover td { background:var(--gray-50); }
     <div style="background:var(--warm-bg);border-radius:var(--radius);padding:16px;margin-bottom:16px;border:1px solid #FFE082;">
       <h3 style="font-size:14px;color:var(--warm-accent);margin-bottom:10px;">🔑 步驟一：設定 GitHub Token</h3>
       <div style="font-size:12px;color:var(--gray-700);margin-bottom:10px;line-height:1.6;">
-        1. 開啟 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" style="color:var(--primary);font-weight:600;">GitHub Fine-grained Token 設定頁</a><br>
-        2. Token name 填寫 <code style="background:#fff;padding:1px 6px;border-radius:3px;">DSE-Sync</code><br>
+        1. 開啟 <a href="https://github.com/settings/tokens/new" target="_blank" style="color:var(--primary);font-weight:600;">GitHub Classic Token 設定頁</a><br>
+        2. Note 填寫 <code style="background:#fff;padding:1px 6px;border-radius:3px;">DSE-Sync</code><br>
         3. Expiration 選 <code style="background:#fff;padding:1px 6px;border-radius:3px;">No expiration</code><br>
-        4. Repository access 選 <code style="background:#fff;padding:1px 6px;border-radius:3px;">All repositories</code><br>
-        5. Permissions → Account permissions → <strong>Gists</strong> → 選 <strong>Read and write</strong><br>
-        6. 按 <strong>Generate token</strong>，複製 token 貼上下面
+        4. 只勾選 <strong>gist</strong> 權限（只需這一個，其他全部不勾）<br>
+        5. 按 <strong>Generate token</strong>，複製 token 貼上下面
       </div>
       <div class="form-group">
-        <label class="form-label">GitHub Personal Access Token</label>
+        <label class="form-label">GitHub Personal Access Token (Classic)</label>
         <div style="display:flex;gap:8px;">
-          <input class="form-input" id="sync-token" type="password" placeholder="github_pat_xxxxxxxxxxxx" style="flex:1;">
+          <input class="form-input" id="sync-token" type="password" placeholder="ghp_xxxxxxxxxxxx" style="flex:1;">
           <button class="btn btn-primary btn-sm" onclick="saveSyncToken()">💾 儲存</button>
         </div>
       </div>
