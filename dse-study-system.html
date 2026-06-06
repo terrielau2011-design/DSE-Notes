@@ -7511,51 +7511,48 @@ function loadExpItems(){
       items.forEach(it=>{it._idx=exportPreviewItems.length; exportPreviewItems.push(it);});
     });
   } else if(source==='quiz'){
-    // 小測驗：根據科目從不同來源生成題目
+    // 小測驗：以「課題+題型」為一組選項，不是逐條題目
     subjects.forEach(subj=>{
       if(subj==='英文'){
-        // 英文：從 engPracticeDB 讀取
+        // 英文：以文章/錄音為一組
         const engDB=typeof engPracticeDB!=='undefined'?engPracticeDB:null;
         if(engDB){
           if(engDB.Paper1 && engDB.Paper1.passages){
             engDB.Paper1.passages.forEach(p=>{
-              if(p.questions) p.questions.forEach((q,i)=>{
-                exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'英文',_pqType:'Paper1 Reading',title:p.title||'',qNum:`Q${i+1}`,question:q.question||q.q||'',options:q.options||q.opts||null,answer:q.answer||q.ans||'',explanation:q.explanation||q.explain||''});
-              });
+              if(p.questions && p.questions.length){
+                const qs=p.questions.map((q,i)=>({_src:'pq',_subj:'英文',_pqType:'Paper1 Reading',title:p.title||'',qNum:`Q${i+1}`,question:q.question||q.q||'',options:q.options||q.opts||null,answer:q.answer||q.ans||'',explanation:q.explanation||q.explain||''}));
+                exportPreviewItems.push({_src:'quiz-group',_idx:exportPreviewItems.length,_subj:'英文',_pqType:'Paper1 Reading',title:p.title||'',qCount:qs.length,_questions:qs});
+              }
             });
           }
           if(engDB.Paper3 && engDB.Paper3.recordings){
             engDB.Paper3.recordings.forEach(r=>{
-              if(r.questions) r.questions.forEach((q,i)=>{
-                exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'英文',_pqType:'Paper3 Listening',title:r.title||'',qNum:`Q${i+1}`,question:q.question||q.q||'',options:q.options||q.opts||null,answer:q.answer||q.ans||'',explanation:q.explanation||q.explain||''});
-              });
+              if(r.questions && r.questions.length){
+                const qs=r.questions.map((q,i)=>({_src:'pq',_subj:'英文',_pqType:'Paper3 Listening',title:r.title||'',qNum:`Q${i+1}`,question:q.question||q.q||'',options:q.options||q.opts||null,answer:q.answer||q.ans||'',explanation:q.explanation||q.explain||''}));
+                exportPreviewItems.push({_src:'quiz-group',_idx:exportPreviewItems.length,_subj:'英文',_pqType:'Paper3 Listening',title:r.title||'',qCount:qs.length,_questions:qs});
+              }
             });
           }
         }
       } else if(subj==='數學'){
-        // 數學：從 mathPracticeDB 讀取
+        // 數學：以課題為一組
         const mathDB=typeof mathPracticeDB!=='undefined'?mathPracticeDB:null;
         if(mathDB && mathDB.topics){
           mathDB.topics.forEach(topic=>{
             const topicName=topic.name||topic.id||'';
-            if(topic.questions) topic.questions.forEach((q,i)=>{
-              exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:'數學',_pqType:topicName,qNum:`Q${i+1}`,question:q.question||q.q||q.text||'',options:q.options||q.opts||null,answer:q.answer||q.ans||q.ansValue||q.correct||'',explanation:q.explanation||q.solution||q.explain||q.steps||''});
-            });
+            if(topic.questions && topic.questions.length){
+              const qs=topic.questions.map((q,i)=>({_src:'pq',_subj:'數學',_pqType:topicName,qNum:`Q${i+1}`,question:q.question||q.q||q.text||'',options:q.options||q.opts||null,answer:q.answer||q.ans||q.ansValue||q.correct||'',explanation:q.explanation||q.solution||q.explain||q.steps||''}));
+              exportPreviewItems.push({_src:'quiz-group',_idx:exportPreviewItems.length,_subj:'數學',_pqType:topicName,title:topicName,qCount:qs.length,_questions:qs});
+            }
           });
         }
       } else {
-        // 文科（中史/世史/C&SD/中文）：從知識庫生成小測驗題目
+        // 文科（中史/世史/C&SD/中文）：以「課題+題型」為一組
         const kbData=knowledgeBase[subj]||[];
-        const isEn=subj==='英文';
         kbData.forEach(item=>{
-          // 生成填充/MC題
-          const fillFields=isEn?[
-            {field:'people',label:'Who are the key figures related to "__TOPIC__"?'},
-            {field:'time',label:'When did "__TOPIC__" take place?'},
-            {field:'region',label:'Where did "__TOPIC__" take place?'},
-            {field:'keyCause',label:'What is the key cause of "__TOPIC__"?'},
-            {field:'factDetail',label:'What are the key details of "__TOPIC__"?'},
-          ]:[
+          const groupQs=[];
+          // 填充/MC題
+          const fillFields=[
             {field:'people',label:'「__課題__」的相關人物是誰？'},
             {field:'time',label:'「__課題__」發生在什麼時候？'},
             {field:'region',label:'「__課題__」發生在哪個地區？'},
@@ -7570,20 +7567,19 @@ function loadExpItems(){
           fillFields.forEach(ff=>{
             const val=item[ff.field];
             if(val&&val.trim()){
-              const qText=ff.label.replace(isEn?'__TOPIC__':'__課題__',isEn?item.title:'「'+item.title+'」');
-              // 生成MC選項：正確答案 + 從其他KB項目取干擾項
+              const qText=ff.label.replace('__課題__','「'+item.title+'」');
               const distractors=kbData.filter(t2=>t2.title!==item.title&&t2[ff.field]&&t2[ff.field].trim()).map(t2=>t2[ff.field]).filter(d=>d!==val);
               const uniqueDistractors=[...new Set(distractors)].slice(0,3);
               const opts=uniqueDistractors.length>=2?[val,...uniqueDistractors.slice(0,3)]:[];
-              exportPreviewItems.push({_src:'pq',_idx:exportPreviewItems.length,_subj:subj,_pqType:'填充題',title:item.title,qNum:'',question:qText,options:opts.length>=3?opts:null,answer:val,explanation:''});
+              groupQs.push({_src:'pq',_subj:subj,_pqType:'填充題',title:item.title,qNum:'',question:qText,options:opts.length>=3?opts:null,answer:val,explanation:''});
             }
           });
-          // 生成短答題
-          const shortFields=isEn?[
-            {field:'causeP',label:'What were the political causes of "__TOPIC__"?'},
-            {field:'causeE',label:'What were the economic causes of "__TOPIC__"?'},
-            {field:'longImpact',label:'What were the long-term impacts of "__TOPIC__"?'},
-          ]:[
+          if(groupQs.length>0){
+            exportPreviewItems.push({_src:'quiz-group',_idx:exportPreviewItems.length,_subj:subj,_pqType:'填充題',title:item.title+' — 填充題',qCount:groupQs.length,_questions:groupQs});
+          }
+          // 短答題
+          const shortQs=[];
+          const shortFields=[
             {field:'causeP',label:'「__課題__」的政治原因是什麼？'},
             {field:'causeE',label:'「__課題__」的經濟原因是什麼？'},
             {field:'causeS',label:'「__課題__」的社會原因是什麼？'},
@@ -7593,27 +7589,77 @@ function loadExpItems(){
           shortFields.forEach(sf=>{
             const val=item[sf.field];
             if(val&&val.trim()){
-              const qText=sf.label.replace(isEn?'__TOPIC__':'__課題__',isEn?item.title:'「'+item.title+'」');
-              exportPreviewItems.push({_src:'pq-short',_idx:exportPreviewItems.length,_subj:subj,_pqType:'短答題',title:item.title,qNum:'',question:qText,options:null,answer:val,explanation:''});
+              const qText=sf.label.replace('__課題__','「'+item.title+'」');
+              shortQs.push({_src:'pq-short',_subj:subj,_pqType:'短答題',title:item.title,qNum:'',question:qText,options:null,answer:val,explanation:''});
             }
           });
-          // 生成PEEL題
+          if(shortQs.length>0){
+            exportPreviewItems.push({_src:'quiz-group',_idx:exportPreviewItems.length,_subj:subj,_pqType:'短答題',title:item.title+' — 短答題',qCount:shortQs.length,_questions:shortQs});
+          }
+          // PEEL題
           if(item.dseQ&&item.dseQ.trim()){
+            const peelQs=[];
             const qs=(item.dseQ||'').split('|||').map(q=>q.trim()).filter(Boolean);
             qs.forEach(qText=>{
-              exportPreviewItems.push({_src:'pq-peel',_idx:exportPreviewItems.length,_subj:subj,_pqType:'PEEL論述題',title:item.title,qNum:'',question:qText,options:null,answer:'',explanation:'',peelData:item});
+              peelQs.push({_src:'pq-peel',_subj:subj,_pqType:'PEEL論述題',title:item.title,qNum:'',question:qText,options:null,answer:'',explanation:'',peelData:item});
             });
+            if(peelQs.length>0){
+              exportPreviewItems.push({_src:'quiz-group',_idx:exportPreviewItems.length,_subj:subj,_pqType:'PEEL論述題',title:item.title+' — PEEL論述題',qCount:peelQs.length,_questions:peelQs});
+            }
           }
         });
       }
     });
   } else if(source==='prac'){
-    const prac=getData(KEYS.prac);
-    // 根據科目篩選操練記錄
-    const pracKeys=subjVal==='all'?allPracKeys:(subjVal==='英文'?['eng']:subjVal==='數學'?['math']:subjVal==='中文'?['chi']:[]);
-    pracKeys.forEach(pk=>{
-      const pracRecords=(prac[pk])||[];
-      pracRecords.forEach(r=>{exportPreviewItems.push({...r,_src:'prac',_idx:exportPreviewItems.length,_pracKey:pk,_subj:pracMap[pk]});});
+    // 練習：連繫到互動題目（英文/數學/中文）
+    subjects.forEach(subj=>{
+      if(subj==='英文'){
+        const engDB=typeof engPracticeDB!=='undefined'?engPracticeDB:null;
+        if(engDB){
+          if(engDB.Paper1 && engDB.Paper1.passages){
+            engDB.Paper1.passages.forEach(p=>{
+              if(p.questions && p.questions.length){
+                const qs=p.questions.map((q,i)=>({_src:'pq',_subj:'英文',_pqType:'Paper1 Reading',title:p.title||'',qNum:`Q${i+1}`,question:q.question||q.q||'',options:q.options||q.opts||null,answer:q.answer||q.ans||'',explanation:q.explanation||q.explain||''}));
+                exportPreviewItems.push({_src:'prac-group',_idx:exportPreviewItems.length,_subj:'英文',_pqType:'Paper1 閱讀理解',title:p.title||'',qCount:qs.length,_questions:qs,source:p.source||'',year:p.year||''});
+              }
+            });
+          }
+          if(engDB.Paper3 && engDB.Paper3.recordings){
+            engDB.Paper3.recordings.forEach(r=>{
+              if(r.questions && r.questions.length){
+                const qs=r.questions.map((q,i)=>({_src:'pq',_subj:'英文',_pqType:'Paper3 Listening',title:r.title||'',qNum:`Q${i+1}`,question:q.question||q.q||'',options:q.options||q.opts||null,answer:q.answer||q.ans||'',explanation:q.explanation||q.explain||''}));
+                exportPreviewItems.push({_src:'prac-group',_idx:exportPreviewItems.length,_subj:'英文',_pqType:'Paper3 聆聽綜合',title:r.title||'',qCount:qs.length,_questions:qs});
+              }
+            });
+          }
+        }
+      } else if(subj==='數學'){
+        const mathDB=typeof mathPracticeDB!=='undefined'?mathPracticeDB:null;
+        if(mathDB && mathDB.topics){
+          mathDB.topics.forEach(topic=>{
+            const topicName=topic.name||topic.id||'';
+            if(topic.questions && topic.questions.length){
+              const qs=topic.questions.map((q,i)=>({_src:'pq',_subj:'數學',_pqType:topicName,qNum:`Q${i+1}`,question:q.question||q.q||q.text||'',options:q.options||q.opts||null,answer:q.answer||q.ans||q.ansValue||q.correct||'',explanation:q.explanation||q.solution||q.explain||q.steps||''}));
+              exportPreviewItems.push({_src:'prac-group',_idx:exportPreviewItems.length,_subj:'數學',_pqType:topicName,title:topicName,qCount:qs.length,_questions:qs});
+            }
+          });
+        }
+      } else if(subj==='中文'){
+        // 中文：從知識庫生成練習題目
+        const kbData=knowledgeBase[subj]||[];
+        kbData.forEach(item=>{
+          const groupQs=[];
+          if(item.keyPoints) (item.keyPoints.split('|||').filter(Boolean)).forEach((kp,i)=>{
+            groupQs.push({_src:'pq-short',_subj:'中文',_pqType:'閱讀理解',title:item.title,qNum:`Q${i+1}`,question:`根據「${item.title}」，解釋：${kp}`,options:null,answer:item.description||'',explanation:''});
+          });
+          if(item.framework) (item.framework.split('|||').filter(Boolean)).forEach((fw,i)=>{
+            groupQs.push({_src:'pq-short',_subj:'中文',_pqType:'寫作',title:item.title,qNum:`Q${groupQs.length+1}`,question:`運用「${item.title}」的寫作框架：${fw}`,options:null,answer:'',explanation:''});
+          });
+          if(groupQs.length>0){
+            exportPreviewItems.push({_src:'prac-group',_idx:exportPreviewItems.length,_subj:'中文',_pqType:item.title,title:item.title,qCount:groupQs.length,_questions:groupQs});
+          }
+        });
+      }
     });
   }
 
@@ -7657,10 +7703,10 @@ function loadExpItems(){
     } else if(item._src==='user'){
       tags='✏️ 筆記';
       if(item.dse==='是') tags+=' 📊DSE';
+    } else if(item._src==='quiz-group'||item._src==='prac-group'){
+      tags=`📝 ${item._pqType||''} · ${item.qCount||0}題`;
     } else if(item._src==='prac'){
       tags=`📋 ${item.date||''} ${item.type||item.topic||''}`;
-    } else if(item._src==='pq'||item._src==='pq-short'||item._src==='pq-peel'){
-      tags=`📝 ${item._pqType||''} ${item.qNum||''}`;
     }
     if(showSubjTag) tags=`📖 ${item._subj} `+tags;
     listHtml+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--gray-100);" class="exp-item-label">
@@ -7729,10 +7775,10 @@ function loadExpItemsFromCache(){
     } else if(item._src==='user'){
       tags='✏️ 筆記';
       if(item.dse==='是') tags+=' 📊DSE';
+    } else if(item._src==='quiz-group'||item._src==='prac-group'){
+      tags=`📝 ${item._pqType||''} · ${item.qCount||0}題`;
     } else if(item._src==='prac'){
       tags=`📋 ${item.date||''} ${item.type||item.topic||''}`;
-    } else if(item._src==='pq'||item._src==='pq-short'||item._src==='pq-peel'){
-      tags=`📝 ${item._pqType||''} ${item.qNum||''}`;
     }
     if(showSubjTag) tags=`📖 ${item._subj} `+tags;
     listHtml+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--gray-100);" class="exp-item-label">
@@ -7975,7 +8021,18 @@ function renderExportItem(item,subj){
 
   // === 知識庫模板 ===
   html+=`<div class="note-card">`;
-  html+=`<div class="nt-title">${isKB?'📚':'✏️'} ${title}</div>`;
+
+  // 為文科加上格式描述
+  if(isKB && ['中史','世史','C&SD'].includes(subj)){
+    const fmts=[];
+    if(item.bg||item.factDetail||item.institutionDetail) fmts.push('①事實');
+    if(item.causeP||item.causeE||item.causeS||item.process||item.shortImpact||item.longImpact||item.posImpact||item.negImpact) fmts.push('②原因過程影響');
+    if(item.p1) fmts.push('③PEEL');
+    const fmtStr=fmts.length?` <span style="font-size:10pt;color:var(--cool-accent);font-weight:400;">${fmts.join(' · ')}</span>`:'';
+    html+=`<div class="nt-title">${isKB?'📚':'✏️'} ${title}${fmtStr}</div>`;
+  } else {
+    html+=`<div class="nt-title">${isKB?'📚':'✏️'} ${title}</div>`;
+  }
   if(subtopic) html+=`<div class="nt-subtitle">${subtopic}</div>`;
 
   // 文科（中史/世史/C&SD）知識庫 - 顯示所有格式
@@ -8100,30 +8157,70 @@ function showExportPreview(){
 
   Object.keys(subjGroups).forEach(subj=>{
     const items=subjGroups[subj];
-    const noteItems=items.filter(it=>it._src!=='prac');
-    const pracItems=items.filter(it=>it._src==='prac');
 
-    if(noteItems.length){
-      html+=`<h2 style="color:#1B3A5C;margin-top:20pt;margin-bottom:8pt;font-size:15pt;border-bottom:1px solid #ccc;padding-bottom:4pt;">📖 ${subj} ${srcLabel}</h2>`;
-      noteItems.forEach(item=>{ html+=renderExportItem(item,subj); });
-    }
+    html+=`<h2 style="color:#1B3A5C;margin-top:20pt;margin-bottom:8pt;font-size:15pt;border-bottom:1px solid #ccc;padding-bottom:4pt;">📖 ${subj} ${srcLabel}</h2>`;
 
-    if(pracItems.length){
-      const pk=pracItems[0]._pracKey||'eng';
-      const isMath=pk==='math';
-      html+=`<h2 style="color:#1B3A5C;margin-top:20pt;margin-bottom:8pt;font-size:15pt;border-bottom:1px solid #ccc;padding-bottom:4pt;">📋 ${subj} 操練記錄</h2>`;
-      html+=`<table style="width:100%;border-collapse:collapse;margin:8pt 0;font-size:10pt;"><tr>`;
-      if(isMath) html+=`<th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">日期</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">課題</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">卷別</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">來源</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">題號</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">題型</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">做對</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">錯誤類型</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">錯誤詳情</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">正確解法</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">覆檢</th>`;
-      else html+=`<th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">日期</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">類型</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">卷別</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">來源</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">題號</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">得分</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">錯誤類型</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">錯誤詳情</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">改善行動</th><th style="background:#1B3A5C;color:#fff;padding:5pt 8pt;text-align:left;">覆檢</th>`;
-      html+=`</tr>`;
-      pracItems.forEach(r=>{
-        html+=`<tr>`;
-        if(isMath) html+=`<td>${r.date||''}</td><td>${r.topic||''}</td><td>${r.paper||''}</td><td>${r.source||''}</td><td>${r.qNum||''}</td><td>${r.qType||''}</td><td>${r.correct==='是'?'✅':'❌'}</td><td>${r.errorType?`<span class="error-badge">${r.errorType}</span>`:''}</td><td>${r.errorDetail||''}</td><td>${r.solution||''}</td><td>${r.reviewed==='是'?'✅':'⬜'}</td>`;
-        else html+=`<td>${r.date||''}</td><td>${r.type||''}</td><td>${r.paper||''}</td><td>${r.source||''}</td><td>${r.qNum||''}</td><td>${r.score||''}</td><td>${r.errorType?`<span class="error-badge">${r.errorType}</span>`:''}</td><td>${r.errorDetail||''}</td><td>${r.improve?`<span class="improve-badge">${r.improve}</span>`:''}</td><td>${r.reviewed==='是'?'✅':'⬜'}</td>`;
-        html+=`</tr>`;
-      });
-      html+=`</table>`;
-    }
+    items.forEach(item=>{
+      if(item._src==='quiz-group'||item._src==='prac-group'){
+        // 展開分組題目，用 note-card 排版
+        html+=`<div class="note-card"><div class="nt-title">📝 ${item.title}</div>`;
+        html+=`<div class="nt-info">${item._pqType||''} · 共 ${item.qCount||0} 題</div>`;
+        if(item._questions && item._questions.length){
+          item._questions.forEach((q,qi)=>{
+            html+=`<div class="nt-section" style="border-top:1px solid #eee;padding-top:8pt;margin-top:8pt;">`;
+            html+=`<div class="nt-label">第 ${qi+1} 題${q._pqType?' ('+q._pqType+')':''}</div>`;
+            html+=`<div class="nt-content">${q.question||''}</div>`;
+            if(q.options && Array.isArray(q.options) && q.options.length>=3){
+              html+=`<div style="margin:4pt 0;">`;
+              q.options.forEach((opt,oi)=>{
+                const letter=String.fromCharCode(65+oi);
+                const isCorrect=q.answer===letter||q.answer===opt||q.answer===oi||q.answer===String(oi)||opt===q.answer;
+                html+=`<div style="padding:3pt 8pt;margin:2pt 0;border-radius:4pt;${isCorrect?'background:#E8F5E9;font-weight:700;':'border:1px solid #eee;'}">${letter}. ${opt}</div>`;
+              });
+              html+=`</div>`;
+            } else if(q.answer){
+              html+=`<div style="background:#E8F5E9;padding:4pt 10pt;border-radius:4pt;margin:4pt 0;font-size:11pt;"><strong>✅ 答案：</strong>${q.answer}</div>`;
+            }
+            if(q.explanation) html+=`<div class="tip-box" style="margin-top:4pt;"><strong>💡 解析：</strong>${q.explanation}</div>`;
+            // PEEL hints
+            if(q.peelData){
+              const p=q.peelData;
+              html+=`<div style="background:linear-gradient(135deg,#E8EAF6,#EDE7F6);padding:8pt 12pt;border-radius:6pt;margin-top:6pt;font-size:11pt;">`;
+              html+=`<div style="font-weight:700;margin-bottom:4pt;">📐 PEEL 答題結構提示</div>`;
+              if(p.p1) html+=`<div><span style="color:#C0392B;font-weight:700;">P：</span>${p.p1}</div>`;
+              if(p.e1_1) html+=`<div style="padding-left:12pt;"><span style="color:#2980B9;font-weight:700;">E：</span>${p.e1_1}</div>`;
+              if(p.e2_1) html+=`<div style="padding-left:12pt;"><span style="color:#27AE60;font-weight:700;">E：</span>${p.e2_1}</div>`;
+              if(p.l1) html+=`<div style="padding-left:12pt;"><span style="color:#8E44AD;font-weight:700;">L：</span>${p.l1}</div>`;
+              html+=`</div>`;
+            }
+            html+=`</div>`;
+          });
+        }
+        html+=`</div>`;
+      } else if(item._src==='prac'){
+        // 操練記錄 - note-card 排版
+        const isMath=item._pracKey==='math';
+        html+=`<div class="note-card"><div class="nt-title">📋 ${item.date||''} ${item.topic||item.type||''}</div>`;
+        html+=`<div class="nt-info">${item.paper||''} · ${item.source||''} · 題號 ${item.qNum||''}</div>`;
+        if(isMath){
+          if(item.qType) html+=`<div class="nt-section"><div class="nt-label">題型</div><div class="nt-content">${item.qType}</div></div>`;
+          html+=`<div class="nt-section"><div class="nt-label">做對</div><div class="nt-content">${item.correct==='是'?'✅ 正確':'❌ 錯誤'}</div></div>`;
+          if(item.errorType) html+=`<div class="nt-section"><div class="nt-label">錯誤類型</div><div class="nt-content"><span class="error-badge">${item.errorType}</span></div></div>`;
+          if(item.errorDetail) html+=`<div class="nt-section"><div class="nt-label">錯誤詳情</div><div class="nt-content">${item.errorDetail}</div></div>`;
+          if(item.solution) html+=`<div class="tip-box"><strong>✅ 正確解法：</strong>${item.solution}</div>`;
+        } else {
+          if(item.type) html+=`<div class="nt-section"><div class="nt-label">類型</div><div class="nt-content">${item.type}</div></div>`;
+          if(item.score) html+=`<div class="nt-section"><div class="nt-label">得分</div><div class="nt-content">${item.score}</div></div>`;
+          if(item.errorType) html+=`<div class="nt-section"><div class="nt-label">錯誤類型</div><div class="nt-content"><span class="error-badge">${item.errorType}</span></div></div>`;
+          if(item.errorDetail) html+=`<div class="nt-section"><div class="nt-label">錯誤詳情</div><div class="nt-content">${item.errorDetail}</div></div>`;
+          if(item.improve) html+=`<div class="tip-box"><strong>🔄 改善行動：</strong><span class="improve-badge">${item.improve}</span></div>`;
+        }
+        html+=`<div class="nt-section"><div class="nt-label">覆檢</div><div class="nt-content">${item.reviewed==='是'?'✅ 已覆檢':'⬜ 未覆檢'}</div></div>`;
+        html+=`</div>`;
+      } else {
+        html+=renderExportItem(item,subj);
+      }
+    });
   });
 
   expPreviewHTML=html;
