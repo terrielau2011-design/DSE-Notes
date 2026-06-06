@@ -8863,7 +8863,11 @@ async function syncDownload(){
     const noteCount=Object.values(mergedNotes).reduce((s,a)=>s+a.length,0);
     const pracCount=Object.values(mergedPrac).reduce((s,a)=>s+a.length,0);
     alert(`✅ 下載並合併成功！\n\n📝 筆記：${noteCount} 條\n✏️ 操練：${pracCount} 條\n📅 雲端上傳時間：${cloudData.uploadTime||'未知'}\n📱 來源裝置：${cloudData.device||'未知'}`);
+    // 刷新所有頁面
     renderDashboard();
+    renderNotes('chhist');
+    renderNotes('whist');
+    renderNotes('csd');
     updateSyncStatus();
   }catch(err){
     btn.disabled=false; btn.textContent='⬇️ 從雲端下載';
@@ -8912,6 +8916,11 @@ async function autoSyncOnLoad(){
     const mergedPrac=mergeData(localPrac,cloudPrac);
     setData(KEYS.notes,mergedNotes);
     setData(KEYS.prac,mergedPrac);
+    // 刷新所有頁面
+    renderDashboard();
+    renderNotes('chhist');
+    renderNotes('whist');
+    renderNotes('csd');
     console.log('☁️ 自動同步完成');
   }catch(e){
     console.log('☁️ 自動同步失敗：',e.message);
