@@ -690,6 +690,7 @@ tr:hover td { background:var(--gray-50); }
         <div style="display:flex;gap:8px;">
           <button class="btn btn-sm btn-outline" onclick="doExportPDF()">🖨️ 列印/PDF</button>
           <button class="btn btn-sm btn-success" onclick="doExportFile()">💾 下載 Word</button>
+          <button class="btn btn-sm btn-cool" onclick="openShareModal()">📤 分享</button>
         </div>
       </div>
       <div id="exp-preview-content" style="border:1px solid var(--gray-200);border-radius:8px;padding:16px;max-height:70vh;overflow-y:auto;background:#fff;"></div>
@@ -698,6 +699,47 @@ tr:hover td { background:var(--gray-50); }
 </div>
 
 <!-- ============ MODALS ============ -->
+<!-- 分享 Modal -->
+<div class="modal-overlay" id="share-modal">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header"><h2>📤 分享</h2><button class="modal-close" onclick="closeModal('share-modal')">✕</button></div>
+    <div style="padding:10px 0;">
+      <div style="font-size:13px;color:var(--gray-500);margin-bottom:14px;">選擇分享方式，將筆記內容傳送到不同平台</div>
+
+      <!-- 分享平台按鈕 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+        <button class="btn" style="background:#25D366;color:#fff;justify-content:center;padding:14px;" onclick="shareToWhatsApp()">
+          <span style="font-size:20px;margin-right:6px;">💬</span> WhatsApp
+        </button>
+        <button class="btn" style="background:#07C160;color:#fff;justify-content:center;padding:14px;" onclick="shareToWeChat()">
+          <span style="font-size:20px;margin-right:6px;">💚</span> WeChat
+        </button>
+        <button class="btn" style="background:#EA4335;color:#fff;justify-content:center;padding:14px;" onclick="shareToEmail()">
+          <span style="font-size:20px;margin-right:6px;">📧</span> Email
+        </button>
+        <button class="btn" style="background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:#fff;justify-content:center;padding:14px;" onclick="shareToIG()">
+          <span style="font-size:20px;margin-right:6px;">📸</span> Instagram
+        </button>
+      </div>
+
+      <!-- 其他分享方式 -->
+      <div style="border-top:1px solid var(--gray-200);padding-top:14px;display:flex;flex-direction:column;gap:8px;">
+        <button class="btn btn-outline" style="justify-content:center;padding:10px;" onclick="shareViaWebAPI()">
+          📱 系統分享（手機適用）
+        </button>
+        <button class="btn btn-outline" style="justify-content:center;padding:10px;" onclick="copyShareContent()">
+          📋 複製內容到剪貼簿
+        </button>
+        <button class="btn btn-outline" style="justify-content:center;padding:10px;" onclick="shareAppLink()">
+          🔗 複製應用程式連結
+        </button>
+      </div>
+
+      <div id="share-status" style="margin-top:12px;text-align:center;font-size:13px;color:var(--success);min-height:20px;"></div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="note-modal">
   <div class="modal">
     <div class="modal-header"><h2 id="note-modal-title">新增筆記</h2><button class="modal-close" onclick="closeModal('note-modal')">✕</button></div>
@@ -8428,6 +8470,129 @@ function doExportFile(){
   document.body.removeChild(a);
   setTimeout(()=>URL.revokeObjectURL(url),1000);
   alert('✅ Word 檔案已下載！用 Microsoft Word 開啟即可編輯。');
+}
+
+// ===== SHARE FUNCTIONS =====
+function getShareText(){
+  // 從預覽內容提取純文字
+  const el=document.getElementById('exp-preview-content');
+  if(!el) return '';
+  let text=el.innerText||el.textContent||'';
+  // 截取前1500字避免太長
+  if(text.length>1500) text=text.substring(0,1500)+'...\n（完整內容請在DSE筆記系統查看）';
+  return text;
+}
+
+function getShareSubject(){
+  const subjVal=document.getElementById('exp-subject').value;
+  const source=getExpSource();
+  const srcLabel=source==='kb'?'知識庫':source==='user'?'筆記':source==='quiz'?'小測驗':'練習';
+  const subjLabel=subjVal==='all'?'全部科目':subjVal;
+  return `DSE ${subjLabel} ${srcLabel}`;
+}
+
+function showShareStatus(msg){
+  const el=document.getElementById('share-status');
+  if(el) el.textContent=msg;
+  setTimeout(()=>{if(el) el.textContent='';},3000);
+}
+
+function openShareModal(){
+  document.getElementById('share-status').textContent='';
+  document.getElementById('share-modal').classList.add('show');
+}
+
+function shareToWhatsApp(){
+  const text=getShareText();
+  const subject=getShareSubject();
+  const msg=`📚 *${subject}*\n\n${text}\n\n🔗 DSE筆記系統：https://terrielau2011-design.github.io/dse-study-system/`;
+  const url=`https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(url,'_blank');
+  showShareStatus('✅ 已開啟 WhatsApp 分享');
+}
+
+function shareToWeChat(){
+  // WeChat 沒有 URL scheme，只能複製內容
+  const text=getShareText();
+  const subject=getShareSubject();
+  const msg=`📚 ${subject}\n\n${text}\n\n🔗 DSE筆記系統：https://terrielau2011-design.github.io/dse-study-system/`;
+  navigator.clipboard.writeText(msg).then(()=>{
+    showShareStatus('✅ 已複製！請打開 WeChat 貼上分享');
+  }).catch(()=>{
+    // fallback
+    const ta=document.createElement('textarea');
+    ta.value=msg;document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);
+    showShareStatus('✅ 已複製！請打開 WeChat 貼上分享');
+  });
+}
+
+function shareToEmail(){
+  const subject=getShareSubject();
+  const text=getShareText();
+  const body=`${text}\n\n---\n📚 DSE筆記系統\n🔗 https://terrielau2011-design.github.io/dse-study-system/`;
+  const url=`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.open(url,'_blank');
+  showShareStatus('✅ 已開啟 Email 分享');
+}
+
+function shareToIG(){
+  // IG 沒有直接分享文字的 URL scheme，只能複製內容
+  const text=getShareText();
+  const subject=getShareSubject();
+  const msg=`📚 ${subject}\n\n${text}\n\n#DSE #香港DSE #筆記`;
+  navigator.clipboard.writeText(msg).then(()=>{
+    showShareStatus('✅ 已複製！請打開 IG 貼上到 Story 或 DM');
+  }).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=msg;document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);
+    showShareStatus('✅ 已複製！請打開 IG 貼上到 Story 或 DM');
+  });
+}
+
+function shareViaWebAPI(){
+  if(!navigator.share){
+    showShareStatus('⚠️ 此瀏覽器不支援系統分享，請用其他方式');
+    return;
+  }
+  const subject=getShareSubject();
+  const text=getShareText();
+  navigator.share({
+    title: subject,
+    text: text.substring(0,800),
+    url: 'https://terrielau2011-design.github.io/dse-study-system/'
+  }).then(()=>{
+    showShareStatus('✅ 分享成功！');
+  }).catch(err=>{
+    if(err.name!=='AbortError') showShareStatus('⚠️ 分享失敗：'+err.message);
+  });
+}
+
+function copyShareContent(){
+  const text=getShareText();
+  const subject=getShareSubject();
+  const msg=`📚 ${subject}\n\n${text}\n\n🔗 DSE筆記系統：https://terrielau2011-design.github.io/dse-study-system/`;
+  navigator.clipboard.writeText(msg).then(()=>{
+    showShareStatus('✅ 已複製到剪貼簿！可貼到任何平台');
+  }).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=msg;document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);
+    showShareStatus('✅ 已複製到剪貼簿！可貼到任何平台');
+  });
+}
+
+function shareAppLink(){
+  const link='https://terrielau2011-design.github.io/dse-study-system/';
+  navigator.clipboard.writeText(link).then(()=>{
+    showShareStatus('✅ 已複製連結：'+link);
+  }).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=link;document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);
+    showShareStatus('✅ 已複製連結：'+link);
+  });
 }
 
 // ===== MODAL HELPERS =====
