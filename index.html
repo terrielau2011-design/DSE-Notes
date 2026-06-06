@@ -8809,6 +8809,39 @@ function debugLocalData(){
   alert(msg);
 }
 
+// 尋找或建立 Gist（確保所有裝置使用同一個 Gist）
+async function findOrCreateGist(token){
+  // 先搜索是否已有同描述的 Gist
+  const listResp=await fetch('https://api.github.com/gists?per_page=100',{
+    headers:{
+      'Authorization':`Bearer ${token}`,
+      'Accept':'application/vnd.github.v3+json'
+    }
+  });
+  if(listResp.ok){
+    const gists=await listResp.json();
+    const matches=gists.filter(g=>g.description===GIST_DESC);
+    if(matches.length>0){
+      // 用最新的那個（按更新時間排序）
+      matches.sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
+      const mainGist=matches[0];
+      localStorage.setItem(GIST_KEY,mainGist.id);
+      // 如果有多個同名 Gist，刪除多餘的
+      if(matches.length>1){
+        for(let i=1;i<matches.length;i++){
+          fetch(`https://api.github.com/gists/${matches[i].id}`,{
+            method:'DELETE',
+            headers:{'Authorization':`Bearer ${token}`}
+          }).catch(()=>{});
+        }
+      }
+      return mainGist.id;
+    }
+  }
+  // 沒有找到，返回 null（上傳時會自動建立）
+  return null;
+}
+
 // 上傳本機資料到 Gist
 async function syncUpload(){
   const token=getSyncToken();
@@ -8826,7 +8859,11 @@ async function syncUpload(){
       device:navigator.userAgent.includes('Mobile')?'手機':'電腦'
     };
 
-    const gistId=getGistId();
+    // 先搜索是否已有 Gist，確保用同一個
+    btn.textContent='⏳ 檢查雲端...';
+    const existingGistId=await findOrCreateGist(token);
+
+    const gistId=existingGistId||getGistId();
     const method=gistId?'PATCH':'POST';
     const url=gistId?`https://api.github.com/gists/${gistId}`:'https://api.github.com/gists';
 
@@ -8876,23 +8913,12 @@ async function syncDownload(){
   btn.disabled=true; btn.textContent='⏳ 下載中...';
 
   try{
-    let gistId=getGistId();
+    // 一律搜索 Gist 列表，確保讀取正確的 Gist
+    btn.textContent='⏳ 尋找雲端資料...';
+    const gistId=await findOrCreateGist(token);
 
-    // 如果沒有 Gist ID，自動從用戶的 Gist 列表中尋找
     if(!gistId){
-      btn.textContent='⏳ 尋找雲端資料...';
-      const listResp=await fetch('https://api.github.com/gists?per_page=100',{
-        headers:{
-          'Authorization':`Bearer ${token}`,
-          'Accept':'application/vnd.github.v3+json'
-        }
-      });
-      if(!listResp.ok) throw new Error(`無法讀取 Gist 列表 (HTTP ${listResp.status})`);
-      const gists=await listResp.json();
-      const match=gists.find(g=>g.description===GIST_DESC);
-      if(!match) throw new Error('尚未建立雲端資料，請先在另一部裝置按「⬆️ 上傳到雲端」');
-      gistId=match.id;
-      localStorage.setItem(GIST_KEY,gistId);
+      throw new Error('尚未建立雲端資料，請先在另一部裝置按「⬆️ 上傳到雲端」');
     }
 
     btn.textContent='⏳ 下載中...';
