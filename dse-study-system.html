@@ -323,6 +323,9 @@ tr:hover td { background:var(--gray-50); }
   h2 { page-break-after:avoid; }
   .note-card, .peel-block { page-break-inside:avoid; }
 }
+/* 音樂播放器 */
+#music-player-container{position:relative;width:100%;padding-bottom:56.25%;background:#000;border-radius:8px;overflow:hidden;}
+#music-player-container iframe,#music-player-container>#music-player{position:absolute;top:0;left:0;width:100%;height:100%;}
 </style>
 </head>
 <body>
@@ -351,6 +354,7 @@ tr:hover td { background:var(--gray-50); }
   <div class="nav-item" data-page="dse-stats"><span class="icon">📊</span>DSE題型分佈</div>
   <div class="nav-item" data-page="export"><span class="icon">🖨️</span>匯出列印</div>
   <div class="nav-item" data-page="sync"><span class="icon">☁️</span>雲端同步</div>
+  <div class="nav-item" data-page="music"><span class="icon">🎵</span>音樂</div>
 </nav>
 
 <div class="main">
@@ -779,6 +783,73 @@ tr:hover td { background:var(--gray-50); }
         <button class="btn btn-sm btn-outline" style="margin-top:6px;" onclick="copyUpdateLink()">📋 複製連結</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ============ 音樂頁面 ============ -->
+<div class="page" id="page-music">
+  <div class="page-header">
+    <h1>🎵 溫習音樂</h1>
+    <p style="color:var(--gray-500);font-size:14px;margin-top:4px;">溫習悶了？播放音樂輕鬆一下 🎶</p>
+  </div>
+
+  <div style="max-width:700px;margin:0 auto;">
+    <!-- 主播放器 -->
+    <div style="background:#fff;border-radius:var(--radius);padding:20px;margin-bottom:16px;border:1px solid var(--gray-200);">
+      <div id="music-player-container">
+        <div id="music-player"></div>
+      </div>
+      <div style="margin-top:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="musicPrev()">⏮ 上一首</button>
+        <button class="btn btn-primary btn-sm" onclick="musicToggle()" id="music-play-btn">▶️ 播放</button>
+        <button class="btn btn-outline btn-sm" onclick="musicNext()">⏭ 下一首</button>
+        <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+          <span style="font-size:13px;">🔊</span>
+          <input type="range" id="music-volume" min="0" max="100" value="50" style="width:80px;accent-color:var(--primary);" onchange="musicSetVolume(this.value)">
+        </div>
+      </div>
+      <div id="music-now-playing" style="margin-top:12px;font-size:13px;color:var(--gray-500);"></div>
+    </div>
+
+    <!-- 播放清單資訊 -->
+    <div style="background:#E3F2FD;border-radius:var(--radius);padding:16px;border:1px solid #BBDEFB;">
+      <h3 style="font-size:14px;color:#1565C0;margin-bottom:8px;">📋 播放清單</h3>
+      <div style="font-size:13px;color:var(--gray-700);line-height:1.6;">
+        目前播放 YouTube 隨機播放清單，歌曲會自動輪播。<br>
+        💡 <strong>提示</strong>：切換到其他頁面時，右下角的浮動播放器會繼續播放音樂。
+      </div>
+    </div>
+
+    <!-- 快捷按鈕 -->
+    <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-outline btn-sm" onclick="musicMinimize()">🔽 最小化到浮動播放器</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 浮動迷你播放器 ============ -->
+<div id="float-player" style="position:fixed;bottom:20px;right:20px;z-index:9998;">
+  <!-- 最小化按鈕 -->
+  <div id="float-mini" onclick="floatExpand()" style="width:48px;height:48px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3);font-size:20px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+    🎵
+  </div>
+  <!-- 展開播放器 -->
+  <div id="float-expanded" style="display:none;background:#fff;border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,0.2);overflow:hidden;width:300px;">
+    <div style="background:var(--primary);color:#fff;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:13px;font-weight:600;">🎵 音樂播放器</span>
+      <div style="display:flex;gap:6px;">
+        <button onclick="floatMinimize()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;" title="最小化">➖</button>
+        <button onclick="floatClose()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;" title="關閉">✕</button>
+      </div>
+    </div>
+    <div id="float-player-embed" style="width:300px;height:169px;"></div>
+    <div style="padding:8px 12px;display:flex;align-items:center;gap:8px;">
+      <button onclick="musicPrev()" style="background:none;border:none;cursor:pointer;font-size:16px;">⏮</button>
+      <button onclick="musicToggle()" id="float-play-btn" style="background:none;border:none;cursor:pointer;font-size:18px;">▶️</button>
+      <button onclick="musicNext()" style="background:none;border:none;cursor:pointer;font-size:16px;">⏭</button>
+      <input type="range" id="float-volume" min="0" max="100" value="50" style="flex:1;accent-color:var(--primary);height:4px;" onchange="musicSetVolume(this.value)">
+    </div>
+    <div id="float-now-playing" style="padding:0 12px 8px;font-size:11px;color:var(--gray-500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
   </div>
 </div>
 
@@ -9159,6 +9230,125 @@ if('serviceWorker' in navigator){
 if('caches' in window){
   caches.keys().then(function(names){names.forEach(function(name){caches.delete(name);});});
 }
+
+// ============ 音樂播放器 ============
+const YT_PLAYLIST='RDFS93cEWcwQA';
+const YT_VIDEO='FS93cEWcwQA';
+let ytPlayer=null;
+let ytReady=false;
+
+// 載入 YouTube IFrame API
+(function(){
+  const tag=document.createElement('script');
+  tag.src='https://www.youtube.com/iframe_api';
+  document.head.appendChild(tag);
+})();
+
+function onYouTubeIframeAPIReady(){
+  // 建立音樂頁面播放器
+  ytPlayer=new YT.Player('music-player',{
+    height:'100%',
+    width:'100%',
+    videoId:YT_VIDEO,
+    playerVars:{
+      list:YT_PLAYLIST,
+      autoplay:0,
+      controls:1,
+      modestbranding:1,
+      rel:0,
+      fs:1
+    },
+    events:{
+      onReady:function(e){
+        ytReady=true;
+        e.target.setVolume(50);
+        updatePlayBtn();
+      },
+      onStateChange:function(e){
+        updatePlayBtn();
+        // 更新歌曲名稱
+        if(e.data===YT.PlayerState.PLAYING){
+          const data=ytPlayer.getVideoData();
+          const title=data.title||'播放中...';
+          document.getElementById('music-now-playing').textContent='🎵 '+title;
+          const floatNP=document.getElementById('float-now-playing');
+          if(floatNP) floatNP.textContent='🎵 '+title;
+        }
+      }
+    }
+  });
+}
+
+function musicToggle(){
+  if(!ytPlayer||!ytReady) return;
+  if(ytPlayer.getPlayerState()===YT.PlayerState.PLAYING){
+    ytPlayer.pauseVideo();
+  }else{
+    ytPlayer.playVideo();
+  }
+  updatePlayBtn();
+}
+
+function musicPrev(){
+  if(ytPlayer&&ytReady) ytPlayer.previousVideo();
+}
+
+function musicNext(){
+  if(ytPlayer&&ytReady) ytPlayer.nextVideo();
+}
+
+function musicSetVolume(val){
+  if(ytPlayer&&ytReady) ytPlayer.setVolume(parseInt(val));
+  // 同步兩個音量控制
+  document.getElementById('music-volume').value=val;
+  document.getElementById('float-volume').value=val;
+}
+
+function updatePlayBtn(){
+  if(!ytPlayer||!ytReady) return;
+  const playing=ytPlayer.getPlayerState()===YT.PlayerState.PLAYING;
+  const mainBtn=document.getElementById('music-play-btn');
+  const floatBtn=document.getElementById('float-play-btn');
+  if(mainBtn) mainBtn.textContent=playing?'⏸ 暫停':'▶️ 播放';
+  if(floatBtn) floatBtn.textContent=playing?'⏸':'▶️';
+}
+
+// 浮動播放器控制
+function floatExpand(){
+  document.getElementById('float-mini').style.display='none';
+  document.getElementById('float-expanded').style.display='block';
+  // 同步浮動播放器的影片
+  syncFloatPlayer();
+}
+
+function floatMinimize(){
+  document.getElementById('float-expanded').style.display='none';
+  document.getElementById('float-mini').style.display='flex';
+}
+
+function floatClose(){
+  if(ytPlayer&&ytReady) ytPlayer.pauseVideo();
+  document.getElementById('float-expanded').style.display='none';
+  document.getElementById('float-mini').style.display='flex';
+  updatePlayBtn();
+}
+
+function syncFloatPlayer(){
+  // 浮動播放器顯示與主播放器同步的資訊
+  if(ytPlayer&&ytReady){
+    const data=ytPlayer.getVideoData();
+    if(data&&data.title){
+      document.getElementById('float-now-playing').textContent='🎵 '+data.title;
+    }
+    updatePlayBtn();
+  }
+}
+
+function musicMinimize(){
+  floatExpand();
+  navigateTo('dashboard');
+}
+
 </script>
 </body>
 </html>
