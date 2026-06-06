@@ -350,6 +350,7 @@ tr:hover td { background:var(--gray-50); }
   <div class="nav-section">工具</div>
   <div class="nav-item" data-page="dse-stats"><span class="icon">📊</span>DSE題型分佈</div>
   <div class="nav-item" data-page="export"><span class="icon">🖨️</span>匯出列印</div>
+  <div class="nav-item" data-page="sync"><span class="icon">☁️</span>雲端同步</div>
 </nav>
 
 <div class="main">
@@ -697,6 +698,69 @@ tr:hover td { background:var(--gray-50); }
         </div>
       </div>
       <div id="exp-preview-content" style="border:1px solid var(--gray-200);border-radius:8px;padding:16px;max-height:70vh;overflow-y:auto;background:#fff;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SYNC PAGE ============ -->
+<div class="page" id="page-sync">
+  <div class="card">
+    <div class="card-header"><h2>☁️ 雲端同步</h2></div>
+    <div style="font-size:13px;color:var(--gray-500);margin-bottom:16px;">
+      使用 GitHub Gist 同步你的筆記和操練資料，電腦和手機即時互通。
+    </div>
+
+    <!-- 設定 Token -->
+    <div style="background:var(--warm-bg);border-radius:var(--radius);padding:16px;margin-bottom:16px;border:1px solid #FFE082;">
+      <h3 style="font-size:14px;color:var(--warm-accent);margin-bottom:10px;">🔑 步驟一：設定 GitHub Token</h3>
+      <div style="font-size:12px;color:var(--gray-700);margin-bottom:10px;line-height:1.6;">
+        1. 開啟 <a href="https://github.com/settings/tokens/new" target="_blank" style="color:var(--primary);font-weight:600;">GitHub Token 設定頁</a><br>
+        2. Token name 填寫 <code style="background:#fff;padding:1px 6px;border-radius:3px;">DSE-Sync</code><br>
+        3. Expiration 選 <code style="background:#fff;padding:1px 6px;border-radius:3px;">No expiration</code><br>
+        4. 勾選 <strong>gist</strong> 權限（只需這一個）<br>
+        5. 按 <strong>Generate token</strong>，複製 token 貼上下面
+      </div>
+      <div class="form-group">
+        <label class="form-label">GitHub Personal Access Token</label>
+        <div style="display:flex;gap:8px;">
+          <input class="form-input" id="sync-token" type="password" placeholder="ghp_xxxxxxxxxxxx" style="flex:1;">
+          <button class="btn btn-primary btn-sm" onclick="saveSyncToken()">💾 儲存</button>
+        </div>
+      </div>
+      <div id="sync-token-status" style="font-size:12px;margin-top:6px;"></div>
+    </div>
+
+    <!-- 同步操作 -->
+    <div style="background:var(--cool-bg);border-radius:var(--radius);padding:16px;margin-bottom:16px;border:1px solid #BBDEFB;">
+      <h3 style="font-size:14px;color:var(--cool-accent);margin-bottom:10px;">🔄 步驟二：同步資料</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+        <button class="btn btn-success" onclick="syncUpload()" id="sync-upload-btn">⬆️ 上傳到雲端</button>
+        <button class="btn btn-cool" onclick="syncDownload()" id="sync-download-btn">⬇️ 從雲端下載</button>
+      </div>
+      <div style="font-size:12px;color:var(--gray-500);line-height:1.6;">
+        <strong>⬆️ 上傳</strong>：把本機資料上傳到 GitHub Gist（覆蓋雲端）<br>
+        <strong>⬇️ 下載</strong>：從 GitHub Gist 下載資料到本機（合併，不覆蓋）
+      </div>
+    </div>
+
+    <!-- 自動同步 -->
+    <div style="background:#E8F5E9;border-radius:var(--radius);padding:16px;margin-bottom:16px;border:1px solid #C8E6C9;">
+      <h3 style="font-size:14px;color:var(--success);margin-bottom:10px;">⚡ 步驟三：自動同步（可選）</h3>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <input type="checkbox" id="sync-auto" onchange="toggleAutoSync()" style="accent-color:var(--success);width:18px;height:18px;">
+          開啟自動同步
+        </label>
+      </div>
+      <div style="font-size:12px;color:var(--gray-500);">開啟後，每次開啟系統時自動從雲端拉取最新資料</div>
+    </div>
+
+    <!-- 同步狀態 -->
+    <div style="background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);padding:16px;">
+      <h3 style="font-size:14px;color:var(--gray-700);margin-bottom:10px;">📊 同步狀態</h3>
+      <div id="sync-status" style="font-size:13px;color:var(--gray-500);">
+        <div>尚未連接雲端</div>
+      </div>
     </div>
   </div>
 </div>
@@ -7585,6 +7649,7 @@ function navigateTo(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   if(page==='dashboard') renderDashboard();
+  if(page==='sync') initSyncPage();
   // Reset export to step1
   if(page==='export'){
     document.getElementById('export-step1').style.display='block';
@@ -8642,6 +8707,217 @@ document.querySelectorAll('.modal-overlay').forEach(m=>{
   m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('show'); });
 });
 
+// ===== CLOUD SYNC (GitHub Gist) =====
+const SYNC_KEY='dse_sync_token';
+const GIST_KEY='dse_gist_id';
+const GIST_DESC='DSE Study System Data Sync';
+
+function getSyncToken(){
+  return localStorage.getItem(SYNC_KEY)||'';
+}
+function getGistId(){
+  return localStorage.getItem(GIST_KEY)||'';
+}
+
+function saveSyncToken(){
+  const token=document.getElementById('sync-token').value.trim();
+  if(!token){showSyncTokenStatus('⚠️ 請輸入 Token','var(--danger)');return;}
+  localStorage.setItem(SYNC_KEY,token);
+  document.getElementById('sync-token').type='password';
+  showSyncTokenStatus('✅ Token 已儲存','var(--success)');
+  updateSyncStatus();
+}
+
+function showSyncTokenStatus(msg,color){
+  const el=document.getElementById('sync-token-status');
+  if(el){el.textContent=msg;el.style.color=color||'var(--gray-500)';}
+}
+
+function updateSyncStatus(){
+  const token=getSyncToken();
+  const gistId=getGistId();
+  const el=document.getElementById('sync-status');
+  if(!el) return;
+
+  const notes=getData(KEYS.notes);
+  const prac=getData(KEYS.prac);
+  const noteCount=Object.values(notes).reduce((s,a)=>s+a.length,0);
+  const pracCount=Object.values(prac).reduce((s,a)=>s+a.length,0);
+
+  let html=`<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>🔑 雲端連接：</span><strong style="color:${token?'var(--success)':'var(--danger)'};">${token?'已連接':'未連接'}</strong></div>`;
+  html+=`<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>☁️ Gist ID：</span><span>${gistId||'尚未建立'}</span></div>`;
+  html+=`<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>📝 本機筆記：</span><span>${noteCount} 條</span></div>`;
+  html+=`<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>✏️ 本機操練：</span><span>${pracCount} 條</span></div>`;
+  const autoSync=localStorage.getItem('dse_auto_sync')==='true';
+  html+=`<div style="display:flex;justify-content:space-between;"><span>⚡ 自動同步：</span><span style="color:${autoSync?'var(--success)':'var(--gray-500)'};">${autoSync?'已開啟':'已關閉'}</span></div>`;
+  el.innerHTML=html;
+}
+
+function toggleAutoSync(){
+  const on=document.getElementById('sync-auto').checked;
+  localStorage.setItem('dse_auto_sync',on?'true':'false');
+  updateSyncStatus();
+}
+
+// 上傳本機資料到 Gist
+async function syncUpload(){
+  const token=getSyncToken();
+  if(!token){alert('⚠️ 請先設定 GitHub Token');return;}
+
+  const btn=document.getElementById('sync-upload-btn');
+  btn.disabled=true; btn.textContent='⏳ 上傳中...';
+
+  try{
+    // 收集所有資料
+    const syncData={
+      notes:getData(KEYS.notes),
+      prac:getData(KEYS.prac),
+      uploadTime:new Date().toISOString(),
+      device:navigator.userAgent.includes('Mobile')?'手機':'電腦'
+    };
+
+    const gistId=getGistId();
+    const method=gistId?'PATCH':'POST';
+    const url=gistId?`https://api.github.com/gists/${gistId}`:'https://api.github.com/gists';
+
+    const body={
+      description:GIST_DESC,
+      public:false,
+      files:{
+        'dse-study-data.json':{
+          content:JSON.stringify(syncData,null,2)
+        }
+      }
+    };
+
+    const resp=await fetch(url,{
+      method:method,
+      headers:{
+        'Authorization':`Bearer ${token}`,
+        'Accept':'application/vnd.github.v3+json',
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify(body)
+    });
+
+    if(!resp.ok){
+      const err=await resp.json();
+      throw new Error(err.message||`HTTP ${resp.status}`);
+    }
+
+    const data=await resp.json();
+    if(data.id) localStorage.setItem(GIST_KEY,data.id);
+
+    btn.disabled=false; btn.textContent='⬆️ 上傳到雲端';
+    alert(`✅ 上傳成功！\n\n📝 筆記：${Object.values(syncData.notes).reduce((s,a)=>s+a.length,0)} 條\n✏️ 操練：${Object.values(syncData.prac).reduce((s,a)=>s+a.length,0)} 條\n☁️ Gist ID：${data.id}\n\n現在可以在另一部裝置按「⬇️ 從雲端下載」取得資料`);
+    updateSyncStatus();
+  }catch(err){
+    btn.disabled=false; btn.textContent='⬆️ 上傳到雲端';
+    alert('❌ 上傳失敗：'+err.message);
+  }
+}
+
+// 從 Gist 下載資料到本機（合併）
+async function syncDownload(){
+  const token=getSyncToken();
+  const gistId=getGistId();
+  if(!token){alert('⚠️ 請先設定 GitHub Token');return;}
+  if(!gistId){alert('⚠️ 尚未建立雲端資料，請先在另一部裝置上傳');return;}
+
+  const btn=document.getElementById('sync-download-btn');
+  btn.disabled=true; btn.textContent='⏳ 下載中...';
+
+  try{
+    const resp=await fetch(`https://api.github.com/gists/${gistId}`,{
+      headers:{
+        'Authorization':`Bearer ${token}`,
+        'Accept':'application/vnd.github.v3+json'
+      }
+    });
+
+    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+    const data=await resp.json();
+    const file=data.files['dse-study-data.json'];
+    if(!file) throw new Error('雲端沒有找到同步資料');
+
+    const cloudData=JSON.parse(file.content);
+    if(!cloudData.notes && !cloudData.prac) throw new Error('雲端資料格式錯誤');
+
+    // 合併策略：以 id 為唯一鍵，雲端優先但保留本機獨有
+    const localNotes=getData(KEYS.notes);
+    const localPrac=getData(KEYS.prac);
+    const cloudNotes=cloudData.notes||{};
+    const cloudPrac=cloudData.prac||{};
+
+    // 合併筆記
+    const mergedNotes=mergeData(localNotes,cloudNotes);
+    // 合併操練
+    const mergedPrac=mergeData(localPrac,cloudPrac);
+
+    setData(KEYS.notes,mergedNotes);
+    setData(KEYS.prac,mergedPrac);
+
+    btn.disabled=false; btn.textContent='⬇️ 從雲端下載';
+
+    const noteCount=Object.values(mergedNotes).reduce((s,a)=>s+a.length,0);
+    const pracCount=Object.values(mergedPrac).reduce((s,a)=>s+a.length,0);
+    alert(`✅ 下載並合併成功！\n\n📝 筆記：${noteCount} 條\n✏️ 操練：${pracCount} 條\n📅 雲端上傳時間：${cloudData.uploadTime||'未知'}\n📱 來源裝置：${cloudData.device||'未知'}`);
+    renderDashboard();
+    updateSyncStatus();
+  }catch(err){
+    btn.disabled=false; btn.textContent='⬇️ 從雲端下載';
+    alert('❌ 下載失敗：'+err.message);
+  }
+}
+
+// 合併資料：以 id 去重，雲端資料優先
+function mergeData(local,cloud){
+  const merged={};
+  const allKeys=new Set([...Object.keys(local),...Object.keys(cloud)]);
+  allKeys.forEach(key=>{
+    const localItems=local[key]||[];
+    const cloudItems=cloud[key]||[];
+    const map=new Map();
+    // 先放本機
+    localItems.forEach(item=>{if(item.id) map.set(item.id,item);});
+    // 雲端覆蓋（優先）
+    cloudItems.forEach(item=>{if(item.id) map.set(item.id,item);});
+    merged[key]=[...map.values()];
+  });
+  return merged;
+}
+
+// 自動同步：頁面載入時檢查
+async function autoSyncOnLoad(){
+  const token=getSyncToken();
+  const gistId=getGistId();
+  const autoEnabled=localStorage.getItem('dse_auto_sync')==='true';
+  if(!autoEnabled||!token||!gistId) return;
+
+  try{
+    const resp=await fetch(`https://api.github.com/gists/${gistId}`,{
+      headers:{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github.v3+json'}
+    });
+    if(!resp.ok) return;
+    const data=await resp.json();
+    const file=data.files['dse-study-data.json'];
+    if(!file) return;
+    const cloudData=JSON.parse(file.content);
+    const cloudNotes=cloudData.notes||{};
+    const cloudPrac=cloudData.prac||{};
+    const localNotes=getData(KEYS.notes);
+    const localPrac=getData(KEYS.prac);
+    const mergedNotes=mergeData(localNotes,cloudNotes);
+    const mergedPrac=mergeData(localPrac,cloudPrac);
+    setData(KEYS.notes,mergedNotes);
+    setData(KEYS.prac,mergedPrac);
+    console.log('☁️ 自動同步完成');
+  }catch(e){
+    console.log('☁️ 自動同步失敗：',e.message);
+  }
+}
+
 // ===== INIT =====
 function seedData(){
   const notes=getData(KEYS.notes);
@@ -8677,6 +8953,16 @@ function seedData(){
 
 seedData();
 renderDashboard();
+autoSyncOnLoad(); // 自動同步
+
+function initSyncPage(){
+  const token=getSyncToken();
+  const el=document.getElementById('sync-token');
+  if(el && token) el.value=token;
+  const autoEl=document.getElementById('sync-auto');
+  if(autoEl) autoEl.checked=localStorage.getItem('dse_auto_sync')==='true';
+  updateSyncStatus();
+}
 
 // 強制清除舊快取 - 確保手機載入最新版本
 if('serviceWorker' in navigator){
@@ -8684,7 +8970,6 @@ if('serviceWorker' in navigator){
     registrations.forEach(function(reg){reg.unregister();});
   });
 }
-// 清除所有 Cache Storage
 if('caches' in window){
   caches.keys().then(function(names){names.forEach(function(name){caches.delete(name);});});
 }
