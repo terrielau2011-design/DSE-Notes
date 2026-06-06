@@ -121,6 +121,7 @@ body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
 .note-item .self-test .q { font-size:13px; color:var(--cool); font-weight:600; }
 .note-item .self-test .a { font-size:13px; color:var(--success); margin-top:6px; display:none; }
 .note-item .self-test .a.show { display:block; }
+.collapsed { display:none; }
 
 /* Proficiency */
 .prof { display:inline-flex; gap:3px; }
@@ -5855,27 +5856,51 @@ function renderNotes(key){
   if(f==='low') filtered=notes.filter(n=>n.prof&&parseInt(n.prof)<=2);
   const el=document.getElementById('note-list-'+key);
   if(!filtered.length){ el.innerHTML='<div class="empty-state"><div class="icon">📖</div><div class="title">仲未有筆記</div><div class="desc">按「+ 新增筆記」開始記錄</div></div>'; return; }
-  el.innerHTML=filtered.map(n=>{
+
+  // 課題表列模式：按課題分組，顯示格式描述
+  el.innerHTML=filtered.map((n,idx)=>{
     const tags=(n.dseType||'').split('/').filter(Boolean).map(t=>{
       const cls={'MC':'tag-mc','短答':'tag-short','DBQ':'tag-dbq','論述':'tag-essay'}[t]||'tag-warm';
       return `<span class="tag ${cls}">${t}</span>`;
     }).join('');
     const prof=n.prof?parseInt(n.prof):0;
     const dots=[1,2,3,4,5].map(i=>`<span class="prof-dot ${i<=prof?(i<=2?'warn':'filled'):''}"></span>`).join('');
-    return `<div class="note-item">
+
+    // 格式描述
+    let fmtDesc='';
+    if(n.kbData){
+      const fmts=[];
+      if(n.kbData.bg||n.kbData.factDetail||n.kbData.institutionDetail) fmts.push('①事實');
+      if(n.kbData.causeP||n.kbData.causeE||n.kbData.causeS||n.kbData.process||n.kbData.shortImpact||n.kbData.longImpact||n.kbData.posImpact||n.kbData.negImpact) fmts.push('②原因過程影響');
+      if(n.kbData.p1) fmts.push('③PEEL');
+      fmtDesc=fmts.join(' · ');
+    } else if(n.fmtLabel){
+      fmtDesc=n.fmtLabel;
+    }
+
+    const noteId=`note-detail-${key}-${idx}`;
+    return `<div class="note-item" style="cursor:pointer;" onclick="document.getElementById('${noteId}').classList.toggle('collapsed')">
       <div style="display:flex;justify-content:space-between;align-items:start;">
-        <div><div class="note-title">${n.topic}</div><div class="note-subtitle">${n.subtopic}</div></div>
-        <div class="btn-group"><button class="btn btn-sm btn-outline" onclick="editNote('${key}','${n.id}')">✏️</button><button class="btn btn-sm btn-danger" onclick="deleteNote('${key}','${n.id}')">🗑️</button></div>
+        <div style="flex:1;min-width:0;">
+          <div class="note-title">${n.topic}${fmtDesc?` <span style="font-size:11px;color:var(--cool-accent);font-weight:400;">${fmtDesc}</span>`:''}</div>
+          <div class="note-subtitle">${n.subtopic}</div>
+        </div>
+        <div class="btn-group" onclick="event.stopPropagation();">
+          <button class="btn btn-sm btn-outline" onclick="editNote('${key}','${n.id}')">✏️</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteNote('${key}','${n.id}')">🗑️</button>
+        </div>
       </div>
-      ${n.content?`<div class="note-content">${n.content}</div>`:''}
-      ${n.keywords?`<div class="note-keywords">🔑 ${n.keywords}</div>`:''}
-      <div class="note-meta">
-        ${n.dse==='是'?`<span class="tag" style="background:#FFEBEE;color:var(--danger);">📊 DSE已出現 ${n.dseYear||''}</span>`:''}
-        ${tags}
-        <div class="prof" title="熟練度 ${prof}/5">${dots}</div>
+      <div id="${noteId}" class="collapsed" style="margin-top:8px;">
+        ${n.content?`<div class="note-content">${n.content}</div>`:''}
+        ${n.keywords?`<div class="note-keywords">🔑 ${n.keywords}</div>`:''}
+        <div class="note-meta">
+          ${n.dse==='是'?`<span class="tag" style="background:#FFEBEE;color:var(--danger);">📊 DSE已出現 ${n.dseYear||''}</span>`:''}
+          ${tags}
+          <div class="prof" title="熟練度 ${prof}/5">${dots}</div>
+        </div>
+        ${n.testQ?`<div class="self-test"><div class="q">❓ ${n.testQ}</div><div class="a" id="ans-${n.id}">💡 ${n.testA||''}</div><button class="btn btn-sm btn-outline" style="margin-top:6px;" onclick="document.getElementById('ans-${n.id}').classList.toggle('show');this.textContent=this.textContent==='👁️ 顯示答案'?'🙈 隱藏答案':'👁️ 顯示答案'">👁️ 顯示答案</button></div>`:''}
+        ${n.remarks?`<div style="margin-top:8px;font-size:12px;color:var(--gray-500);">📌 ${n.remarks}</div>`:''}
       </div>
-      ${n.testQ?`<div class="self-test"><div class="q">❓ ${n.testQ}</div><div class="a" id="ans-${n.id}">💡 ${n.testA||''}</div><button class="btn btn-sm btn-outline" style="margin-top:6px;" onclick="document.getElementById('ans-${n.id}').classList.toggle('show');this.textContent=this.textContent==='👁️ 顯示答案'?'🙈 隱藏答案':'👁️ 顯示答案'">👁️ 顯示答案</button></div>`:''}
-      ${n.remarks?`<div style="margin-top:8px;font-size:12px;color:var(--gray-500);">📌 ${n.remarks}</div>`:''}
     </div>`;
   }).join('');
 }
@@ -7440,13 +7465,51 @@ function saveGeneratedNote(){
       else contentParts.push(el.value.trim());
     }
   });
-  const data=getData(KEYS.notes);
-  if(!data[sKey]) data[sKey]=[];
-  data[sKey].push({
+
+  // ===== 儲存結構化資料（用於匯出時匹配知識庫格式） =====
+  const fmt=selectedFmt||'1';
+  const fmtLabel={'1':'①事實','2':'②原因過程影響','3':'③PEEL','4':'④混合型'}[fmt]||'';
+
+  // 從知識庫查找匹配課題以取得完整資料
+  const kb=knowledgeBase[subject]||[];
+  const match=kb.find(t=>t.title===title)||(title.length>=2?kb.find(t=>t.title.includes(title)||title.includes(t.title)):null);
+
+  // 收集各欄位的值
+  const fields={};
+  document.querySelectorAll('#gen-result-content textarea, #gen-result-content input[type=text]').forEach(el=>{
+    if(el.id && el.value.trim()){
+      fields[el.id]=el.value.trim();
+    }
+  });
+
+  const note={
     id:uid(), topic:title, subtopic:document.getElementById('gen-time').value||'',
     content:contentParts.join('\n'), keywords:document.getElementById('gen-people').value||'',
-    dse:'否', dseType:'', dseYear:'', testQ:'', testA:'', prof:'1', remarks:'由筆記生成器建立'
-  });
+    dse:'否', dseType:'', dseYear:'', testQ:'', testA:'', prof:'1', remarks:'由筆記生成器建立',
+    fmt:fmt, fmtLabel:fmtLabel, genSubject:subject, fields:fields
+  };
+
+  // 如果有匹配的知識庫條目，儲存結構化資料供匯出使用
+  if(match){
+    note.kbData={
+      time:match.time||'', people:match.people||'', region:match.region||'', dynasty:match.dynasty||'',
+      bg:match.bg||'', factDetail:match.factDetail||'', institutionDetail:match.institutionDetail||null,
+      causeP:match.causeP||'', causeE:match.causeE||'', causeS:match.causeS||'', causeO:match.causeO||'',
+      keyCause:match.keyCause||'', process:match.process||'', turningPoint:match.turningPoint||'',
+      shortImpact:match.shortImpact||'', longImpact:match.longImpact||'',
+      posImpact:match.posImpact||'', negImpact:match.negImpact||'',
+      evaluation:match.evaluation||'',
+      p1:match.p1||'', e1_1:match.e1_1||'', e2_1:match.e2_1||'', l1:match.l1||'',
+      p2:match.p2||'', e1_2:match.e1_2||'', e2_2:match.e2_2||'', l2:match.l2||'',
+      conclusion:match.conclusion||'',
+      dseQ:match.dseQ||'', commonMistakes:match.commonMistakes||'',
+      answerTips:match.answerTips||'', dseRecord:match.dseRecord||''
+    };
+  }
+
+  const data=getData(KEYS.notes);
+  if(!data[sKey]) data[sKey]=[];
+  data[sKey].push(note);
   setData(KEYS.notes,data);
   alert('✅ 已儲存到'+subject+'筆記！');
 }
@@ -7703,6 +7766,16 @@ function loadExpItems(){
     } else if(item._src==='user'){
       tags='✏️ 筆記';
       if(item.dse==='是') tags+=' 📊DSE';
+      // 顯示格式描述
+      if(item.kbData){
+        const ufmts=[];
+        if(item.kbData.bg||item.kbData.factDetail||item.kbData.institutionDetail) ufmts.push('①事實');
+        if(item.kbData.causeP||item.kbData.causeE||item.kbData.causeS||item.kbData.process||item.kbData.shortImpact||item.kbData.longImpact||item.kbData.posImpact||item.kbData.negImpact) ufmts.push('②原因過程影響');
+        if(item.kbData.p1) ufmts.push('③PEEL');
+        fmtDesc=ufmts.join(' · ');
+      } else if(item.fmtLabel){
+        fmtDesc=item.fmtLabel;
+      }
     } else if(item._src==='quiz-group'||item._src==='prac-group'){
       tags=`📝 ${item._pqType||''} · ${item.qCount||0}題`;
     } else if(item._src==='prac'){
@@ -7775,6 +7848,16 @@ function loadExpItemsFromCache(){
     } else if(item._src==='user'){
       tags='✏️ 筆記';
       if(item.dse==='是') tags+=' 📊DSE';
+      // 顯示格式描述
+      if(item.kbData){
+        const ufmts=[];
+        if(item.kbData.bg||item.kbData.factDetail||item.kbData.institutionDetail) ufmts.push('①事實');
+        if(item.kbData.causeP||item.kbData.causeE||item.kbData.causeS||item.kbData.process||item.kbData.shortImpact||item.kbData.longImpact||item.kbData.posImpact||item.kbData.negImpact) ufmts.push('②原因過程影響');
+        if(item.kbData.p1) ufmts.push('③PEEL');
+        fmtDesc=ufmts.join(' · ');
+      } else if(item.fmtLabel){
+        fmtDesc=item.fmtLabel;
+      }
     } else if(item._src==='quiz-group'||item._src==='prac-group'){
       tags=`📝 ${item._pqType||''} · ${item.qCount||0}題`;
     } else if(item._src==='prac'){
@@ -7940,10 +8023,105 @@ function renderExportItem(item,subj){
   const subtopic=item.subtopic||item.category||'';
   let html='';
 
-  // === 用戶筆記模板 - 匹配app內 renderNotes() 格式 ===
+  // === 用戶筆記模板 ===
   if(item._src==='user'){
+    // 如果有知識庫結構化資料，用知識庫格式渲染
+    if(item.kbData && ['中史','世史','C&SD'].includes(subj)){
+      const kb=item.kbData;
+      const fmts=[];
+      if(kb.bg||kb.factDetail||kb.institutionDetail) fmts.push('①事實');
+      if(kb.causeP||kb.causeE||kb.causeS||kb.process||kb.shortImpact||kb.longImpact||kb.posImpact||kb.negImpact) fmts.push('②原因過程影響');
+      if(kb.p1) fmts.push('③PEEL');
+      const fmtStr=fmts.length?` <span style="font-size:10pt;color:var(--cool-accent);font-weight:400;">${fmts.join(' · ')}</span>`:'';
+      const fmtLabel=item.fmtLabel?` <span style="font-size:10pt;color:var(--warm-accent);font-weight:400;">[${item.fmtLabel}]</span>`:'';
+
+      html+=`<div class="note-card">`;
+      html+=`<div class="nt-title">✏️ ${title}${fmtStr}${fmtLabel}</div>`;
+      if(subtopic) html+=`<div class="nt-subtitle">${subtopic}</div>`;
+
+      // 信息行
+      const infoParts=[];
+      if(kb.time) infoParts.push(kb.time);
+      if(kb.people) infoParts.push(kb.people);
+      if(kb.region) infoParts.push(kb.region);
+      if(kb.dynasty) infoParts.push(kb.dynasty);
+      if(infoParts.length) html+=`<div class="nt-info">${infoParts.join(' ｜ ')}</div>`;
+
+      // 格式① 事實型
+      if(kb.bg) html+=`<div class="nt-section"><div class="nt-label">📖 背景</div><div class="nt-content">${kb.bg}</div></div>`;
+      if(kb.factDetail) html+=`<div class="nt-section"><div class="nt-label">📝 史實細節</div><div class="nt-content">${kb.factDetail}</div></div>`;
+      if(kb.institutionDetail) html+=`<div class="nt-section"><div class="nt-label">🏛️ 制度細節</div><div class="nt-content">${renderInstitution(kb.institutionDetail)}</div></div>`;
+
+      // 格式② 原因-過程-影響
+      if(kb.causeP) html+=`<div class="nt-section"><div class="nt-label">🔵 原因（政治）</div><div class="nt-content">${kb.causeP}</div></div>`;
+      if(kb.causeE) html+=`<div class="nt-section"><div class="nt-label">🟢 原因（經濟）</div><div class="nt-content">${kb.causeE}</div></div>`;
+      if(kb.causeS) html+=`<div class="nt-section"><div class="nt-label">🟡 原因（社會）</div><div class="nt-content">${kb.causeS}</div></div>`;
+      if(kb.causeO) html+=`<div class="nt-section"><div class="nt-label">⚪ 其他原因</div><div class="nt-content">${kb.causeO}</div></div>`;
+      if(kb.keyCause) html+=`<div class="nt-section"><div class="nt-label">🔑 關鍵原因</div><div class="nt-content">${kb.keyCause}</div></div>`;
+      if(kb.process) html+=`<div class="nt-section"><div class="nt-label">📋 過程</div><div class="nt-content">${kb.process}</div></div>`;
+      if(kb.turningPoint) html+=`<div class="nt-section"><div class="nt-label">🔄 轉折點</div><div class="nt-content">${kb.turningPoint}</div></div>`;
+      if(kb.shortImpact) html+=`<div class="nt-section"><div class="nt-label">⚡ 短期影響</div><div class="nt-content">${kb.shortImpact}</div></div>`;
+      if(kb.longImpact) html+=`<div class="nt-section"><div class="nt-label">📈 長期影響</div><div class="nt-content">${kb.longImpact}</div></div>`;
+      if(kb.posImpact) html+=`<div class="nt-section"><div class="nt-label">✅ 正面影響</div><div class="nt-content">${kb.posImpact}</div></div>`;
+      if(kb.negImpact) html+=`<div class="nt-section"><div class="nt-label">❌ 負面影響</div><div class="nt-content">${kb.negImpact}</div></div>`;
+      if(kb.evaluation) html+=`<div class="nt-section"><div class="nt-label">⚖️ 評價</div><div class="nt-content">${kb.evaluation}</div></div>`;
+
+      // DSE Questions
+      if(kb.dseQ){
+        const qs=kb.dseQ.split('|||').map(q=>q.trim()).filter(Boolean);
+        html+=`<div class="dse-questions"><div class="nt-label">🎯 DSE 常見問題</div><ol>`;qs.forEach(q=>html+=`<li>${q}</li>`);html+=`</ol></div>`;
+      }
+
+      // PEEL 答題結構
+      if(kb.p1){
+        html+=`<div class="peel-block"><h3>📐 PEEL 答題結構</h3>`;
+        html+=`<h3 style="color:#C0392B;">── 論點 1 ──</h3>`;
+        if(kb.p1) html+=`<div class="peel-p"><strong>P（論點）：</strong>${kb.p1}</div>`;
+        if(kb.e1_1) html+=`<div class="peel-e1"><strong>E（論據）：</strong>${kb.e1_1}</div>`;
+        if(kb.e2_1) html+=`<div class="peel-e2"><strong>E（解釋）：</strong>${kb.e2_1}</div>`;
+        if(kb.l1) html+=`<div class="peel-l"><strong>L（扣題）：</strong>${kb.l1}</div>`;
+        if(kb.p2){
+          html+=`<h3 style="color:#C0392B;">── 論點 2 ──</h3>`;
+          if(kb.p2) html+=`<div class="peel-p"><strong>P（論點）：</strong>${kb.p2}</div>`;
+          if(kb.e1_2) html+=`<div class="peel-e1"><strong>E（論據）：</strong>${kb.e1_2}</div>`;
+          if(kb.e2_2) html+=`<div class="peel-e2"><strong>E（解釋）：</strong>${kb.e2_2}</div>`;
+          if(kb.l2) html+=`<div class="peel-l"><strong>L（扣題）：</strong>${kb.l2}</div>`;
+        }
+        if(kb.conclusion) html+=`<div class="peel-conc"><strong>🔑 總結立場：</strong>${kb.conclusion}</div>`;
+        html+=`</div>`;
+      }
+
+      if(kb.commonMistakes) html+=`<div class="warn-box"><strong>⚠️ 常犯錯誤：</strong>${kb.commonMistakes.replace(/\|\|\|/g,'；')}</div>`;
+      if(kb.answerTips) html+=`<div class="tip-box"><strong>💡 答題貼士：</strong>${kb.answerTips.replace(/\|\|\|/g,'；')}</div>`;
+      if(kb.dseRecord) html+=`<div class="nt-section"><div class="nt-label">📊 DSE 出題記錄</div><div class="nt-content">${kb.dseRecord}</div></div>`;
+
+      // DSE tags + proficiency + self-test + remarks
+      if(item.dse==='是'){
+        html+=`<div style="margin:4pt 0;">`;
+        html+=`<span class="dse-tag">📊 DSE已出現 ${item.dseYear||''}</span>`;
+        (item.dseType||'').split('/').filter(Boolean).forEach(t=>{
+          const cls={'MC':'tag-mc','短答':'tag-short','DBQ':'tag-dbq','論述':'tag-essay'}[t]||'';
+          html+=`<span class="dse-tag ${cls}">${t}</span>`;
+        });
+        html+=`</div>`;
+      }
+      if(item.prof){
+        const prof=parseInt(item.prof)||0;
+        html+=`<div class="prof-dots" title="熟練度 ${prof}/5">`;
+        [1,2,3,4,5].forEach(i=>{html+=`<span class="prof-dot ${i<=prof?(i<=2?'warn':'filled'):''}"></span>`;});
+        html+=` ${prof}/5</div>`;
+      }
+      if(item.testQ) html+=`<div class="self-test-box"><div class="st-q">❓ ${item.testQ}</div><div class="st-a">💡 ${item.testA||''}</div></div>`;
+      if(item.remarks) html+=`<div style="margin-top:6pt;font-size:10pt;color:#9E9E9E;">📌 ${item.remarks}</div>`;
+
+      html+=`</div>`;
+      return html;
+    }
+
+    // 沒有知識庫資料的筆記（手動新增），用基本格式
+    const fmtLabel=item.fmtLabel?` <span style="font-size:10pt;color:var(--warm-accent);font-weight:400;">[${item.fmtLabel}]</span>`:'';
     html+=`<div class="note-card">`;
-    html+=`<div class="nt-title">${title}</div>`;
+    html+=`<div class="nt-title">${title}${fmtLabel}</div>`;
     if(subtopic) html+=`<div class="nt-subtitle">${subtopic}</div>`;
     if(item.content) html+=`<div class="nt-content">${item.content}</div>`;
     if(item.keywords) html+=`<div class="nt-keywords">🔑 ${item.keywords}</div>`;
