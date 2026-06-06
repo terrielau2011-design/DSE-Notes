@@ -331,6 +331,7 @@ tr:hover td { background:var(--gray-50); }
 @keyframes jiwoongBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
 #jiwoong-avatar.bounce{animation:jiwoongBounce 0.5s ease 2;}
 .jiwoong-page-header img{object-fit:cover;object-position:center top;}
+.zb1-avatar{border-radius:50%;background-size:cover;background-position:center 15%;border:3px solid #4CAF50;box-shadow:0 4px 12px rgba(76,175,80,0.3);flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -375,7 +376,7 @@ tr:hover td { background:var(--gray-50); }
 <div class="page active" id="page-dashboard">
   <!-- 地雄主頁頭像 -->
   <div class="jiwoong-page-header" style="display:flex;align-items:center;gap:14px;margin-bottom:16px;padding:14px 18px;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border-radius:var(--radius);border:1px solid #A5D6A7;">
-    <img src="https://i.imgur.com/wQndvYn.jpeg" style="width:64px;height:64px;border-radius:50%;object-fit:cover;object-position:center top;object-position:center top;border:3px solid #4CAF50;box-shadow:0 4px 12px rgba(76,175,80,0.3);">
+    <div class="zb1-avatar" style="width:64px;height:64px;background-image:url('https://i.imgur.com/wQndvYn.jpeg');border:3px solid #4CAF50;box-shadow:0 4px 12px rgba(76,175,80,0.3);"></div>
     <div>
       <div style="font-size:14px;font-weight:600;color:#2E7D32;">ZB1 撐你! 💚</div>
       <div style="font-size:12px;color:#558B2F;margin-top:2px;" id="jiwoong-welcome">歡迎返嚟！今日都要加油呀！💪</div>
@@ -394,7 +395,7 @@ tr:hover td { background:var(--gray-50); }
 <!-- ============ NOTE GENERATOR ============ -->
 <div class="page" id="page-generator">
   <div class="jiwoong-page-header" style="display:flex;align-items:center;gap:14px;margin-bottom:16px;padding:14px 18px;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border-radius:var(--radius);border:1px solid #A5D6A7;">
-    <img src="https://i.imgur.com/vqjZjqp.jpeg" style="width:52px;height:52px;border-radius:50%;object-fit:cover;object-position:center top;border:2px solid #4CAF50;">
+    <div class="zb1-avatar" style="width:52px;height:52px;background-image:url('https://i.imgur.com/vqjZjqp.jpeg');border:2px solid #4CAF50;"></div>
     <div style="font-size:13px;color:#2E7D32;font-weight:500;">認真做筆記，ZB1 撐你！📝💚</div>
   </div>
   <div class="card">
@@ -446,7 +447,7 @@ tr:hover td { background:var(--gray-50); }
 <!-- ============ QUIZ ============ -->
 <div class="page" id="page-quiz">
   <div class="jiwoong-page-header" style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 16px;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border-radius:var(--radius);border:1px solid #A5D6A7;">
-    <img src="https://i.imgur.com/JdWC7gQ.jpeg" style="width:44px;height:44px;border-radius:50%;object-fit:cover;object-position:center top;border:2px solid #4CAF50;">
+    <div class="zb1-avatar" style="width:44px;height:44px;background-image:url('https://i.imgur.com/JdWC7gQ.jpeg');border:2px solid #4CAF50;"></div>
     <div style="font-size:12px;color:#2E7D32;">퀴즈 시간! 할 수 있어! 🧪💚</div>
   </div>
   <div class="card">
@@ -534,7 +535,7 @@ tr:hover td { background:var(--gray-50); }
 <!-- ============ NOTES PAGES (shared template) ============ -->
 <div class="page" id="page-notes-chhist">
   <div class="jiwoong-page-header" style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 16px;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border-radius:var(--radius);border:1px solid #A5D6A7;">
-    <img src="https://i.imgur.com/R19UNLQ.jpeg" style="width:44px;height:44px;border-radius:50%;object-fit:cover;object-position:center top;border:2px solid #4CAF50;">
+    <div class="zb1-avatar" style="width:44px;height:44px;background-image:url('https://i.imgur.com/R19UNLQ.jpeg');border:2px solid #4CAF50;"></div>
     <div style="font-size:12px;color:#2E7D32;">중사 기록 열심히! 파이팅! 💚</div>
   </div>
   <div class="card">
@@ -552,7 +553,7 @@ tr:hover td { background:var(--gray-50); }
 
 <div class="page" id="page-notes-whist">
   <div class="jiwoong-page-header" style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 16px;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border-radius:var(--radius);border:1px solid #A5D6A7;">
-    <img src="https://i.imgur.com/R19UNLQ.jpeg" style="width:44px;height:44px;border-radius:50%;object-fit:cover;object-position:center top;border:2px solid #4CAF50;">
+    <div class="zb1-avatar" style="width:44px;height:44px;background-image:url('https://i.imgur.com/R19UNLQ.jpeg');border:2px solid #4CAF50;"></div>
     <div style="font-size:12px;color:#2E7D32;">세사도 파이팅! 할 수 있어! 💚</div>
   </div>
   <div class="card">
@@ -570,7 +571,7 @@ tr:hover td { background:var(--gray-50); }
 
 <div class="page" id="page-notes-csd">
   <div class="jiwoong-page-header" style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 16px;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border-radius:var(--radius);border:1px solid #A5D6A7;">
-    <img src="https://i.imgur.com/R19UNLQ.jpeg" style="width:44px;height:44px;border-radius:50%;object-fit:cover;object-position:center top;border:2px solid #4CAF50;">
+    <div class="zb1-avatar" style="width:44px;height:44px;background-image:url('https://i.imgur.com/R19UNLQ.jpeg');border:2px solid #4CAF50;"></div>
     <div style="font-size:12px;color:#2E7D32;">C&SD도 할 수 있어! 파이팅! 💚</div>
   </div>
   <div class="card">
@@ -589,7 +590,7 @@ tr:hover td { background:var(--gray-50); }
 <!-- ============ PRACTICE PAGES ============ -->
 <div class="page" id="page-prac-eng">
   <div class="jiwoong-page-header" style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 16px;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border-radius:var(--radius);border:1px solid #A5D6A7;">
-    <img src="https://i.imgur.com/JdWC7gQ.jpeg" style="width:44px;height:44px;border-radius:50%;object-fit:cover;object-position:center top;border:2px solid #4CAF50;">
+    <div class="zb1-avatar" style="width:44px;height:44px;background-image:url('https://i.imgur.com/JdWC7gQ.jpeg');border:2px solid #4CAF50;"></div>
     <div style="font-size:12px;color:#2E7D32;">영어 연습 파이팅! ✏️💚</div>
   </div>
   <div class="card">
@@ -617,7 +618,7 @@ tr:hover td { background:var(--gray-50); }
 
 <div class="page" id="page-prac-math">
   <div class="jiwoong-page-header" style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 16px;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border-radius:var(--radius);border:1px solid #A5D6A7;">
-    <img src="https://i.imgur.com/JdWC7gQ.jpeg" style="width:44px;height:44px;border-radius:50%;object-fit:cover;object-position:center top;border:2px solid #4CAF50;">
+    <div class="zb1-avatar" style="width:44px;height:44px;background-image:url('https://i.imgur.com/JdWC7gQ.jpeg');border:2px solid #4CAF50;"></div>
     <div style="font-size:12px;color:#2E7D32;">수학도 할 수 있어! 포기하지 마! ✏️💚</div>
   </div>
   <!-- Interactive Practice Area -->
@@ -644,7 +645,7 @@ tr:hover td { background:var(--gray-50); }
 
 <div class="page" id="page-prac-chi">
   <div class="jiwoong-page-header" style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 16px;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border-radius:var(--radius);border:1px solid #A5D6A7;">
-    <img src="https://i.imgur.com/JdWC7gQ.jpeg" style="width:44px;height:44px;border-radius:50%;object-fit:cover;object-position:center top;border:2px solid #4CAF50;">
+    <div class="zb1-avatar" style="width:44px;height:44px;background-image:url('https://i.imgur.com/JdWC7gQ.jpeg');border:2px solid #4CAF50;"></div>
     <div style="font-size:12px;color:#2E7D32;">중문 연습도 파이팅! ✏️💚</div>
   </div>
   <div class="card">
@@ -683,7 +684,7 @@ tr:hover td { background:var(--gray-50); }
 <!-- ============ EXPORT ============ -->
 <div class="page" id="page-export">
   <div class="jiwoong-page-header" style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 16px;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border-radius:var(--radius);border:1px solid #A5D6A7;">
-    <img src="https://i.imgur.com/7oiyvbd.jpeg" style="width:44px;height:44px;border-radius:50%;object-fit:cover;object-position:center top;border:2px solid #4CAF50;">
+    <div class="zb1-avatar" style="width:44px;height:44px;background-image:url('https://i.imgur.com/7oiyvbd.jpeg');border:2px solid #4CAF50;"></div>
     <div style="font-size:12px;color:#2E7D32;">출력도 완벽하게! 🖨️💚</div>
   </div>
   <!-- Step 1: 篩選與選擇條目 -->
@@ -758,7 +759,7 @@ tr:hover td { background:var(--gray-50); }
 <!-- ============ SYNC PAGE ============ -->
 <div class="page" id="page-sync">
   <div class="jiwoong-page-header" style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 16px;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border-radius:var(--radius);border:1px solid #A5D6A7;">
-    <img src="https://i.imgur.com/7oiyvbd.jpeg" style="width:44px;height:44px;border-radius:50%;object-fit:cover;object-position:center top;border:2px solid #4CAF50;">
+    <div class="zb1-avatar" style="width:44px;height:44px;background-image:url('https://i.imgur.com/7oiyvbd.jpeg');border:2px solid #4CAF50;"></div>
     <div style="font-size:12px;color:#2E7D32;">동기화 완료! ☁️💚</div>
   </div>
   <div class="card">
@@ -842,7 +843,7 @@ tr:hover td { background:var(--gray-50); }
 <!-- ============ 音樂頁面 ============ -->
 <div class="page" id="page-music">
   <div class="jiwoong-page-header" style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 16px;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border-radius:var(--radius);border:1px solid #A5D6A7;">
-    <img src="https://i.imgur.com/U96OCzV.jpeg" style="width:44px;height:44px;border-radius:50%;object-fit:cover;object-position:center top;border:2px solid #4CAF50;">
+    <div class="zb1-avatar" style="width:44px;height:44px;background-image:url('https://i.imgur.com/U96OCzV.jpeg');border:2px solid #4CAF50;"></div>
     <div style="font-size:12px;color:#2E7D32;">음악 들으면서 힘내자! 🎵💚</div>
   </div>
   <div class="page-header">
@@ -913,17 +914,14 @@ tr:hover td { background:var(--gray-50); }
 <!-- ============ ZB1 鼓勵夥伴 ============ -->
 <div id="jiwoong-companion" style="position:fixed;bottom:80px;left:20px;z-index:9997;touch-action:none;">
   <!-- 浮動頭像按鈕（可拖動） -->
-  <div id="jiwoong-avatar" onclick="jiwoongClick()" style="width:80px;height:80px;border-radius:50%;overflow:hidden;cursor:grab;box-shadow:0 6px 20px rgba(0,0,0,0.25);border:3px solid #4CAF50;transition:transform 0.3s,box-shadow 0.3s;position:relative;" onmouseover="this.style.transform='scale(1.1)';this.style.boxShadow='0 8px 24px rgba(76,175,80,0.4)'" onmouseout="if(!jiwoongDragging){this.style.transform='scale(1)';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.25)'}">
-    <img src="https://i.imgur.com/CbHvdPq.jpeg" style="width:100%;height:100%;object-fit:cover;object-position:center top;" alt="ZB1">
+  <div id="jiwoong-avatar" onclick="jiwoongClick()" style="width:80px;height:80px;border-radius:50%;overflow:hidden;cursor:grab;box-shadow:0 6px 20px rgba(0,0,0,0.25);border:3px solid #4CAF50;transition:transform 0.3s,box-shadow 0.3s;position:relative;background-image:url('https://i.imgur.com/CbHvdPq.jpeg');background-size:cover;background-position:center 15%;" onmouseover="this.style.transform='scale(1.1)';this.style.boxShadow='0 8px 24px rgba(76,175,80,0.4)'" onmouseout="if(!jiwoongDragging){this.style.transform='scale(1)';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.25)'}">
     <div style="position:absolute;bottom:2px;right:2px;background:#4CAF50;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;display:flex;align-items:center;justify-content:center;">💚</div>
   </div>
   <!-- 對話泡泡（橫向佈局：左大頭像 + 右文字） -->
   <div id="jiwoong-bubble" style="display:none;position:absolute;bottom:90px;left:0;background:#fff;border-radius:16px;padding:0;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,0.18);border:1px solid #E8F5E9;animation:bubbleIn 0.3s ease;">
     <div style="display:flex;align-items:stretch;">
-      <!-- 左邊：大頭像 -->
-      <div style="width:120px;height:120px;flex-shrink:0;overflow:hidden;">
-        <img id="jiwoong-bubble-img" src="https://i.imgur.com/CbHvdPq.jpeg" style="width:100%;height:100%;object-fit:cover;object-position:center top;">
-      </div>
+      <!-- 左邊：大頭像（用 background-image 精確控制裁剪） -->
+      <div id="jiwoong-bubble-photo" style="width:130px;min-height:130px;flex-shrink:0;background-image:url('https://i.imgur.com/CbHvdPq.jpeg');background-size:cover;background-position:center 15%;"></div>
       <!-- 右邊：鼓勵語 -->
       <div style="padding:14px 16px;display:flex;flex-direction:column;justify-content:center;min-width:180px;">
         <div style="font-size:10px;font-weight:600;color:#4CAF50;margin-bottom:6px;">ZB1 💚 응원해!</div>
@@ -9368,8 +9366,8 @@ function jiwoongClick(){
 
   // 每次點擊隨機換浮動頭像和泡泡頭像
   const photo=zb1RandomPhoto();
-  document.querySelector('#jiwoong-avatar img').src=photo;
-  document.getElementById('jiwoong-bubble-img').src=photo;
+  document.getElementById('jiwoong-avatar').style.backgroundImage='url('+photo+')';
+  document.getElementById('jiwoong-bubble-photo').style.backgroundImage='url('+photo+')';
 
   // 彈跳動畫
   const avatar=document.getElementById('jiwoong-avatar');
