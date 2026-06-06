@@ -8003,8 +8003,9 @@ function renderExportItem(item,subj){
     // 如果有知識庫結構化資料，用知識庫格式渲染
     if(item.kbData && ['中史','世史','C&SD'].includes(subj)){
       const kb=item.kbData;
+      const fmt=item.fmt||'4'; // 預設混合型（向後兼容舊筆記）
       // 格式描述：用儲存時的格式標記，不從kbData推斷
-      const fmtDesc=item.fmtLabel||'';
+      const fmtDesc=item.fmtLabel||{'1':'①事實','2':'②原因過程影響','3':'③PEEL','4':'④混合型'}[fmt]||'';
       const fmtStr=fmtDesc?` <span style="font-size:10pt;color:var(--cool-accent);font-weight:400;">${fmtDesc}</span>`:'';
 
       html+=`<div class="note-card">`;
@@ -8019,33 +8020,47 @@ function renderExportItem(item,subj){
       if(kb.dynasty) infoParts.push(kb.dynasty);
       if(infoParts.length) html+=`<div class="nt-info">${infoParts.join(' ｜ ')}</div>`;
 
+      // 根據格式渲染對應欄位
+      const showFmt1=fmt==='1'||fmt==='4'; // 事實型 or 混合型
+      const showFmt2=fmt==='2'||fmt==='4'; // 原因過程影響 or 混合型
+      const showFmt3=fmt==='3'||fmt==='4'; // PEEL or 混合型
+
       // 格式① 事實型
-      if(kb.bg) html+=`<div class="nt-section"><div class="nt-label">📖 背景</div><div class="nt-content">${kb.bg}</div></div>`;
-      if(kb.factDetail) html+=`<div class="nt-section"><div class="nt-label">📝 史實細節</div><div class="nt-content">${kb.factDetail}</div></div>`;
-      if(kb.institutionDetail) html+=`<div class="nt-section"><div class="nt-label">🏛️ 制度細節</div><div class="nt-content">${renderInstitution(kb.institutionDetail)}</div></div>`;
+      if(showFmt1){
+        if(kb.bg) html+=`<div class="nt-section"><div class="nt-label">📖 背景</div><div class="nt-content">${kb.bg}</div></div>`;
+        if(kb.factDetail) html+=`<div class="nt-section"><div class="nt-label">📝 史實細節</div><div class="nt-content">${kb.factDetail}</div></div>`;
+        if(kb.institutionDetail) html+=`<div class="nt-section"><div class="nt-label">🏛️ 制度細節</div><div class="nt-content">${renderInstitution(kb.institutionDetail)}</div></div>`;
+        // 格式1的即時影響
+        if(fmt==='1' && (kb.shortImpact||kb.longImpact||kb.evaluation)){
+          if(kb.shortImpact) html+=`<div class="nt-section"><div class="nt-label">⚡ 即時影響</div><div class="nt-content">${kb.shortImpact}</div></div>`;
+          else if(kb.longImpact) html+=`<div class="nt-section"><div class="nt-label">⚡ 即時影響</div><div class="nt-content">${kb.longImpact}</div></div>`;
+        }
+      }
 
       // 格式② 原因-過程-影響
-      if(kb.causeP) html+=`<div class="nt-section"><div class="nt-label">🔵 原因（政治）</div><div class="nt-content">${kb.causeP}</div></div>`;
-      if(kb.causeE) html+=`<div class="nt-section"><div class="nt-label">🟢 原因（經濟）</div><div class="nt-content">${kb.causeE}</div></div>`;
-      if(kb.causeS) html+=`<div class="nt-section"><div class="nt-label">🟡 原因（社會）</div><div class="nt-content">${kb.causeS}</div></div>`;
-      if(kb.causeO) html+=`<div class="nt-section"><div class="nt-label">⚪ 其他原因</div><div class="nt-content">${kb.causeO}</div></div>`;
-      if(kb.keyCause) html+=`<div class="nt-section"><div class="nt-label">🔑 關鍵原因</div><div class="nt-content">${kb.keyCause}</div></div>`;
-      if(kb.process) html+=`<div class="nt-section"><div class="nt-label">📋 過程</div><div class="nt-content">${kb.process}</div></div>`;
-      if(kb.turningPoint) html+=`<div class="nt-section"><div class="nt-label">🔄 轉折點</div><div class="nt-content">${kb.turningPoint}</div></div>`;
-      if(kb.shortImpact) html+=`<div class="nt-section"><div class="nt-label">⚡ 短期影響</div><div class="nt-content">${kb.shortImpact}</div></div>`;
-      if(kb.longImpact) html+=`<div class="nt-section"><div class="nt-label">📈 長期影響</div><div class="nt-content">${kb.longImpact}</div></div>`;
-      if(kb.posImpact) html+=`<div class="nt-section"><div class="nt-label">✅ 正面影響</div><div class="nt-content">${kb.posImpact}</div></div>`;
-      if(kb.negImpact) html+=`<div class="nt-section"><div class="nt-label">❌ 負面影響</div><div class="nt-content">${kb.negImpact}</div></div>`;
-      if(kb.evaluation) html+=`<div class="nt-section"><div class="nt-label">⚖️ 評價</div><div class="nt-content">${kb.evaluation}</div></div>`;
+      if(showFmt2){
+        if(kb.causeP) html+=`<div class="nt-section"><div class="nt-label">🔵 原因（政治）</div><div class="nt-content">${kb.causeP}</div></div>`;
+        if(kb.causeE) html+=`<div class="nt-section"><div class="nt-label">🟢 原因（經濟）</div><div class="nt-content">${kb.causeE}</div></div>`;
+        if(kb.causeS) html+=`<div class="nt-section"><div class="nt-label">🟡 原因（社會）</div><div class="nt-content">${kb.causeS}</div></div>`;
+        if(kb.causeO) html+=`<div class="nt-section"><div class="nt-label">⚪ 其他原因</div><div class="nt-content">${kb.causeO}</div></div>`;
+        if(kb.keyCause) html+=`<div class="nt-section"><div class="nt-label">🔑 關鍵原因</div><div class="nt-content">${kb.keyCause}</div></div>`;
+        if(kb.process) html+=`<div class="nt-section"><div class="nt-label">📋 過程</div><div class="nt-content">${kb.process}</div></div>`;
+        if(kb.turningPoint) html+=`<div class="nt-section"><div class="nt-label">🔄 轉折點</div><div class="nt-content">${kb.turningPoint}</div></div>`;
+        if(kb.shortImpact) html+=`<div class="nt-section"><div class="nt-label">⚡ 短期影響</div><div class="nt-content">${kb.shortImpact}</div></div>`;
+        if(kb.longImpact) html+=`<div class="nt-section"><div class="nt-label">📈 長期影響</div><div class="nt-content">${kb.longImpact}</div></div>`;
+        if(kb.posImpact) html+=`<div class="nt-section"><div class="nt-label">✅ 正面影響</div><div class="nt-content">${kb.posImpact}</div></div>`;
+        if(kb.negImpact) html+=`<div class="nt-section"><div class="nt-label">❌ 負面影響</div><div class="nt-content">${kb.negImpact}</div></div>`;
+        if(kb.evaluation) html+=`<div class="nt-section"><div class="nt-label">⚖️ 評價</div><div class="nt-content">${kb.evaluation}</div></div>`;
+      }
 
-      // DSE Questions
-      if(kb.dseQ){
+      // DSE Questions（格式3和4顯示）
+      if(showFmt3 && kb.dseQ){
         const qs=kb.dseQ.split('|||').map(q=>q.trim()).filter(Boolean);
         html+=`<div class="dse-questions"><div class="nt-label">🎯 DSE 常見問題</div><ol>`;qs.forEach(q=>html+=`<li>${q}</li>`);html+=`</ol></div>`;
       }
 
-      // PEEL 答題結構
-      if(kb.p1){
+      // PEEL 答題結構（格式3和4顯示）
+      if(showFmt3 && kb.p1){
         html+=`<div class="peel-block"><h3>📐 PEEL 答題結構</h3>`;
         html+=`<h3 style="color:#C0392B;">── 論點 1 ──</h3>`;
         if(kb.p1) html+=`<div class="peel-p"><strong>P（論點）：</strong>${kb.p1}</div>`;
@@ -8063,6 +8078,7 @@ function renderExportItem(item,subj){
         html+=`</div>`;
       }
 
+      // DSE考試攻略（所有格式都顯示）
       if(kb.commonMistakes) html+=`<div class="warn-box"><strong>⚠️ 常犯錯誤：</strong>${kb.commonMistakes.replace(/\|\|\|/g,'；')}</div>`;
       if(kb.answerTips) html+=`<div class="tip-box"><strong>💡 答題貼士：</strong>${kb.answerTips.replace(/\|\|\|/g,'；')}</div>`;
       if(kb.dseRecord) html+=`<div class="nt-section"><div class="nt-label">📊 DSE 出題記錄</div><div class="nt-content">${kb.dseRecord}</div></div>`;
