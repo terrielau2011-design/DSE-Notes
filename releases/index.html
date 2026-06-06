@@ -8836,32 +8836,14 @@ async function syncUpload(){
 // 從 Gist 下載資料到本機（合併）
 async function syncDownload(){
   const token=getSyncToken();
+  const gistId=getGistId();
   if(!token){alert('⚠️ 請先設定 GitHub Token');return;}
+  if(!gistId){alert('⚠️ 尚未建立雲端資料，請先在另一部裝置上傳');return;}
 
   const btn=document.getElementById('sync-download-btn');
   btn.disabled=true; btn.textContent='⏳ 下載中...';
 
   try{
-    let gistId=getGistId();
-
-    // 如果沒有 Gist ID，自動從用戶的 Gist 列表中尋找
-    if(!gistId){
-      btn.textContent='⏳ 尋找雲端資料...';
-      const listResp=await fetch('https://api.github.com/gists?per_page=100',{
-        headers:{
-          'Authorization':`Bearer ${token}`,
-          'Accept':'application/vnd.github.v3+json'
-        }
-      });
-      if(!listResp.ok) throw new Error(`無法讀取 Gist 列表 (HTTP ${listResp.status})`);
-      const gists=await listResp.json();
-      const match=gists.find(g=>g.description===GIST_DESC);
-      if(!match) throw new Error('尚未建立雲端資料，請先在另一部裝置按「⬆️ 上傳到雲端」');
-      gistId=match.id;
-      localStorage.setItem(GIST_KEY,gistId);
-    }
-
-    btn.textContent='⏳ 下載中...';
     const resp=await fetch(`https://api.github.com/gists/${gistId}`,{
       headers:{
         'Authorization':`Bearer ${token}`,
