@@ -361,6 +361,7 @@ tr:hover td { background:var(--gray-50); }
   <div class="nav-item" data-page="export"><span class="icon">🖨️</span>匯出列印</div>
   <div class="nav-item" data-page="sync"><span class="icon">☁️</span>雲端同步</div>
   <div class="nav-item" data-page="music"><span class="icon">🎵</span>音樂</div>
+  <div class="nav-item" data-page="report"><span class="icon">📊</span>學習報告</div>
 </nav>
 
 <div class="main">
@@ -908,6 +909,100 @@ tr:hover td { background:var(--gray-50); }
       <input type="range" id="float-volume" min="0" max="100" value="50" style="flex:1;accent-color:var(--primary);height:4px;" onchange="musicSetVolume(this.value)">
     </div>
     <div id="float-now-playing" style="padding:0 12px 8px;font-size:11px;color:var(--gray-500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+  </div>
+</div>
+
+<!-- ============ 學習報告頁面 ============ -->
+<div class="page" id="page-report">
+  <div class="page-header">
+    <h1>📊 學習報告</h1>
+    <p style="color:var(--gray-500);font-size:14px;margin-top:4px;">追蹤你的學習進度，讓努力看得見 💪</p>
+  </div>
+
+  <div style="max-width:800px;margin:0 auto;">
+    <!-- 今日總覽 -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;">
+      <div style="background:linear-gradient(135deg,#1B3A5C,#2E5A88);color:#fff;border-radius:var(--radius);padding:18px;text-align:center;">
+        <div style="font-size:28px;font-weight:700;" id="rpt-time">0分鐘</div>
+        <div style="font-size:12px;opacity:0.8;margin-top:4px;">⏱️ 今日時長</div>
+      </div>
+      <div style="background:linear-gradient(135deg,#4CAF50,#66BB6A);color:#fff;border-radius:var(--radius);padding:18px;text-align:center;">
+        <div style="font-size:28px;font-weight:700;" id="rpt-notes">0</div>
+        <div style="font-size:12px;opacity:0.8;margin-top:4px;">📝 新增筆記</div>
+      </div>
+      <div style="background:linear-gradient(135deg,#FF9800,#FFB74D);color:#fff;border-radius:var(--radius);padding:18px;text-align:center;">
+        <div style="font-size:28px;font-weight:700;" id="rpt-quizzes">0</div>
+        <div style="font-size:12px;opacity:0.8;margin-top:4px;">🧪 完成測驗</div>
+      </div>
+      <div style="background:linear-gradient(135deg,#9C27B0,#BA68C8);color:#fff;border-radius:var(--radius);padding:18px;text-align:center;">
+        <div style="font-size:28px;font-weight:700;" id="rpt-pracs">0</div>
+        <div style="font-size:12px;opacity:0.8;margin-top:4px;">✏️ 完成操練</div>
+      </div>
+    </div>
+
+    <!-- 連續溫習 -->
+    <div style="background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border-radius:var(--radius);padding:16px;margin-bottom:16px;display:flex;align-items:center;gap:14px;border:1px solid #A5D6A7;">
+      <div style="font-size:36px;">🔥</div>
+      <div>
+        <div style="font-size:24px;font-weight:700;color:#2E7D32;" id="rpt-streak">0</div>
+        <div style="font-size:13px;color:#558B2F;">日連續溫習</div>
+      </div>
+    </div>
+
+    <!-- 各科時長 -->
+    <div style="background:#fff;border-radius:var(--radius);padding:18px;margin-bottom:16px;border:1px solid var(--gray-200);">
+      <h3 style="font-size:14px;color:var(--gray-700);margin-bottom:12px;">📚 各科今日時長</h3>
+      <div id="rpt-subjects"></div>
+    </div>
+
+    <!-- 7日趨勢 -->
+    <div style="background:#fff;border-radius:var(--radius);padding:18px;margin-bottom:16px;border:1px solid var(--gray-200);">
+      <h3 style="font-size:14px;color:var(--gray-700);margin-bottom:12px;">📈 7日溫習時長趨勢</h3>
+      <div id="rpt-trend" style="display:flex;align-items:flex-end;gap:6px;height:120px;padding-top:10px;"></div>
+    </div>
+
+    <!-- 測驗成績 -->
+    <div style="background:#fff;border-radius:var(--radius);padding:18px;margin-bottom:16px;border:1px solid var(--gray-200);">
+      <h3 style="font-size:14px;color:var(--gray-700);margin-bottom:8px;">🧪 今日測驗均分</h3>
+      <div style="font-size:32px;font-weight:700;" id="rpt-avg">—</div>
+    </div>
+
+    <!-- 活動日誌 -->
+    <div style="background:#fff;border-radius:var(--radius);padding:18px;margin-bottom:16px;border:1px solid var(--gray-200);">
+      <h3 style="font-size:14px;color:var(--gray-700);margin-bottom:8px;">📋 今日活動</h3>
+      <div id="rpt-activities" style="max-height:200px;overflow-y:auto;font-size:12px;"></div>
+    </div>
+
+    <!-- 媽媽 Email 設定 -->
+    <div style="background:#FFF3E0;border-radius:var(--radius);padding:16px;border:1px solid #FFE0B2;">
+      <h3 style="font-size:14px;color:#E65100;margin-bottom:10px;">📧 發送報告給媽媽</h3>
+      <div style="font-size:12px;color:var(--gray-600);margin-bottom:10px;line-height:1.5;">
+        輸入媽媽的 Email 地址，可以每日自動發送學習報告。<br>
+        （需設定 EmailJS 免費服務，設定步驟按下方「？ 」查看）
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input type="email" id="mom-email" placeholder="媽媽的 Email 地址" style="flex:1;padding:8px 12px;border:1px solid #FFE0B2;border-radius:6px;font-size:13px;">
+        <button class="btn btn-sm btn-warm" onclick="saveMomEmail()">💾 儲存</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-sm btn-primary" onclick="sendReportToMom()">📧 發送今日報告</button>
+        <button class="btn btn-sm btn-outline" onclick="showEmailJSSetup()">？ 設定教學</button>
+      </div>
+      <div id="emailjs-setup" style="display:none;margin-top:12px;font-size:11px;color:var(--gray-600);line-height:1.6;background:#fff;padding:10px;border-radius:6px;">
+        <strong>EmailJS 設定步驟：</strong><br>
+        1. 到 <a href="https://www.emailjs.com" target="_blank">emailjs.com</a> 註冊免費帳號<br>
+        2. 加入 Email Service（如 Gmail）→ 取得 <strong>Service ID</strong><br>
+        3. 建立 Email Template → 取得 <strong>Template ID</strong><br>
+        4. Account → API Keys → 取得 <strong>Public Key</strong><br>
+        5. 在下方填入三個 ID
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+          <input type="text" id="emailjs-service" placeholder="Service ID" style="flex:1;min-width:120px;padding:6px 8px;border:1px solid var(--gray-300);border-radius:4px;font-size:11px;">
+          <input type="text" id="emailjs-template" placeholder="Template ID" style="flex:1;min-width:120px;padding:6px 8px;border:1px solid var(--gray-300);border-radius:4px;font-size:11px;">
+          <input type="text" id="emailjs-key" placeholder="Public Key" style="flex:1;min-width:120px;padding:6px 8px;border:1px solid var(--gray-300);border-radius:4px;font-size:11px;">
+        </div>
+        <button class="btn btn-sm btn-outline" style="margin-top:8px;" onclick="saveEmailJSConfig()">💾 儲存設定</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -6068,7 +6163,7 @@ const factInstMap={
 '明清對外關係':'海禁政策、一口通商、朝貢體系、閉關鎖國'};
 
 // ===== DATA LAYER =====
-const KEYS = { notes:'dse_notes', prac:'dse_prac' };
+const KEYS = { notes:'dse_notes', prac:'dse_prac', activity:'dse_activity_log', studyTime:'dse_study_time', reportSettings:'dse_report_settings' };
 function getData(key){ try{return JSON.parse(localStorage.getItem(key))||{};}catch(e){return {};} }
 function setData(key,val){ localStorage.setItem(key, JSON.stringify(val)); }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
@@ -6252,8 +6347,11 @@ function editNote(key,id){
 function deleteNote(key,id){
   if(!confirm('確定刪除呢條筆記？')) return;
   const data=getData(KEYS.notes);
+  const note=data[key].find(n=>n.id===id);
+  const topic=note?note.topic:'';
   data[key]=data[key].filter(n=>n.id!==id);
   setData(KEYS.notes,data);
+  logActivity('note_delete', key, topic);
   renderNotes(key);
 }
 
@@ -6316,7 +6414,10 @@ function savePrac(){
     record[f.id]=el?el.value:'';
   });
   const idx=data[sKey].findIndex(p=>p.id===record.id);
-  if(idx>=0) data[sKey][idx]=record; else data[sKey].push(record);
+  if(idx>=0) data[sKey][idx]=record; else {
+    data[sKey].push(record);
+    logActivity('prac_done', sKey, subject+' '+(record.topic||record.type||''));
+  }
   setData(KEYS.prac,data);
   closeModal('prac-modal');
   renderPrac(sKey);
@@ -7459,13 +7560,15 @@ function submitQuiz(){
 
 function saveQuizHistory(subject,filter,type,correct,total,elapsed){
   const history=JSON.parse(localStorage.getItem('dse_quiz_history')||'[]');
+  const pct=Math.round((correct/total)*100);
   history.unshift({
     date:new Date().toLocaleString('zh-HK'),
     subject,filter,type,correct,total,elapsed,
-    pct:Math.round((correct/total)*100)
+    pct:pct
   });
   if(history.length>50) history.length=50;
   localStorage.setItem('dse_quiz_history',JSON.stringify(history));
+  logActivity('quiz_done', subject, `${correct}/${total} ${pct}%`);
   loadQuizHistory();
 }
 
@@ -7769,7 +7872,8 @@ function saveGeneratedNote(){
     id:uid(), topic:title, subtopic:document.getElementById('gen-time').value||'',
     content:contentParts.join('\n'), keywords:document.getElementById('gen-people').value||'',
     dse:'否', dseType:'', dseYear:'', testQ:'', testA:'', prof:'1', remarks:'由筆記生成器建立',
-    fmt:fmt, fmtLabel:fmtLabel, genSubject:subject, fields:fields
+    fmt:fmt, fmtLabel:fmtLabel, genSubject:subject, fields:fields,
+    createdAt:new Date().toISOString()
   };
 
   // 如果有匹配的知識庫條目，儲存結構化資料供匯出使用
@@ -7794,6 +7898,7 @@ function saveGeneratedNote(){
   if(!data[sKey]) data[sKey]=[];
   data[sKey].push(note);
   setData(KEYS.notes,data);
+  logActivity('note_create', sKey, title+' '+fmtLabel);
   alert('✅ 已儲存到'+subject+'筆記！');
 }
 
@@ -9446,6 +9551,342 @@ window.addEventListener('load',function(){
     setTimeout(jiwoongClose,8000);
   },2000);
 });
+
+// ============ 學習追蹤與報告 ============
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+
+// 活動日誌
+function logActivity(type, subject, detail){
+  const logs=getData(KEYS.activity);
+  if(!Array.isArray(logs)) logs.length=0; // 初始化
+  logs.push({id:uid(), ts:new Date().toISOString(), type:type, subject:subject||'', detail:detail||''});
+  // 只保留最近500條
+  if(logs.length>500) logs.splice(0, logs.length-500);
+  localStorage.setItem(KEYS.activity, JSON.stringify(logs));
+}
+
+// 學習時長追蹤
+let currentSubject='dashboard';
+let lastActiveTime=Date.now();
+let isPageVisible=!document.hidden;
+
+function getTodayKey(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function addStudyTime(subject, seconds){
+  const times=getData(KEYS.studyTime);
+  const today=getTodayKey();
+  if(!times[today]) times[today]={total:0};
+  if(!times[today][subject]) times[today][subject]=0;
+  times[today][subject]+=seconds;
+  times[today].total+=seconds;
+  localStorage.setItem(KEYS.studyTime, JSON.stringify(times));
+}
+
+function trackStudyTime(){
+  if(!isPageVisible) return;
+  const now=Date.now();
+  const elapsed=Math.round((now-lastActiveTime)/1000);
+  if(elapsed>0 && elapsed<=60){ // 最多30秒一步，防止大跳
+    addStudyTime(currentSubject, elapsed);
+  }
+  lastActiveTime=now;
+}
+
+// 每30秒記錄一次
+setInterval(trackStudyTime, 30000);
+
+// 可見性追蹤
+document.addEventListener('visibilitychange', function(){
+  if(document.hidden){
+    trackStudyTime(); // 離開前先記錄
+    isPageVisible=false;
+  }else{
+    lastActiveTime=Date.now();
+    isPageVisible=true;
+  }
+});
+
+// 頁面切換時更新當前科目
+const originalNavigateTo=navigateTo;
+navigateTo=function(page){
+  trackStudyTime(); // 切換前先記錄
+  // 推斷科目
+  if(page.startsWith('notes-chhist')||page==='generator' && false) currentSubject='chhist';
+  else if(page.startsWith('notes-chhist')) currentSubject='chhist';
+  else if(page.startsWith('notes-whist')) currentSubject='whist';
+  else if(page.startsWith('notes-csd')) currentSubject='csd';
+  else if(page.startsWith('prac-eng')) currentSubject='eng';
+  else if(page.startsWith('prac-math')) currentSubject='math';
+  else if(page.startsWith('prac-chi')) currentSubject='chi';
+  else if(page==='quiz') currentSubject='quiz';
+  else if(page==='music') currentSubject='music';
+  else currentSubject='dashboard';
+  originalNavigateTo(page);
+  lastActiveTime=Date.now();
+};
+
+// 獲取學習時長（格式化）
+function formatDuration(seconds){
+  if(seconds<60) return seconds+'秒';
+  const m=Math.floor(seconds/60);
+  const s=seconds%60;
+  if(m<60) return m+'分鐘'+(s?s+'秒':'');
+  const h=Math.floor(m/60);
+  const rm=m%60;
+  return h+'小時'+(rm?rm+'分鐘':'');
+}
+
+// 獲取今日統計
+function getTodayStats(){
+  const times=getData(KEYS.studyTime);
+  const today=getTodayKey();
+  const dayData=times[today]||{};
+  const logs=getData(KEYS.activity);
+  const todayLogs=Array.isArray(logs)?logs.filter(l=>l.ts&&l.ts.startsWith(today)):[];
+
+  const noteCount=todayLogs.filter(l=>l.type==='note_create').length;
+  const quizCount=todayLogs.filter(l=>l.type==='quiz_done').length;
+  const pracCount=todayLogs.filter(l=>l.type==='prac_done').length;
+  const quizScores=todayLogs.filter(l=>l.type==='quiz_done'&&l.detail).map(l=>{
+    const m=l.detail.match(/(\d+)%/);
+    return m?parseInt(m[1]):null;
+  }).filter(x=>x!==null);
+
+  return {
+    totalTime: dayData.total||0,
+    noteCount: noteCount,
+    quizCount: quizCount,
+    pracCount: pracCount,
+    quizAvg: quizScores.length?Math.round(quizScores.reduce((a,b)=>a+b,0)/quizScores.length):0,
+    subjectTime: {
+      chhist: dayData.chhist||0,
+      whist: dayData.whist||0,
+      csd: dayData.csd||0,
+      eng: dayData.eng||0,
+      math: dayData.math||0,
+      chi: dayData.chi||0
+    }
+  };
+}
+
+// 計算連續溫習天數
+function getStreak(){
+  const times=getData(KEYS.studyTime);
+  let streak=0;
+  const d=new Date();
+  // 檢查今天有沒有學習
+  const todayKey=getTodayKey();
+  if(!times[todayKey]||times[todayKey].total<60){
+    // 今天還沒學夠1分鐘，從昨天開始算
+    d.setDate(d.getDate()-1);
+  }
+  while(true){
+    const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if(times[key]&&times[key].total>=60){
+      streak++;
+      d.setDate(d.getDate()-1);
+    }else{
+      break;
+    }
+  }
+  return streak;
+}
+
+// 7日趨勢數據
+function get7DayTrend(){
+  const times=getData(KEYS.studyTime);
+  const result=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date();
+    d.setDate(d.getDate()-i);
+    const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const label=`${d.getMonth()+1}/${d.getDate()}`;
+    result.push({date:key, label:label, total:(times[key]&&times[key].total)||0});
+  }
+  return result;
+}
+
+// 每日學習推送
+function showDailySummary(){
+  const today=getTodayKey();
+  const lastShown=localStorage.getItem('dse_daily_shown');
+  if(lastShown===today) return; // 今天已顯示過
+
+  const stats=getTodayStats();
+  const streak=getStreak();
+
+  // 如果今天有學習記錄才顯示
+  if(stats.totalTime<30) return;
+
+  localStorage.setItem('dse_daily_shown', today);
+
+  const subjNames={chhist:'中史',whist:'世史',csd:'C&SD',eng:'英文',math:'數學',chi:'中文'};
+  let subjectDetails='';
+  Object.keys(stats.subjectTime).forEach(k=>{
+    if(stats.subjectTime[k]>0){
+      subjectDetails+=`\n  ${subjNames[k]||k}：${formatDuration(stats.subjectTime[k])}`;
+    }
+  });
+
+  const msg=`📊 今日學習摘要\n\n⏱️ 總時長：${formatDuration(stats.totalTime)}\n📝 新增筆記：${stats.noteCount} 條\n🧪 完成測驗：${stats.quizCount} 次${stats.quizAvg?'\n📊 測驗均分：'+stats.quizAvg+'%':''}\n✏️ 完成操練：${stats.pracCount} 次${subjectDetails?'\n\n📚 各科時長：'+subjectDetails:''}\n\n🔥 連續溫習：${streak} 天\n💚 ZB1 撐你！繼續加油！`;
+
+  setTimeout(function(){
+    alert(msg);
+  }, 3000);
+}
+
+// 頁面載入時檢查
+window.addEventListener('load', function(){
+  setTimeout(showDailySummary, 5000);
+});
+
+// 渲染報告頁面
+function renderReport(){
+  const stats=getTodayStats();
+  const streak=getStreak();
+  const trend=get7DayTrend();
+
+  document.getElementById('rpt-time').textContent=formatDuration(stats.totalTime);
+  document.getElementById('rpt-notes').textContent=stats.noteCount;
+  document.getElementById('rpt-quizzes').textContent=stats.quizCount;
+  document.getElementById('rpt-pracs').textContent=stats.pracCount;
+  document.getElementById('rpt-streak').textContent=streak;
+  document.getElementById('rpt-avg').textContent=stats.quizAvg?stats.quizAvg+'%':'—';
+
+  // 各科時長
+  const subjNames={chhist:'中史',whist:'世史',csd:'C&SD',eng:'英文',math:'數學',chi:'中文'};
+  const subjColors={chhist:'#1B3A5C',whist:'#5C4B8A',csd:'#2E7D32',eng:'#E65100',math:'#C62828',chi:'#AD1457'};
+  let subjHTML='';
+  const maxTime=Math.max(1,...Object.values(stats.subjectTime));
+  Object.keys(stats.subjectTime).forEach(k=>{
+    const t=stats.subjectTime[k];
+    if(t>0){
+      const pct=Math.round(t/maxTime*100);
+      subjHTML+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="width:50px;font-size:12px;color:var(--gray-600);">${subjNames[k]||k}</span>
+        <div style="flex:1;height:20px;background:var(--gray-100);border-radius:10px;overflow:hidden;">
+          <div style="width:${pct}%;height:100%;background:${subjColors[k]||'var(--primary)'};border-radius:10px;transition:width 0.5s;"></div>
+        </div>
+        <span style="font-size:11px;color:var(--gray-500);width:60px;text-align:right;">${formatDuration(t)}</span>
+      </div>`;
+    }
+  });
+  document.getElementById('rpt-subjects').innerHTML=subjHTML||'<div style="color:var(--gray-400);font-size:13px;">今日未有各科時長記錄</div>';
+
+  // 7日趨勢
+  const maxTrend=Math.max(1,...trend.map(t=>t.total));
+  document.getElementById('rpt-trend').innerHTML=trend.map(t=>{
+    const h=Math.max(4,Math.round(t.total/maxTrend*100));
+    const min=Math.round(t.total/60);
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <div style="font-size:10px;color:var(--gray-500);">${min>0?min+'m':'-'}</div>
+      <div style="width:100%;height:${h}%;background:linear-gradient(to top,#1B3A5C,#4A90D9);border-radius:4px 4px 0 0;min-height:4px;"></div>
+      <div style="font-size:10px;color:var(--gray-400);">${t.label}</div>
+    </div>`;
+  }).join('');
+
+  // 今日活動
+  const logs=getData(KEYS.activity);
+  const todayLogs=Array.isArray(logs)?logs.filter(l=>l.ts&&l.ts.startsWith(getTodayKey())):[];
+  const typeEmoji={note_create:'📝',note_edit:'✏️',note_delete:'🗑️',quiz_done:'🧪',prac_done:'✏️'};
+  document.getElementById('rpt-activities').innerHTML=todayLogs.length?todayLogs.slice().reverse().map(l=>{
+    const time=l.ts?l.ts.split('T')[1].slice(0,5):'';
+    return `<div style="padding:4px 0;border-bottom:1px solid var(--gray-100);display:flex;gap:8px;">
+      <span style="color:var(--gray-400);">${time}</span>
+      <span>${typeEmoji[l.type]||'📌'} ${l.detail||l.type}</span>
+    </div>`;
+  }).join(''):'<div style="color:var(--gray-400);">今日未有活動記錄</div>';
+
+  // 載入 Email 設定
+  const settings=getData(KEYS.reportSettings);
+  if(settings.momEmail) document.getElementById('mom-email').value=settings.momEmail;
+  if(settings.emailjsService) document.getElementById('emailjs-service').value=settings.emailjsService;
+  if(settings.emailjsTemplate) document.getElementById('emailjs-template').value=settings.emailjsTemplate;
+  if(settings.emailjsKey) document.getElementById('emailjs-key').value=settings.emailjsKey;
+}
+
+function saveMomEmail(){
+  const email=document.getElementById('mom-email').value.trim();
+  if(!email){alert('請輸入 Email 地址');return;}
+  const settings=getData(KEYS.reportSettings);
+  settings.momEmail=email;
+  localStorage.setItem(KEYS.reportSettings,JSON.stringify(settings));
+  alert('✅ 已儲存媽媽的 Email！');
+}
+
+function showEmailJSSetup(){
+  const el=document.getElementById('emailjs-setup');
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+
+function saveEmailJSConfig(){
+  const settings=getData(KEYS.reportSettings);
+  settings.emailjsService=document.getElementById('emailjs-service').value.trim();
+  settings.emailjsTemplate=document.getElementById('emailjs-template').value.trim();
+  settings.emailjsKey=document.getElementById('emailjs-key').value.trim();
+  localStorage.setItem(KEYS.reportSettings,JSON.stringify(settings));
+  alert('✅ EmailJS 設定已儲存！');
+}
+
+function sendReportToMom(){
+  const settings=getData(KEYS.reportSettings);
+  if(!settings.momEmail){alert('⚠️ 請先輸入媽媽的 Email 地址');return;}
+  if(!settings.emailjsService||!settings.emailjsTemplate||!settings.emailjsKey){
+    alert('⚠️ 請先完成 EmailJS 設定（按「？設定教學」）');return;
+  }
+  const stats=getTodayStats();
+  const streak=getStreak();
+  const reportHTML=generateReportHTML(stats, streak);
+
+  // 用 EmailJS 發送
+  fetch('https://api.emailjs.com/api/v1.0/email/send',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      service_id:settings.emailjsService,
+      template_id:settings.emailjsTemplate,
+      user_id:settings.emailjsKey,
+      template_params:{
+        to_email:settings.momEmail,
+        subject:'📊 DSE學習報告 - '+getTodayKey(),
+        message:reportHTML
+      }
+    })
+  }).then(resp=>{
+    if(resp.ok) alert('✅ 報告已發送到 '+settings.momEmail);
+    else resp.text().then(t=>alert('❌ 發送失敗：'+t));
+  }).catch(err=>alert('❌ 發送失敗：'+err.message));
+}
+
+function generateReportHTML(stats, streak){
+  const subjNames={chhist:'中史',whist:'世史',csd:'C&SD',eng:'英文',math:'數學',chi:'中文'};
+  let subjectDetails='';
+  Object.keys(stats.subjectTime).forEach(k=>{
+    if(stats.subjectTime[k]>0) subjectDetails+=`<li>${subjNames[k]||k}：${formatDuration(stats.subjectTime[k])}</li>`;
+  });
+  return `<h2>📊 DSE 學習報告</h2>
+<p>日期：${getTodayKey()}</p>
+<h3>今日總覽</h3>
+<ul>
+<li>⏱️ 總溫習時長：${formatDuration(stats.totalTime)}</li>
+<li>📝 新增筆記：${stats.noteCount} 條</li>
+<li>🧪 完成測驗：${stats.quizCount} 次${stats.quizAvg?'（均分 '+stats.quizAvg+'%）':''}</li>
+<li>✏️ 完成操練：${stats.pracCount} 次</li>
+<li>🔥 連續溫習：${streak} 天</li>
+</ul>
+${subjectDetails?'<h3>各科時長</h3><ul>'+subjectDetails+'</ul>':''}
+<p>💚 ZB1 撐你！繼續加油！</p>`;
+}
+
+// navigateTo 加載報告頁
+const _origNavTo=navigateTo;
+navigateTo=function(page){
+  _origNavTo(page);
+  if(page==='report') renderReport();
+};
 
 // ============ 音樂播放器 ============
 const YT_PLAYLIST='RDFS93cEWcwQA';
