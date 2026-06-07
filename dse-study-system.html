@@ -924,23 +924,29 @@ tr:hover td { background:var(--gray-50); }
   </div>
 
   <div style="max-width:800px;margin:0 auto;">
-    <!-- 今日總覽 -->
+    <!-- 今日/累計 切換 -->
+    <div style="display:flex;gap:0;margin-bottom:16px;background:var(--gray-100);border-radius:10px;overflow:hidden;border:1px solid var(--gray-200);">
+      <button id="rpt-mode-today" onclick="setReportMode('today')" style="flex:1;padding:10px;border:none;font-size:14px;font-weight:600;cursor:pointer;background:var(--primary);color:#fff;transition:all 0.2s;">📅 今日</button>
+      <button id="rpt-mode-total" onclick="setReportMode('total')" style="flex:1;padding:10px;border:none;font-size:14px;font-weight:600;cursor:pointer;background:transparent;color:var(--gray-600);transition:all 0.2s;">📈 累計</button>
+    </div>
+
+    <!-- 統計卡 -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;">
       <div style="background:linear-gradient(135deg,#1B3A5C,#2E5A88);color:#fff;border-radius:var(--radius);padding:18px;text-align:center;">
         <div style="font-size:28px;font-weight:700;" id="rpt-time">0分鐘</div>
-        <div style="font-size:12px;opacity:0.8;margin-top:4px;">⏱️ 今日時長</div>
+        <div style="font-size:12px;opacity:0.8;margin-top:4px;" id="rpt-time-label">⏱️ 今日時長</div>
       </div>
       <div style="background:linear-gradient(135deg,#4CAF50,#66BB6A);color:#fff;border-radius:var(--radius);padding:18px;text-align:center;">
         <div style="font-size:28px;font-weight:700;" id="rpt-notes">0</div>
-        <div style="font-size:12px;opacity:0.8;margin-top:4px;">📝 新增筆記</div>
+        <div style="font-size:12px;opacity:0.8;margin-top:4px;" id="rpt-notes-label">📝 新增筆記</div>
       </div>
       <div style="background:linear-gradient(135deg,#FF9800,#FFB74D);color:#fff;border-radius:var(--radius);padding:18px;text-align:center;">
         <div style="font-size:28px;font-weight:700;" id="rpt-quizzes">0</div>
-        <div style="font-size:12px;opacity:0.8;margin-top:4px;">🧪 完成測驗</div>
+        <div style="font-size:12px;opacity:0.8;margin-top:4px;" id="rpt-quizzes-label">🧪 完成測驗</div>
       </div>
       <div style="background:linear-gradient(135deg,#9C27B0,#BA68C8);color:#fff;border-radius:var(--radius);padding:18px;text-align:center;">
         <div style="font-size:28px;font-weight:700;" id="rpt-pracs">0</div>
-        <div style="font-size:12px;opacity:0.8;margin-top:4px;">✏️ 完成操練</div>
+        <div style="font-size:12px;opacity:0.8;margin-top:4px;" id="rpt-pracs-label">✏️ 完成操練</div>
       </div>
     </div>
 
@@ -951,11 +957,15 @@ tr:hover td { background:var(--gray-50); }
         <div style="font-size:24px;font-weight:700;color:#2E7D32;" id="rpt-streak">0</div>
         <div style="font-size:13px;color:#558B2F;">日連續溫習</div>
       </div>
+      <div style="margin-left:auto;text-align:right;">
+        <div style="font-size:20px;font-weight:700;color:#1565C0;" id="rpt-days">0</div>
+        <div style="font-size:13px;color:#1976D2;">日有溫習記錄</div>
+      </div>
     </div>
 
     <!-- 各科時長 -->
     <div style="background:#fff;border-radius:var(--radius);padding:18px;margin-bottom:16px;border:1px solid var(--gray-200);">
-      <h3 style="font-size:14px;color:var(--gray-700);margin-bottom:12px;">📚 各科今日時長</h3>
+      <h3 style="font-size:14px;color:var(--gray-700);margin-bottom:12px;" id="rpt-subject-title">📚 各科今日時長</h3>
       <div id="rpt-subjects"></div>
     </div>
 
@@ -967,13 +977,13 @@ tr:hover td { background:var(--gray-50); }
 
     <!-- 測驗成績 -->
     <div style="background:#fff;border-radius:var(--radius);padding:18px;margin-bottom:16px;border:1px solid var(--gray-200);">
-      <h3 style="font-size:14px;color:var(--gray-700);margin-bottom:8px;">🧪 今日測驗均分</h3>
+      <h3 style="font-size:14px;color:var(--gray-700);margin-bottom:8px;" id="rpt-avg-title">🧪 今日測驗均分</h3>
       <div style="font-size:32px;font-weight:700;" id="rpt-avg">—</div>
     </div>
 
     <!-- 活動日誌 -->
     <div style="background:#fff;border-radius:var(--radius);padding:18px;margin-bottom:16px;border:1px solid var(--gray-200);">
-      <h3 style="font-size:14px;color:var(--gray-700);margin-bottom:8px;">📋 今日活動</h3>
+      <h3 style="font-size:14px;color:var(--gray-700);margin-bottom:8px;" id="rpt-act-title">📋 今日活動</h3>
       <div id="rpt-activities" style="max-height:200px;overflow-y:auto;font-size:12px;"></div>
     </div>
 
@@ -9883,18 +9893,97 @@ window.addEventListener('load', function(){
   renderDashStats(); // 初始載入 dashboard 統計
 });
 
+// 報告模式：today / total
+let reportMode='today';
+
+function setReportMode(mode){
+  reportMode=mode;
+  document.getElementById('rpt-mode-today').style.background=mode==='today'?'var(--primary)':'transparent';
+  document.getElementById('rpt-mode-today').style.color=mode==='today'?'#fff':'var(--gray-600)';
+  document.getElementById('rpt-mode-total').style.background=mode==='total'?'var(--primary)':'transparent';
+  document.getElementById('rpt-mode-total').style.color=mode==='total'?'#fff':'var(--gray-600)';
+  renderReport();
+}
+
+// 計算累計統計
+function getTotalStats(){
+  const times=getData(KEYS.studyTime);
+  const logs=getData(KEYS.activity);
+  const allLogs=Array.isArray(logs)?logs:[];
+  const allNotes=getData(KEYS.notes);
+
+  // 累計學習時間
+  let totalTime=0;
+  let totalSubjectTime={chhist:0,whist:0,csd:0,eng:0,math:0,chi:0};
+  let activeDays=0;
+  Object.keys(times).forEach(key=>{
+    const d=times[key];
+    if(d&&d.total){
+      totalTime+=d.total;
+      activeDays++;
+      ['chhist','whist','csd','eng','math','chi'].forEach(s=>{
+        totalSubjectTime[s]+=(d[s]||0);
+      });
+    }
+  });
+
+  // 累計筆記
+  let totalNotes=0;
+  if(typeof allNotes==='object'&&allNotes!==null){
+    Object.values(allNotes).forEach(arr=>{ if(Array.isArray(arr)) totalNotes+=arr.length; });
+  }
+
+  // 累計測驗/操練
+  const totalQuizCount=allLogs.filter(l=>l.type==='quiz_done').length;
+  const totalPracCount=allLogs.filter(l=>l.type==='prac_done').length;
+  const allQuizScores=allLogs.filter(l=>l.type==='quiz_done'&&l.detail).map(l=>{
+    const m=l.detail.match(/(\d+)%/);
+    return m?parseInt(m[1]):null;
+  }).filter(x=>x!==null);
+  const totalQuizAvg=allQuizScores.length?Math.round(allQuizScores.reduce((a,b)=>a+b,0)/allQuizScores.length):0;
+
+  return {
+    totalTime, totalSubjectTime, totalNotes,
+    totalQuizCount, totalPracCount, totalQuizAvg, activeDays
+  };
+}
+
 // 渲染報告頁面
 function renderReport(){
-  const stats=getTodayStats();
+  const isToday=reportMode==='today';
+  const todayStats=getTodayStats();
+  const totalStats=getTotalStats();
   const streak=getStreak();
   const trend=get7DayTrend();
 
+  // 根據模式選擇數據
+  const stats=isToday?todayStats:{
+    totalTime:totalStats.totalTime,
+    noteCount:totalStats.totalNotes,
+    totalNotes:totalStats.totalNotes,
+    quizCount:totalStats.totalQuizCount,
+    pracCount:totalStats.totalPracCount,
+    quizAvg:totalStats.totalQuizAvg,
+    subjectTime:totalStats.totalSubjectTime
+  };
+
+  // 更新統計卡
   document.getElementById('rpt-time').textContent=formatDuration(stats.totalTime);
-  document.getElementById('rpt-notes').textContent=stats.noteCount+(stats.totalNotes?' / 共'+stats.totalNotes+'條':'');
+  document.getElementById('rpt-notes').textContent=isToday?(stats.noteCount+(stats.totalNotes?' / 共'+stats.totalNotes+'條':'')):stats.totalNotes+' 條';
   document.getElementById('rpt-quizzes').textContent=stats.quizCount;
   document.getElementById('rpt-pracs').textContent=stats.pracCount;
   document.getElementById('rpt-streak').textContent=streak;
+  document.getElementById('rpt-days').textContent=totalStats.activeDays;
   document.getElementById('rpt-avg').textContent=stats.quizAvg?stats.quizAvg+'%':'—';
+
+  // 更新標籤
+  document.getElementById('rpt-time-label').textContent=isToday?'⏱️ 今日時長':'⏱️ 累計時長';
+  document.getElementById('rpt-notes-label').textContent=isToday?'📝 新增筆記':'📝 累計筆記';
+  document.getElementById('rpt-quizzes-label').textContent=isToday?'🧪 完成測驗':'🧪 累計測驗';
+  document.getElementById('rpt-pracs-label').textContent=isToday?'✏️ 完成操練':'✏️ 累計操練';
+  document.getElementById('rpt-subject-title').textContent=isToday?'📚 各科今日時長':'📚 各科累計時長';
+  document.getElementById('rpt-avg-title').textContent=isToday?'🧪 今日測驗均分':'🧪 累計測驗均分';
+  document.getElementById('rpt-act-title').textContent=isToday?'📋 今日活動':'📋 最近活動';
 
   // 各科時長
   const subjNames={chhist:'中史',whist:'世史',csd:'C&SD',eng:'英文',math:'數學',chi:'中文'};
@@ -9914,9 +10003,10 @@ function renderReport(){
       </div>`;
     }
   });
-  document.getElementById('rpt-subjects').innerHTML=subjHTML||'<div style="color:var(--gray-400);font-size:13px;">今日未有各科時長記錄</div>';
+  const noDataText=isToday?'今日未有各科時長記錄':'尚未有各科時長記錄';
+  document.getElementById('rpt-subjects').innerHTML=subjHTML||`<div style="color:var(--gray-400);font-size:13px;">${noDataText}</div>`;
 
-  // 7日趨勢
+  // 7日趨勢（兩個模式都顯示）
   const maxTrend=Math.max(1,...trend.map(t=>t.total));
   document.getElementById('rpt-trend').innerHTML=trend.map(t=>{
     const h=Math.max(4,Math.round(t.total/maxTrend*100));
@@ -9928,17 +10018,21 @@ function renderReport(){
     </div>`;
   }).join('');
 
-  // 今日活動
-  const logs=getData(KEYS.activity);
-  const todayLogs=Array.isArray(logs)?logs.filter(l=>l.ts&&toLocalDateKey(l.ts)===getTodayKey()):[];
-  const typeEmoji={note_create:'📝',note_edit:'✏️',note_delete:'🗑️',quiz_done:'🧪',prac_done:'✏️'};
-  document.getElementById('rpt-activities').innerHTML=todayLogs.length?todayLogs.slice().reverse().map(l=>{
-    const time=l.ts?l.ts.split('T')[1].slice(0,5):'';
+  // 活動日誌
+  const rawLogs=getData(KEYS.activity);
+  const allLogs=Array.isArray(rawLogs)?rawLogs:[];
+  const todayKey=getTodayKey();
+  const logs=isToday?allLogs.filter(l=>l.ts&&toLocalDateKey(l.ts)===todayKey):allLogs.slice(-20);
+  const typeEmoji={note_create:'📝',note_edit:'✏️',note_delete:'🗑️',quiz_done:'🧪',prac_done:'✏️',email_sent:'📧'};
+  const noActText=isToday?'今日未有活動記錄':'尚未有活動記錄';
+  document.getElementById('rpt-activities').innerHTML=logs.length?logs.slice().reverse().map(l=>{
+    const d=l.ts?new Date(l.ts):null;
+    const timeStr=d?`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`:'';
     return `<div style="padding:4px 0;border-bottom:1px solid var(--gray-100);display:flex;gap:8px;">
-      <span style="color:var(--gray-400);">${time}</span>
+      <span style="color:var(--gray-400);white-space:nowrap;">${timeStr}</span>
       <span>${typeEmoji[l.type]||'📌'} ${l.detail||l.type}</span>
     </div>`;
-  }).join(''):'<div style="color:var(--gray-400);">今日未有活動記錄</div>';
+  }).join(''):`<div style="color:var(--gray-400);">${noActText}</div>`;
 
   // 載入 Email 設定
   const settings=getData(KEYS.reportSettings);
