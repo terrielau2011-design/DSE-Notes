@@ -9836,7 +9836,8 @@ function sendReportToMom(){
   const subjectLines=entries.length?entries.map(([k,v])=>`${subjNames[k]||k}：${formatDuration(v)}`).join('\n'):'今日尚未記錄各科時間';
 
   // 生成活動記錄
-  const logs=getData(KEYS.activity)||[];
+  const rawLogs=getData(KEYS.activity);
+  const logs=Array.isArray(rawLogs)?rawLogs:[];
   const todayLogs=Array.isArray(logs)?logs.filter(l=>l.ts&&l.ts.startsWith(dateStr)).slice(-10):[];
   const typeMap={note_create:'📝 新增筆記',note_delete:'🗑️ 刪除筆記',quiz_done:'🧪 完成測驗',prac_done:'✏️ 完成操練',email_sent:'📧 發送報告'};
   const activityLines=todayLogs.length?todayLogs.map(l=>{
