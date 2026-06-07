@@ -9861,16 +9861,16 @@ function sendReportToMom(){
     '💚':'ZB1 撐你！加油！'
   };
 
-  const btn=event.target;
-  const origText=btn.textContent;
-  btn.textContent='⏳ 發送中...';btn.disabled=true;
+  const btn=document.querySelector('[onclick="sendReportToMom()"]');
+  const origText=btn?btn.textContent:'📧 發送今日報告';
+  if(btn){btn.textContent='⏳ 發送中...';btn.disabled=true;}
 
   fetch('https://formsubmit.co/ajax/'+encodeURIComponent(settings.momEmail),{
     method:'POST',
     headers:{'Content-Type':'application/json','Accept':'application/json'},
     body:JSON.stringify(formData)
   }).then(resp=>resp.json()).then(data=>{
-    btn.textContent=origText;btn.disabled=false;
+    if(btn){btn.textContent=origText;btn.disabled=false;}
     if(data.success){
       alert('✅ 報告已發送到 '+settings.momEmail+'！\n\n📌 如果係第一次發送，媽媽需要先去 Email 按「Confirm」確認，之後就會直接收到。');
       logActivity('email_sent','report',settings.momEmail);
@@ -9878,7 +9878,7 @@ function sendReportToMom(){
       alert('❌ 發送失敗：'+(data.message||'未知錯誤')+'\n\n請確認 Email 地址正確。');
     }
   }).catch(err=>{
-    btn.textContent=origText;btn.disabled=false;
+    if(btn){btn.textContent=origText;btn.disabled=false;}
     alert('❌ 發送失敗：'+err.message+'\n\n請檢查網絡連接。');
   });
 }
