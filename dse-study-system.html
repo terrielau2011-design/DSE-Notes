@@ -391,6 +391,10 @@ tr:hover td { background:var(--gray-50); }
     <div class="card-header"><h2>📊 六科進度總覽</h2></div>
     <div class="progress-grid" id="progress-grid"></div>
   </div>
+  <div class="card" id="dashboard-today-stats" style="margin-top:12px;">
+    <div class="card-header"><h2>📋 今日學習概況</h2></div>
+    <div id="dash-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;"></div>
+  </div>
 </div>
 
 <!-- ============ NOTE GENERATOR ============ -->
@@ -6344,6 +6348,7 @@ function saveNote(){
   setData(KEYS.notes,data);
   closeModal('note-modal');
   renderNotes(sKey);
+  renderDashStats(); // 即時更新 dashboard 統計
 }
 
 function editNote(key,id){
@@ -7907,6 +7912,7 @@ function saveGeneratedNote(){
   data[sKey].push(note);
   setData(KEYS.notes,data);
   logActivity('note_create', sKey, title+' '+fmtLabel);
+  renderDashStats(); // 即時更新 dashboard 統計
   alert('✅ 已儲存到'+subject+'筆記！');
 }
 
@@ -9759,6 +9765,7 @@ function showDailySummary(){
 // 頁面載入時檢查
 window.addEventListener('load', function(){
   setTimeout(showDailySummary, 5000);
+  renderDashStats(); // 初始載入 dashboard 統計
 });
 
 // 渲染報告頁面
@@ -9909,12 +9916,37 @@ function sendReportToMom(){
   }catch(e){alert('❌ 程式錯誤：'+e.message);console.error('sendReportToMom error:',e);}
 }
 
-// navigateTo 加載報告頁
+// navigateTo 加載報告頁 + dashboard 統計
 const _origNavTo=navigateTo;
 navigateTo=function(page){
   _origNavTo(page);
   if(page==='report') renderReport();
+  if(page==='dashboard') renderDashStats();
 };
+
+function renderDashStats(){
+  const stats=getTodayStats();
+  const streak=getStreak();
+  const el=document.getElementById('dash-stats');
+  if(!el) return;
+  el.innerHTML=`
+    <div style="background:#E3F2FD;border-radius:12px;padding:14px;text-align:center;">
+      <div style="font-size:22px;font-weight:700;color:#1565C0;">${formatDuration(stats.totalTime)}</div>
+      <div style="font-size:11px;color:#666;margin-top:2px;">⏱️ 學習時長</div>
+    </div>
+    <div style="background:#E8F5E9;border-radius:12px;padding:14px;text-align:center;">
+      <div style="font-size:22px;font-weight:700;color:#2E7D32;">${stats.noteCount}${stats.totalNotes?'/'+stats.totalNotes:''}</div>
+      <div style="font-size:11px;color:#666;margin-top:2px;">📝 新增/總筆記</div>
+    </div>
+    <div style="background:#FFF3E0;border-radius:12px;padding:14px;text-align:center;">
+      <div style="font-size:22px;font-weight:700;color:#E65100;">${stats.quizCount}次${stats.quizAvg?' ('+stats.quizAvg+'%)':''}</div>
+      <div style="font-size:11px;color:#666;margin-top:2px;">🧪 測驗</div>
+    </div>
+    <div style="background:#FCE4EC;border-radius:12px;padding:14px;text-align:center;">
+      <div style="font-size:22px;font-weight:700;color:#C62828;">${streak}🔥</div>
+      <div style="font-size:11px;color:#666;margin-top:2px;">連續天數</div>
+    </div>`;
+}
 
 // ============ 音樂播放器 ============
 const YT_PLAYLIST='RDFS93cEWcwQA';
