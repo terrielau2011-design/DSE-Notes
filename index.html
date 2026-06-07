@@ -9769,12 +9769,20 @@ function getTodayStats(){
   const todayLogs=Array.isArray(logs)?logs.filter(l=>l.ts&&toLocalDateKey(l.ts)===today):[];
 
   // 直接從筆記資料計算今日新增數量
+  // dse_notes 結構: { chhist: [...], whist: [...], csd: [...] }
   const allNotes=getData(KEYS.notes);
-  const todayNoteCount=Array.isArray(allNotes)?allNotes.filter(n=>{
-    if(n.createdAt&&toLocalDateKey(n.createdAt)===today) return true;
-    if(n.created&&toLocalDateKey(n.created)===today) return true;
-    return false;
-  }).length:0;
+  let todayNoteCount=0;
+  let totalNotes=0;
+  if(typeof allNotes==='object'&&allNotes!==null){
+    Object.values(allNotes).forEach(arr=>{
+      if(Array.isArray(arr)){
+        totalNotes+=arr.length;
+        arr.forEach(n=>{
+          if(n.createdAt&&toLocalDateKey(n.createdAt)===today) todayNoteCount++;
+        });
+      }
+    });
+  }
   // 同時保留 activity log 嘅記錄作為後備
   const actNoteCount=todayLogs.filter(l=>l.type==='note_create').length;
 
@@ -9788,7 +9796,7 @@ function getTodayStats(){
   return {
     totalTime: dayData.total||0,
     noteCount: Math.max(todayNoteCount, actNoteCount),
-    totalNotes: Array.isArray(allNotes)?allNotes.length:0,
+    totalNotes: totalNotes,
     quizCount: quizCount,
     pracCount: pracCount,
     quizAvg: quizScores.length?Math.round(quizScores.reduce((a,b)=>a+b,0)/quizScores.length):0,
