@@ -9916,11 +9916,18 @@ function sendReportToMom(){
   }catch(e){alert('❌ 程式錯誤：'+e.message);console.error('sendReportToMom error:',e);}
 }
 
-// navigateTo 加載報告頁 + dashboard 統計
+// navigateTo 加載報告頁 + dashboard 統計 + 自動刷新
+let _reportTimer=null;
 const _origNavTo=navigateTo;
 navigateTo=function(page){
   _origNavTo(page);
-  if(page==='report') renderReport();
+  if(page==='report'){
+    renderReport();
+    if(_reportTimer) clearInterval(_reportTimer);
+    _reportTimer=setInterval(renderReport, 15000); // 每15秒刷新報告
+  }else{
+    if(_reportTimer){ clearInterval(_reportTimer); _reportTimer=null; }
+  }
   if(page==='dashboard') renderDashStats();
 };
 
