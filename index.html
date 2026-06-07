@@ -9643,7 +9643,16 @@ function getTodayStats(){
   const logs=getData(KEYS.activity);
   const todayLogs=Array.isArray(logs)?logs.filter(l=>l.ts&&l.ts.startsWith(today)):[];
 
-  const noteCount=todayLogs.filter(l=>l.type==='note_create').length;
+  // 直接從筆記資料計算今日新增數量
+  const allNotes=getData(KEYS.notes);
+  const todayNoteCount=Array.isArray(allNotes)?allNotes.filter(n=>{
+    if(n.createdAt&&n.createdAt.startsWith(today)) return true;
+    if(n.created&&n.created.startsWith(today)) return true;
+    return false;
+  }).length:0;
+  // 同時保留 activity log 嘅記錄作為後備
+  const actNoteCount=todayLogs.filter(l=>l.type==='note_create').length;
+
   const quizCount=todayLogs.filter(l=>l.type==='quiz_done').length;
   const pracCount=todayLogs.filter(l=>l.type==='prac_done').length;
   const quizScores=todayLogs.filter(l=>l.type==='quiz_done'&&l.detail).map(l=>{
@@ -9653,7 +9662,8 @@ function getTodayStats(){
 
   return {
     totalTime: dayData.total||0,
-    noteCount: noteCount,
+    noteCount: Math.max(todayNoteCount, actNoteCount),
+    totalNotes: Array.isArray(allNotes)?allNotes.length:0,
     quizCount: quizCount,
     pracCount: pracCount,
     quizAvg: quizScores.length?Math.round(quizScores.reduce((a,b)=>a+b,0)/quizScores.length):0,
@@ -9746,7 +9756,7 @@ function renderReport(){
   const trend=get7DayTrend();
 
   document.getElementById('rpt-time').textContent=formatDuration(stats.totalTime);
-  document.getElementById('rpt-notes').textContent=stats.noteCount;
+  document.getElementById('rpt-notes').textContent=stats.noteCount+(stats.totalNotes?' / 共'+stats.totalNotes+'條':'');
   document.getElementById('rpt-quizzes').textContent=stats.quizCount;
   document.getElementById('rpt-pracs').textContent=stats.pracCount;
   document.getElementById('rpt-streak').textContent=streak;
@@ -9854,7 +9864,7 @@ function sendReportToMom(){
     '日期':dateStr,
     '學生名字':name,
     '⏱️ 總學習時長':formatDuration(stats.totalTime||0),
-    '📝 新增筆記':(stats.noteCount||0)+' 條',
+    '📝 新增筆記':(stats.noteCount||0)+' 條'+(stats.totalNotes?'（共 '+stats.totalNotes+' 條）':''),
     '🧪 完成測驗':(stats.quizCount||0)+' 次'+(stats.quizAvg?'（均分 '+stats.quizAvg+'%）':''),
     '✏️ 完成操練':(stats.pracCount||0)+' 次',
     '🔥 連續溫習':streak+' 天',
