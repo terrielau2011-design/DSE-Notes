@@ -9553,8 +9553,8 @@ function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2
 
 // 活動日誌
 function logActivity(type, subject, detail){
-  const logs=getData(KEYS.activity);
-  if(!Array.isArray(logs)) logs.length=0; // 初始化
+  let logs=getData(KEYS.activity);
+  if(!Array.isArray(logs)) logs=[]; // 確保是陣列
   logs.push({id:uid(), ts:new Date().toISOString(), type:type, subject:subject||'', detail:detail||''});
   // 只保留最近500條
   if(logs.length>500) logs.splice(0, logs.length-500);
