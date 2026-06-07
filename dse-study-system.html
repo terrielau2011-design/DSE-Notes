@@ -87,6 +87,9 @@ body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
 .btn-success { background:var(--success); color:#fff; }
 .btn-danger { background:var(--danger); color:#fff; }
 .btn-warm { background:var(--warm); color:#fff; }
+.playlist-btn { background:var(--gray-100); color:var(--gray-600); border:2px solid var(--gray-200); border-radius:20px; padding:6px 16px; font-size:13px; cursor:pointer; transition:all 0.2s; }
+.playlist-btn:hover { border-color:var(--primary); color:var(--primary); }
+.playlist-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
 .btn-cool { background:var(--cool); color:#fff; }
 .btn-outline { background:transparent; border:2px solid var(--primary); color:var(--primary); }
 .btn-outline:hover { background:var(--primary); color:#fff; }
@@ -859,6 +862,15 @@ tr:hover td { background:var(--gray-50); }
   <div style="max-width:700px;margin:0 auto;">
     <!-- 主播放器 -->
     <div style="background:#fff;border-radius:var(--radius);padding:20px;margin-bottom:16px;border:1px solid var(--gray-200);">
+      <!-- Playlist 選擇 -->
+      <div style="margin-bottom:14px;">
+        <div style="font-size:13px;color:var(--gray-600);margin-bottom:8px;">🎶 選擇播放清單</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;" id="playlist-selector">
+          <button class="btn btn-sm playlist-btn active" data-pl="0" onclick="switchPlaylist(0)">🎵 Playlist 1</button>
+          <button class="btn btn-sm playlist-btn" data-pl="1" onclick="switchPlaylist(1)">🎵 Playlist 2</button>
+          <button class="btn btn-sm playlist-btn" data-pl="2" onclick="switchPlaylist(2)">🎵 Playlist 3</button>
+        </div>
+      </div>
       <div id="music-player-container">
         <div id="music-player"></div>
       </div>
@@ -10165,8 +10177,12 @@ function renderDashStats(){
 }
 
 // ============ 音樂播放器 ============
-const YT_PLAYLIST='RDFS93cEWcwQA';
-const YT_VIDEO='FS93cEWcwQA';
+const YT_PLAYLISTS=[
+  {id:'RDFS93cEWcwQA', video:'FS93cEWcwQA', name:'Playlist 1'},
+  {id:'RDVR_KtJYMrdo', video:'VR_KtJYMrdo', name:'Playlist 2'},
+  {id:'RDbZrfMU71W9I', video:'bZrfMU71W9I', name:'Playlist 3'}
+];
+let currentPlaylist=0;
 let ytPlayer=null;
 let ytReady=false;
 
@@ -10179,12 +10195,13 @@ let ytReady=false;
 
 function onYouTubeIframeAPIReady(){
   // 建立音樂頁面播放器
+  const pl=YT_PLAYLISTS[currentPlaylist];
   ytPlayer=new YT.Player('music-player',{
     height:'100%',
     width:'100%',
-    videoId:YT_VIDEO,
+    videoId:pl.video,
     playerVars:{
-      list:YT_PLAYLIST,
+      list:pl.id,
       autoplay:0,
       controls:1,
       modestbranding:1,
@@ -10210,6 +10227,23 @@ function onYouTubeIframeAPIReady(){
       }
     }
   });
+}
+
+function switchPlaylist(idx){
+  if(idx===currentPlaylist) return;
+  currentPlaylist=idx;
+  // 更新按鈕樣式
+  document.querySelectorAll('.playlist-btn').forEach(b=>{
+    b.classList.toggle('active',parseInt(b.dataset.pl)===idx);
+  });
+  // 載入新 playlist
+  if(ytPlayer&&ytReady){
+    const pl=YT_PLAYLISTS[idx];
+    ytPlayer.loadPlaylist({list:pl.id});
+    document.getElementById('music-now-playing').textContent='⏳ 載入 '+pl.name+'...';
+    const floatNP=document.getElementById('float-now-playing');
+    if(floatNP) floatNP.textContent='⏳ '+pl.name;
+  }
 }
 
 function musicToggle(){
