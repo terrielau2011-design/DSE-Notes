@@ -9819,6 +9819,7 @@ function showEmailSetup(){
 }
 
 function sendReportToMom(){
+  try{
   const settings=getData(KEYS.reportSettings);
   if(!settings.momEmail){alert('⚠️ 請先輸入媽媽的 Email 地址');return;}
   const stats=getTodayStats();
@@ -9830,12 +9831,13 @@ function sendReportToMom(){
 
   // 生成各科時間
   const subjNames={chhist:'中史',whist:'世史',csd:'C&SD',eng:'英文',math:'數學',chi:'中文'};
-  const entries=Object.entries(stats.subjectTime).filter(([k,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  const stData=stats.subjectTime||{};
+  const entries=Object.entries(stData).filter(([k,v])=>v>0).sort((a,b)=>b[1]-a[1]);
   const subjectLines=entries.length?entries.map(([k,v])=>`${subjNames[k]||k}：${formatDuration(v)}`).join('\n'):'今日尚未記錄各科時間';
 
   // 生成活動記錄
-  const logs=getData(KEYS.activity);
-  const todayLogs=logs.filter(l=>l.ts&&l.ts.startsWith(dateStr)).slice(-10);
+  const logs=getData(KEYS.activity)||[];
+  const todayLogs=Array.isArray(logs)?logs.filter(l=>l.ts&&l.ts.startsWith(dateStr)).slice(-10):[];
   const typeMap={note_create:'📝 新增筆記',note_delete:'🗑️ 刪除筆記',quiz_done:'🧪 完成測驗',prac_done:'✏️ 完成操練',email_sent:'📧 發送報告'};
   const activityLines=todayLogs.length?todayLogs.map(l=>{
     const t=new Date(l.ts);
@@ -9850,10 +9852,10 @@ function sendReportToMom(){
     _template:'table',
     '日期':dateStr,
     '學生名字':name,
-    '⏱️ 總學習時長':formatDuration(stats.totalTime),
-    '📝 新增筆記':stats.noteCount+' 條',
-    '🧪 完成測驗':stats.quizCount+' 次'+(stats.quizAvg?'（均分 '+stats.quizAvg+'%）':''),
-    '✏️ 完成操練':stats.pracCount+' 次',
+    '⏱️ 總學習時長':formatDuration(stats.totalTime||0),
+    '📝 新增筆記':(stats.noteCount||0)+' 條',
+    '🧪 完成測驗':(stats.quizCount||0)+' 次'+(stats.quizAvg?'（均分 '+stats.quizAvg+'%）':''),
+    '✏️ 完成操練':(stats.pracCount||0)+' 次',
     '🔥 連續溫習':streak+' 天',
     '📊 各科學習時間':subjectLines,
     '📋 今日活動':activityLines,
@@ -9881,6 +9883,7 @@ function sendReportToMom(){
     if(btn){btn.textContent=origText;btn.disabled=false;}
     alert('❌ 發送失敗：'+err.message+'\n\n請檢查網絡連接。');
   });
+  }catch(e){alert('❌ 程式錯誤：'+e.message);console.error('sendReportToMom error:',e);}
 }
 
 // navigateTo 加載報告頁
