@@ -6233,7 +6233,64 @@ function renderDashboard(){
 // ===== NOTES =====
 const subjMap={chhist:'中史',whist:'世史',csd:'C&SD'};
 let noteFilter={chhist:'all',whist:'all',csd:'all'};
+let noteSelectMode={chhist:false,whist:false,csd:false};
+let noteSelected={chhist:new Set(),whist:new Set(),csd:new Set()};
+
 function filterNotes(key,val){ noteFilter[key]=val; renderNotes(key); }
+
+function toggleSelectMode(key){
+  noteSelectMode[key]=!noteSelectMode[key];
+  if(!noteSelectMode[key]) noteSelected[key].clear();
+  renderNotes(key);
+}
+
+function toggleNoteSelect(key,id){
+  if(noteSelected[key].has(id)) noteSelected[key].delete(id);
+  else noteSelected[key].add(id);
+  // 更新 checkbox 樣式
+  const cb=document.getElementById('cb-'+id);
+  if(cb) cb.checked=noteSelected[key].has(id);
+  updateBatchBar(key);
+}
+
+function updateBatchBar(key){
+  const bar=document.getElementById('batch-bar-'+key);
+  if(!bar) return;
+  const count=noteSelected[key].size;
+  if(noteSelectMode[key]&&count>0){
+    bar.style.display='flex';
+    bar.innerHTML=`<span style="font-size:13px;color:var(--gray-600);">已選 ${count} 條</span>
+      <button class="btn btn-sm btn-danger" onclick="batchDeleteNotes('${key}')">🗑️ 刪除已選 (${count})</button>
+      <button class="btn btn-sm btn-outline" onclick="noteSelected['${key}'].clear();renderNotes('${key}')">✖ 取消選取</button>`;
+  }else if(noteSelectMode[key]){
+    bar.style.display='flex';
+    bar.innerHTML=`<span style="font-size:13px;color:var(--gray-400);">點選筆記以刪除</span>
+      <button class="btn btn-sm btn-outline" onclick="toggleSelectMode('${key}')">✖ 結束多選</button>`;
+  }else{
+    bar.style.display='none';
+  }
+}
+
+function batchDeleteNotes(key){
+  const ids=noteSelected[key];
+  if(!ids.size) return;
+  if(!confirm(`確定刪除已選嘅 ${ids.size} 條筆記？`)) return;
+  const data=getData(KEYS.notes);
+  const before=(data[key]||[]).length;
+  data[key]=(data[key]||[]).filter(n=>!ids.has(n.id));
+  const deleted=before-(data[key]||[]).length;
+  setData(KEYS.notes,data);
+  ids.forEach(id=>{
+    const n=(getData(KEYS.notes)[key]||[]).find(x=>x.id===id); // 已刪除，僅記錄
+    logActivity('note_delete', key, '批量刪除');
+  });
+  noteSelected[key].clear();
+  noteSelectMode[key]=false;
+  renderNotes(key);
+  renderDashStats();
+  autoSyncAfterChange();
+  alert(`✅ 已刪除 ${deleted} 條筆記`);
+}
 
 function renderNotes(key){
   const notes=getData(KEYS.notes)[key]||[];
@@ -6242,10 +6299,20 @@ function renderNotes(key){
   if(f==='dse') filtered=notes.filter(n=>n.dse==='是');
   if(f==='low') filtered=notes.filter(n=>n.prof&&parseInt(n.prof)<=2);
   const el=document.getElementById('note-list-'+key);
+  const isSelectMode=noteSelectMode[key];
+
+  // 多選操作列
+  let batchBar=`<div id="batch-bar-${key}" style="display:none;gap:8px;align-items:center;padding:8px 12px;background:#FFF3E0;border-radius:8px;margin-bottom:10px;"></div>`;
+
+  // 多選開關按鈕
+  const selectBtn=isSelectMode
+    ?`<button class="btn btn-sm btn-outline" onclick="toggleSelectMode('${key}')" style="border-color:#E65100;color:#E65100;">✖ 結束多選</button>`
+    :`<button class="btn btn-sm btn-outline" onclick="toggleSelectMode('${key}')">☑ 多選刪除</button>`;
+
   if(!filtered.length){ el.innerHTML='<div class="empty-state"><div class="icon">📖</div><div class="title">仲未有筆記</div><div class="desc">按「+ 新增筆記」開始記錄</div></div>'; return; }
 
   // 課題表列模式：按課題分組，顯示格式描述
-  el.innerHTML=filtered.map((n,idx)=>{
+  el.innerHTML=selectBtn+batchBar+filtered.map((n,idx)=>{
     const tags=(n.dseType||'').split('/').filter(Boolean).map(t=>{
       const cls={'MC':'tag-mc','短答':'tag-short','DBQ':'tag-dbq','論述':'tag-essay'}[t]||'tag-warm';
       return `<span class="tag ${cls}">${t}</span>`;
@@ -6260,16 +6327,21 @@ function renderNotes(key){
     // 時間顯示
     const createdTime=n.createdAt?new Date(n.createdAt):null;
     const timeStr=createdTime?`${createdTime.getFullYear()}-${String(createdTime.getMonth()+1).padStart(2,'0')}-${String(createdTime.getDate()).padStart(2,'0')} ${String(createdTime.getHours()).padStart(2,'0')}:${String(createdTime.getMinutes()).padStart(2,'0')}`:'';
-    return `<div class="note-item" style="cursor:pointer;" onclick="document.getElementById('${noteId}').classList.toggle('collapsed')">
+    const checked=noteSelected[key].has(n.id)?'checked':'';
+    const checkbox=isSelectMode?`<input type="checkbox" id="cb-${n.id}" ${checked} onclick="event.stopPropagation();toggleNoteSelect('${key}','${n.id}')" style="width:18px;height:18px;accent-color:#E65100;cursor:pointer;flex-shrink:0;margin-right:8px;">`:'';
+    return `<div class="note-item" style="cursor:pointer;${isSelectMode&&noteSelected[key].has(n.id)?'background:#FFF8E1;border-color:#FFB74D;':''}" onclick="${isSelectMode?`toggleNoteSelect('${key}','${n.id}');renderNotes('${key}')`:`document.getElementById('${noteId}').classList.toggle('collapsed')`}">
       <div style="display:flex;justify-content:space-between;align-items:start;">
-        <div style="flex:1;min-width:0;">
-          <div class="note-title">${n.topic}${fmtDesc?` <span style="font-size:11px;color:var(--cool-accent);font-weight:400;">${fmtDesc}</span>`:''}</div>
-          <div class="note-subtitle">${n.subtopic}${timeStr?` <span style="color:var(--gray-400);font-size:11px;">⏰ ${timeStr}</span>`:''}</div>
+        <div style="display:flex;align-items:start;flex:1;min-width:0;">
+          ${checkbox}
+          <div style="flex:1;min-width:0;">
+            <div class="note-title">${n.topic}${fmtDesc?` <span style="font-size:11px;color:var(--cool-accent);font-weight:400;">${fmtDesc}</span>`:''}</div>
+            <div class="note-subtitle">${n.subtopic}${timeStr?` <span style="color:var(--gray-400);font-size:11px;">⏰ ${timeStr}</span>`:''}</div>
+          </div>
         </div>
-        <div class="btn-group" onclick="event.stopPropagation();">
+        ${isSelectMode?'':`<div class="btn-group" onclick="event.stopPropagation();">
           <button class="btn btn-sm btn-outline" onclick="editNote('${key}','${n.id}')">✏️</button>
           <button class="btn btn-sm btn-danger" onclick="deleteNote('${key}','${n.id}')">🗑️</button>
-        </div>
+        </div>`}
       </div>
       <div id="${noteId}" class="collapsed" style="margin-top:8px;">
         ${n.content?`<div class="note-content">${n.content}</div>`:''}
@@ -6284,6 +6356,8 @@ function renderNotes(key){
       </div>
     </div>`;
   }).join('');
+  // 初始化多選列
+  if(isSelectMode) updateBatchBar(key);
 }
 
 function openNoteModal(subject, editData){
@@ -6366,6 +6440,9 @@ function deleteNote(key,id){
   setData(KEYS.notes,data);
   logActivity('note_delete', key, topic);
   renderNotes(key);
+  renderDashStats();
+  // 自動同步到雲端，防止刪除後被覆蓋
+  autoSyncAfterChange();
 }
 
 // ===== PRACTICE =====
@@ -9044,6 +9121,29 @@ function toggleAutoSync(){
   const on=document.getElementById('sync-auto').checked;
   localStorage.setItem('dse_auto_sync',on?'true':'false');
   updateSyncStatus();
+}
+
+// 刪除/修改後自動同步到雲端（靜默，不彈提示）
+function autoSyncAfterChange(){
+  const token=getSyncToken();
+  const autoSync=localStorage.getItem('dse_auto_sync')==='true';
+  if(!token||!autoSync) return; // 未連接或未開啟自動同步則跳過
+  // 靜默上傳，不阻塞 UI
+  const syncData={
+    notes:getData(KEYS.notes),
+    prac:getData(KEYS.prac),
+    uploadTime:new Date().toISOString(),
+    device:navigator.userAgent.includes('Mobile')?'手機':'電腦'
+  };
+  findOrCreateGist(token).then(gistId=>{
+    if(!gistId) gistId=getGistId();
+    if(!gistId) return;
+    fetch(`https://api.github.com/gists/${gistId}`,{
+      method:'PATCH',
+      headers:{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
+      body:JSON.stringify({description:GIST_DESC,public:false,files:{'dse-study-data.json':{content:JSON.stringify(syncData,null,2)}}})
+    }).catch(()=>{});
+  }).catch(()=>{});
 }
 
 // 除錯：查看本機 localStorage 數據
