@@ -6253,11 +6253,14 @@ function renderNotes(key){
     let fmtDesc=n.fmtLabel||'';
 
     const noteId=`note-detail-${key}-${idx}`;
+    // 時間顯示
+    const createdTime=n.createdAt?new Date(n.createdAt):null;
+    const timeStr=createdTime?`${createdTime.getFullYear()}-${String(createdTime.getMonth()+1).padStart(2,'0')}-${String(createdTime.getDate()).padStart(2,'0')} ${String(createdTime.getHours()).padStart(2,'0')}:${String(createdTime.getMinutes()).padStart(2,'0')}`:'';
     return `<div class="note-item" style="cursor:pointer;" onclick="document.getElementById('${noteId}').classList.toggle('collapsed')">
       <div style="display:flex;justify-content:space-between;align-items:start;">
         <div style="flex:1;min-width:0;">
           <div class="note-title">${n.topic}${fmtDesc?` <span style="font-size:11px;color:var(--cool-accent);font-weight:400;">${fmtDesc}</span>`:''}</div>
-          <div class="note-subtitle">${n.subtopic}</div>
+          <div class="note-subtitle">${n.subtopic}${timeStr?` <span style="color:var(--gray-400);font-size:11px;">⏰ ${timeStr}</span>`:''}</div>
         </div>
         <div class="btn-group" onclick="event.stopPropagation();">
           <button class="btn btn-sm btn-outline" onclick="editNote('${key}','${n.id}')">✏️</button>
@@ -6313,8 +6316,9 @@ function saveNote(){
   const subject=document.getElementById('note-edit-subject').value;
   const sKey=subject==='中史'?'chhist':subject==='世史'?'whist':'csd';
   if(!data[sKey]) data[sKey]=[];
+  const existingId=document.getElementById('note-edit-id').value;
   const note={
-    id:document.getElementById('note-edit-id').value||uid(),
+    id:existingId||uid(),
     topic:document.getElementById('nm-topic').value,
     subtopic:document.getElementById('nm-subtopic').value,
     content:document.getElementById('nm-content').value,
@@ -6328,7 +6332,15 @@ function saveNote(){
     remarks:document.getElementById('nm-remarks').value,
   };
   const idx=data[sKey].findIndex(n=>n.id===note.id);
-  if(idx>=0) data[sKey][idx]=note; else data[sKey].push(note);
+  if(idx>=0){
+    // 編輯：保留原有 createdAt
+    note.createdAt=data[sKey][idx].createdAt||new Date().toISOString();
+    data[sKey][idx]=note;
+  }else{
+    // 新增：記錄建立時間
+    note.createdAt=new Date().toISOString();
+    data[sKey].push(note);
+  }
   setData(KEYS.notes,data);
   closeModal('note-modal');
   renderNotes(sKey);
