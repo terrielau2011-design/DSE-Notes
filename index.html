@@ -977,8 +977,11 @@ tr:hover td { background:var(--gray-50); }
     <div style="background:#FFF3E0;border-radius:var(--radius);padding:16px;border:1px solid #FFE0B2;">
       <h3 style="font-size:14px;color:#E65100;margin-bottom:10px;">📧 發送報告給媽媽</h3>
       <div style="font-size:12px;color:var(--gray-600);margin-bottom:10px;line-height:1.5;">
-        輸入媽媽的 Email 地址，可以每日自動發送學習報告。<br>
+        輸入你嘅名字同媽媽嘅 Email 地址，可以每日發送學習報告。<br>
         （需設定 EmailJS 免費服務，設定步驟按下方「？ 」查看）
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <input type="text" id="student-name" placeholder="你嘅名字（如：子軒）" style="flex:1;padding:8px 12px;border:1px solid #FFE0B2;border-radius:6px;font-size:13px;">
       </div>
       <div style="display:flex;gap:8px;margin-bottom:10px;">
         <input type="email" id="mom-email" placeholder="媽媽的 Email 地址" style="flex:1;padding:8px 12px;border:1px solid #FFE0B2;border-radius:6px;font-size:13px;">
@@ -988,17 +991,20 @@ tr:hover td { background:var(--gray-50); }
         <button class="btn btn-sm btn-primary" onclick="sendReportToMom()">📧 發送今日報告</button>
         <button class="btn btn-sm btn-outline" onclick="showEmailJSSetup()">？ 設定教學</button>
       </div>
-      <div id="emailjs-setup" style="display:none;margin-top:12px;font-size:11px;color:var(--gray-600);line-height:1.6;background:#fff;padding:10px;border-radius:6px;">
-        <strong>EmailJS 設定步驟：</strong><br>
-        1. 到 <a href="https://www.emailjs.com" target="_blank">emailjs.com</a> 註冊免費帳號<br>
-        2. 加入 Email Service（如 Gmail）→ 取得 <strong>Service ID</strong><br>
-        3. 建立 Email Template → 取得 <strong>Template ID</strong><br>
-        4. Account → API Keys → 取得 <strong>Public Key</strong><br>
-        5. 在下方填入三個 ID
+      <div id="emailjs-setup" style="display:none;margin-top:12px;font-size:11px;color:var(--gray-600);line-height:1.6;background:#fff;padding:12px;border-radius:8px;">
+        <strong>📧 EmailJS 設定步驟：</strong><br>
+        1. 到 <a href="https://www.emailjs.com" target="_blank">emailjs.com</a> 用<strong>你自己嘅 Gmail</strong> 註冊<br>
+        2. Email Services → Add New → Gmail → Connect Account → 授權 → 記低 <strong>Service ID</strong><br>
+        3. Email Templates → Create New → 填寫以下內容：<br>
+        &nbsp;&nbsp;• Subject：<code>📖 {{from_name}} 嘅 DSE 每日學習報告 - {{date}}</code><br>
+        &nbsp;&nbsp;• To Email：<code>{{to_email}}</code><br>
+        &nbsp;&nbsp;• Content：切換到 HTML 模式，貼上模板代碼（<a href="javascript:void(0)" onclick="copyEmailTemplate()">📌 按此複製模板</a>）<br>
+        4. Account → API Keys → 記低 <strong>Public Key</strong><br>
+        5. 在下方填入三個 ID → 按「儲存設定」
         <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
-          <input type="text" id="emailjs-service" placeholder="Service ID" style="flex:1;min-width:120px;padding:6px 8px;border:1px solid var(--gray-300);border-radius:4px;font-size:11px;">
-          <input type="text" id="emailjs-template" placeholder="Template ID" style="flex:1;min-width:120px;padding:6px 8px;border:1px solid var(--gray-300);border-radius:4px;font-size:11px;">
-          <input type="text" id="emailjs-key" placeholder="Public Key" style="flex:1;min-width:120px;padding:6px 8px;border:1px solid var(--gray-300);border-radius:4px;font-size:11px;">
+          <input type="text" id="emailjs-service" placeholder="Service ID（如 service_xxxxx）" style="flex:1;min-width:160px;padding:6px 8px;border:1px solid var(--gray-300);border-radius:4px;font-size:11px;">
+          <input type="text" id="emailjs-template" placeholder="Template ID（如 template_xxxxx）" style="flex:1;min-width:160px;padding:6px 8px;border:1px solid var(--gray-300);border-radius:4px;font-size:11px;">
+          <input type="text" id="emailjs-key" placeholder="Public Key（如 aBcDeFg...）" style="flex:1;min-width:160px;padding:6px 8px;border:1px solid var(--gray-300);border-radius:4px;font-size:11px;">
         </div>
         <button class="btn btn-sm btn-outline" style="margin-top:8px;" onclick="saveEmailJSConfig()">💾 儲存設定</button>
       </div>
@@ -9803,6 +9809,7 @@ function renderReport(){
   // 載入 Email 設定
   const settings=getData(KEYS.reportSettings);
   if(settings.momEmail) document.getElementById('mom-email').value=settings.momEmail;
+  if(settings.studentName) document.getElementById('student-name').value=settings.studentName;
   if(settings.emailjsService) document.getElementById('emailjs-service').value=settings.emailjsService;
   if(settings.emailjsTemplate) document.getElementById('emailjs-template').value=settings.emailjsTemplate;
   if(settings.emailjsKey) document.getElementById('emailjs-key').value=settings.emailjsKey;
@@ -9810,16 +9817,26 @@ function renderReport(){
 
 function saveMomEmail(){
   const email=document.getElementById('mom-email').value.trim();
+  const name=document.getElementById('student-name').value.trim();
   if(!email){alert('請輸入 Email 地址');return;}
   const settings=getData(KEYS.reportSettings);
   settings.momEmail=email;
+  if(name) settings.studentName=name;
   localStorage.setItem(KEYS.reportSettings,JSON.stringify(settings));
-  alert('✅ 已儲存媽媽的 Email！');
+  alert('✅ 已儲存！');
 }
 
 function showEmailJSSetup(){
   const el=document.getElementById('emailjs-setup');
   el.style.display=el.style.display==='none'?'block':'none';
+}
+
+function copyEmailTemplate(){
+  const tpl=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f5f5;margin:0;padding:20px;}.container{max-width:520px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);}.header{background:linear-gradient(135deg,#4CAF50,#45a049);padding:24px;text-align:center;}.header h1{color:#fff;margin:0;font-size:22px;}.header p{color:rgba(255,255,255,0.9);margin:6px 0 0;font-size:14px;}.body{padding:24px;}.greeting{font-size:16px;margin-bottom:20px;color:#333;}.stats{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;}.stat{flex:1;min-width:110px;background:#f0f9f0;border-radius:12px;padding:14px;text-align:center;}.stat .num{font-size:24px;font-weight:bold;color:#4CAF50;}.stat .label{font-size:12px;color:#666;margin-top:4px;}.section{margin-bottom:16px;}.section h3{font-size:15px;color:#333;border-left:4px solid #4CAF50;padding-left:10px;margin:0 0 10px;}.section p,.section li{font-size:14px;color:#555;line-height:1.6;margin:4px 0;}.highlight{background:#fff8e1;padding:12px 16px;border-radius:8px;font-size:14px;color:#f57c00;margin:12px 0;}.footer{text-align:center;padding:16px;font-size:12px;color:#999;background:#fafafa;}.zb1{font-size:14px;color:#4CAF50;text-align:center;margin-top:12px;}</style></head><body><div class="container"><div class="header"><h1>📖 DSE 每日學習報告</h1><p>{{date}}</p></div><div class="body"><div class="greeting">你好！以下係 <strong>{{from_name}}</strong> 今日嘅學習記錄 💪</div><div class="stats"><div class="stat"><div class="num">{{study_time}}</div><div class="label">⏱️ 學習時長</div></div><div class="stat"><div class="num">{{notes_count}}</div><div class="label">📝 新增筆記</div></div><div class="stat"><div class="num">{{quiz_avg}}</div><div class="label">🧪 測驗平均</div></div><div class="stat"><div class="num">{{streak}}</div><div class="label">🔥 連續日數</div></div></div><div class="section"><h3>📊 各科學習時間</h3><p>{{subject_breakdown}}</p></div><div class="section"><h3>📝 今日活動</h3><p>{{activities}}</p></div><div class="highlight">💡 {{encouragement}}</div><div class="zb1">💚 ZB1 撐你！加油！</div></div><div class="footer">此報告由 DSE 學習系統自動發送</div></div></body></html>`;
+  navigator.clipboard.writeText(tpl).then(()=>alert('✅ 模板已複製！\n去 EmailJS Template → 切換到 HTML 模式 → 貼上')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=tpl;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    alert('✅ 模板已複製！\n去 EmailJS Template → 切換到 HTML 模式 → 貼上');
+  });
 }
 
 function saveEmailJSConfig(){
@@ -9839,9 +9856,10 @@ function sendReportToMom(){
   }
   const stats=getTodayStats();
   const streak=getStreak();
-  const reportHTML=generateReportHTML(stats, streak);
+  const reportData=generateReportData(stats, streak);
+  const encouragements=['今日又努力咗！繼續加油！💪','每一分努力都算數！💚','溫習咗就係贏咗！🔥','DSE 之前每一日都好重要！📚','堅持就係最強嘅武器！✨'];
+  const enc=encouragements[Math.floor(Math.random()*encouragements.length)];
 
-  // 用 EmailJS 發送
   fetch('https://api.emailjs.com/api/v1.0/email/send',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
@@ -9851,34 +9869,43 @@ function sendReportToMom(){
       user_id:settings.emailjsKey,
       template_params:{
         to_email:settings.momEmail,
-        subject:'📊 DSE學習報告 - '+getTodayKey(),
-        message:reportHTML
+        from_name:settings.studentName||'同學',
+        date:getTodayKey(),
+        study_time:formatDuration(stats.totalTime),
+        notes_count:stats.noteCount+' 條',
+        quiz_avg:stats.quizAvg?stats.quizAvg+'%':'未有',
+        streak:streak+' 天',
+        subject_breakdown:reportData.subjectBreakdown,
+        activities:reportData.activities,
+        encouragement:enc
       }
     })
   }).then(resp=>{
-    if(resp.ok) alert('✅ 報告已發送到 '+settings.momEmail);
+    if(resp.ok){alert('✅ 報告已發送到 '+settings.momEmail);logActivity('email_sent','report',settings.momEmail);}
     else resp.text().then(t=>alert('❌ 發送失敗：'+t));
   }).catch(err=>alert('❌ 發送失敗：'+err.message));
 }
 
-function generateReportHTML(stats, streak){
+function generateReportData(stats, streak){
   const subjNames={chhist:'中史',whist:'世史',csd:'C&SD',eng:'英文',math:'數學',chi:'中文'};
-  let subjectDetails='';
-  Object.keys(stats.subjectTime).forEach(k=>{
-    if(stats.subjectTime[k]>0) subjectDetails+=`<li>${subjNames[k]||k}：${formatDuration(stats.subjectTime[k])}</li>`;
-  });
-  return `<h2>📊 DSE 學習報告</h2>
-<p>日期：${getTodayKey()}</p>
-<h3>今日總覽</h3>
-<ul>
-<li>⏱️ 總溫習時長：${formatDuration(stats.totalTime)}</li>
-<li>📝 新增筆記：${stats.noteCount} 條</li>
-<li>🧪 完成測驗：${stats.quizCount} 次${stats.quizAvg?'（均分 '+stats.quizAvg+'%）':''}</li>
-<li>✏️ 完成操練：${stats.pracCount} 次</li>
-<li>🔥 連續溫習：${streak} 天</li>
-</ul>
-${subjectDetails?'<h3>各科時長</h3><ul>'+subjectDetails+'</ul>':''}
-<p>💚 ZB1 撐你！繼續加油！</p>`;
+  let subjectBreakdown='';
+  const entries=Object.entries(stats.subjectTime).filter(([k,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  if(entries.length===0) subjectBreakdown='今日尚未記錄各科時間';
+  else subjectBreakdown=entries.map(([k,v])=>`• ${subjNames[k]||k}：${formatDuration(v)}`).join('<br>');
+
+  const logs=getData(KEYS.activity);
+  const today=getTodayKey();
+  const todayLogs=logs.filter(l=>l.ts&&l.ts.startsWith(today)).slice(-10);
+  let activities='';
+  if(todayLogs.length===0) activities='今日暫無活動記錄';
+  else activities=todayLogs.map(l=>{
+    const t=new Date(l.ts);
+    const time=String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0');
+    const typeMap={note_create:'📝 新增筆記',note_delete:'🗑️ 刪除筆記',quiz_done:'🧪 完成測驗',prac_done:'✏️ 完成操練',email_sent:'📧 發送報告'};
+    return time+' '+(typeMap[l.type]||l.type)+' '+(l.detail||'');
+  }).join('<br>');
+
+  return {subjectBreakdown, activities};
 }
 
 // navigateTo 加載報告頁
