@@ -9689,6 +9689,13 @@ function getTodayKey(){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
+// 將 ISO 日期字符串轉為本地日期 key（解決時區問題）
+function toLocalDateKey(isoStr){
+  if(!isoStr) return '';
+  const d=new Date(isoStr);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 function addStudyTime(subject, seconds){
   const times=getData(KEYS.studyTime);
   const today=getTodayKey();
@@ -9759,13 +9766,13 @@ function getTodayStats(){
   const today=getTodayKey();
   const dayData=times[today]||{};
   const logs=getData(KEYS.activity);
-  const todayLogs=Array.isArray(logs)?logs.filter(l=>l.ts&&l.ts.startsWith(today)):[];
+  const todayLogs=Array.isArray(logs)?logs.filter(l=>l.ts&&toLocalDateKey(l.ts)===today):[];
 
   // 直接從筆記資料計算今日新增數量
   const allNotes=getData(KEYS.notes);
   const todayNoteCount=Array.isArray(allNotes)?allNotes.filter(n=>{
-    if(n.createdAt&&n.createdAt.startsWith(today)) return true;
-    if(n.created&&n.created.startsWith(today)) return true;
+    if(n.createdAt&&toLocalDateKey(n.createdAt)===today) return true;
+    if(n.created&&toLocalDateKey(n.created)===today) return true;
     return false;
   }).length:0;
   // 同時保留 activity log 嘅記錄作為後備
@@ -9915,7 +9922,7 @@ function renderReport(){
 
   // 今日活動
   const logs=getData(KEYS.activity);
-  const todayLogs=Array.isArray(logs)?logs.filter(l=>l.ts&&l.ts.startsWith(getTodayKey())):[];
+  const todayLogs=Array.isArray(logs)?logs.filter(l=>l.ts&&toLocalDateKey(l.ts)===getTodayKey()):[];
   const typeEmoji={note_create:'📝',note_edit:'✏️',note_delete:'🗑️',quiz_done:'🧪',prac_done:'✏️'};
   document.getElementById('rpt-activities').innerHTML=todayLogs.length?todayLogs.slice().reverse().map(l=>{
     const time=l.ts?l.ts.split('T')[1].slice(0,5):'';
@@ -9967,7 +9974,7 @@ function sendReportToMom(){
   // 生成活動記錄
   const rawLogs=getData(KEYS.activity);
   const logs=Array.isArray(rawLogs)?rawLogs:[];
-  const todayLogs=Array.isArray(logs)?logs.filter(l=>l.ts&&l.ts.startsWith(dateStr)).slice(-10):[];
+  const todayLogs=Array.isArray(logs)?logs.filter(l=>l.ts&&toLocalDateKey(l.ts)===dateStr).slice(-10):[];
   const typeMap={note_create:'📝 新增筆記',note_delete:'🗑️ 刪除筆記',quiz_done:'🧪 完成測驗',prac_done:'✏️ 完成操練',email_sent:'📧 發送報告'};
   const activityLines=todayLogs.length?todayLogs.map(l=>{
     const t=new Date(l.ts);
