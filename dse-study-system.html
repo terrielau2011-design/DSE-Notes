@@ -9182,15 +9182,51 @@ function updateSyncStatus(){
 
   const notes=getData(KEYS.notes);
   const prac=getData(KEYS.prac);
-  const noteCount=Object.values(notes).reduce((s,a)=>s+a.length,0);
-  const pracCount=Object.values(prac).reduce((s,a)=>s+a.length,0);
+  const noteCount=Object.values(notes).reduce((s,a)=>s+(Array.isArray(a)?a.length:0),0);
+  const pracCount=Object.values(prac).reduce((s,a)=>s+(Array.isArray(a)?a.length:0),0);
 
   let html=`<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>🔑 雲端連接：</span><strong style="color:${token?'var(--success)':'var(--danger)'};">${token?'已連接':'未連接'}</strong></div>`;
   html+=`<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>☁️ Gist ID：</span><span>${gistId||'尚未建立'}</span></div>`;
   html+=`<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>📝 本機筆記：</span><span>${noteCount} 條</span></div>`;
   html+=`<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>✏️ 本機操練：</span><span>${pracCount} 條</span></div>`;
   const autoSync=localStorage.getItem('dse_auto_sync')==='true';
-  html+=`<div style="display:flex;justify-content:space-between;"><span>⚡ 自動同步：</span><span style="color:${autoSync?'var(--success)':'var(--gray-500)'};">${autoSync?'已開啟':'已關閉'}</span></div>`;
+  html+=`<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>⚡ 自動同步：</span><span style="color:${autoSync?'var(--success)':'var(--gray-500)'};">${autoSync?'已開啟':'已關閉'}</span></div>`;
+
+  // 雲端資料對比
+  if(token && gistId){
+    html+=`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--gray-200);">`;
+    html+=`<div style="font-size:12px;color:var(--gray-500);margin-bottom:4px;">☁️ 雲端資料狀態</div>`;
+    html+=`<div id="cloud-sync-info" style="font-size:12px;color:var(--gray-500);">⏳ 載入中...</div>`;
+    html+=`</div>`;
+    // 非同步載入雲端資料
+    fetch(`https://api.github.com/gists/${gistId}`,{
+      headers:{'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github.v3+json'}
+    }).then(r=>r.json()).then(data=>{
+      const file=data.files&&data.files['dse-study-data.json'];
+      if(!file) return;
+      const cloud=JSON.parse(file.content);
+      const cloudNotes=cloud.notes||{};
+      const cloudPrac=cloud.prac||{};
+      const cloudNoteCount=Object.values(cloudNotes).reduce((s,a)=>s+(Array.isArray(a)?a.length:0),0);
+      const cloudPracCount=Object.values(cloudPrac).reduce((s,a)=>s+(Array.isArray(a)?a.length:0),0);
+      const uploadTime=cloud.uploadTime?formatDateTime(cloud.uploadTime):'未知';
+      const device=cloud.device||'未知';
+      const infoEl=document.getElementById('cloud-sync-info');
+      if(infoEl){
+        const noteDiff=cloudNoteCount-noteCount;
+        const noteColor=noteDiff>0?'var(--danger)':noteDiff<0?'var(--cool-accent)':'var(--success)';
+        const noteSign=noteDiff>0?`（雲端多 ${noteDiff} 條）`:noteDiff<0?`（本機多 ${-noteDiff} 條）`:'（一致）';
+        infoEl.innerHTML=`<div>📝 雲端筆記：<strong>${cloudNoteCount}</strong> 條 <span style="color:${noteColor};">${noteSign}</span></div>`+
+          `<div>✏️ 雲端操練：${cloudPracCount} 條</div>`+
+          `<div>📅 上傳時間：${uploadTime}</div>`+
+          `<div>📱 來源裝置：${device}</div>`;
+      }
+    }).catch(()=>{
+      const infoEl=document.getElementById('cloud-sync-info');
+      if(infoEl) infoEl.innerHTML=`<span style="color:var(--danger);">❌ 無法讀取雲端資料</span>`;
+    });
+  }
+
   el.innerHTML=html;
 }
 
