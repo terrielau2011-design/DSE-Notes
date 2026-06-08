@@ -6191,10 +6191,42 @@ const factInstMap={
 '明清對外關係':'海禁政策、一口通商、朝貢體系、閉關鎖國'};
 
 // ===== DATA LAYER =====
-const KEYS = { notes:'dse_notes', prac:'dse_prac', activity:'dse_activity_log', studyTime:'dse_study_time', reportSettings:'dse_report_settings' };
+const KEYS = { notes:'dse_notes', prac:'dse_prac', activity:'dse_activity_log', studyTime:'dse_study_time', reportSettings:'dse_report_settings', exportHistory:'dse_export_history' };
 function getData(key){ try{return JSON.parse(localStorage.getItem(key))||{};}catch(e){return {};} }
 function setData(key,val){ localStorage.setItem(key, JSON.stringify(val)); }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+// ===== 匯出歷史 =====
+function getExportHistory(){
+  const h=getData(KEYS.exportHistory);
+  return (typeof h==='object'&&h!==null&&!Array.isArray(h))?h:{};
+}
+function getItemExportKey(item){
+  // 用科目+來源+標題作為唯一識別
+  const subj=item._subj||'';
+  const src=item._src||'';
+  const title=item.title||item.topic||item.type||'';
+  const sub=item.subtopic||item.category||item.paper||'';
+  return `${subj}|${src}|${title}|${sub}`;
+}
+function recordExportHistory(items, source, isoTime){
+  const history=getExportHistory();
+  items.forEach(item=>{
+    const key=getItemExportKey(item);
+    if(!history[key]) history[key]=[];
+    history[key].push(isoTime);
+    // 只保留最近5次
+    if(history[key].length>5) history[key]=history[key].slice(-5);
+  });
+  setData(KEYS.exportHistory, history);
+}
+function getItemLastExport(item){
+  const history=getExportHistory();
+  const key=getItemExportKey(item);
+  const records=history[key];
+  if(!records||!records.length) return '';
+  return records[records.length-1]; // 最後一次
+}
 
 // Initialize form on page load
 document.addEventListener('DOMContentLoaded', function(){ updateGenForm(); quizOnSubjectChange(); loadQuizHistory(); renderChiPracticeTab('卷三聆聽'); });
@@ -8282,12 +8314,15 @@ function loadExpItems(){
       tags=`📋 ${item.date||''} ${item.type||item.topic||''}`;
     }
     if(showSubjTag) tags=`📖 ${item._subj} `+tags;
+    const lastExp=getItemLastExport(item);
+    const lastExpStr=lastExp?`<div style="font-size:10px;color:#999;margin-top:1px;">🖨️ 上次匯出：${formatDateTime(lastExp)}</div>`:'';
     listHtml+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--gray-100);" class="exp-item-label">
       <input type="checkbox" class="exp-check" data-exp-idx="${i}" style="width:18px;height:18px;accent-color:var(--primary);flex-shrink:0;cursor:pointer;">
       <div style="flex:1;min-width:0;cursor:pointer;" onclick="this.previousElementSibling.click()">
         <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${title}${sub?' — '+sub:''}</div>
         ${tags?`<div style="font-size:11px;color:var(--gray-500);margin-top:2px;">${tags}</div>`:''}
         ${fmtDesc?`<div style="font-size:11px;color:var(--cool-accent);margin-top:1px;">${fmtDesc}</div>`:''}
+        ${lastExpStr}
       </div>
       <button onclick="removeExpItem(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0;" title="移除此項">✕</button>
     </div>`;
@@ -8356,12 +8391,15 @@ function loadExpItemsFromCache(){
       tags=`📋 ${item.date||''} ${item.type||item.topic||''}`;
     }
     if(showSubjTag) tags=`📖 ${item._subj} `+tags;
+    const lastExp=getItemLastExport(item);
+    const lastExpStr=lastExp?`<div style="font-size:10px;color:#999;margin-top:1px;">🖨️ 上次匯出：${formatDateTime(lastExp)}</div>`:'';
     listHtml+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--gray-100);" class="exp-item-label">
       <input type="checkbox" class="exp-check" data-exp-idx="${i}" style="width:18px;height:18px;accent-color:var(--primary);flex-shrink:0;cursor:pointer;">
       <div style="flex:1;min-width:0;cursor:pointer;" onclick="this.previousElementSibling.click()">
         <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${title}${sub?' — '+sub:''}</div>
         ${tags?`<div style="font-size:11px;color:var(--gray-500);margin-top:2px;">${tags}</div>`:''}
         ${fmtDesc?`<div style="font-size:11px;color:var(--cool-accent);margin-top:1px;">${fmtDesc}</div>`:''}
+        ${lastExpStr}
       </div>
       <button onclick="removeExpItem(${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px;padding:4px;flex-shrink:0;" title="移除此項">✕</button>
     </div>`;
@@ -8833,6 +8871,10 @@ function showExportPreview(){
   // Build preview HTML — group by subject
   const now=new Date();
   const exportTime=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  // 記錄匯出歷史
+  recordExportHistory(selectedItems, source, now.toISOString());
+
   let html=`<h1 style="color:#1B3A5C;text-align:center;border-bottom:3px solid #1B3A5C;padding-bottom:8pt;font-size:18pt;margin-bottom:6pt;">DSE 匯出列印</h1>`;
   html+=`<div style="font-size:10pt;color:#888;text-align:center;margin-bottom:12pt;">📅 匯出時間：${exportTime} | 科目：${subjLabel} | 來源：${srcLabel} | 共 ${selectedItems.length} 條</div>`;
 
