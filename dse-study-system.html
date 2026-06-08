@@ -8527,7 +8527,8 @@ function renderExportItem(item,subj){
 
       html+=`<div class="note-card">`;
       html+=`<div class="nt-title">✏️ ${title}${fmtStr}</div>`;
-      if(subtopic) html+=`<div class="nt-subtitle">${subtopic}</div>`;
+      const createdStr=item.createdAt?(()=>{const d=new Date(item.createdAt);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`)():'';
+      if(subtopic||createdStr) html+=`<div class="nt-subtitle">${subtopic}${createdStr?' <span style="color:#999;font-size:10pt;">⏰ '+createdStr+'</span>':''}</div>`;
 
       // 信息行
       const infoParts=[];
@@ -8627,7 +8628,8 @@ function renderExportItem(item,subj){
     const fmtLabel=item.fmtLabel?` <span style="font-size:10pt;color:var(--warm-accent);font-weight:400;">[${item.fmtLabel}]</span>`:'';
     html+=`<div class="note-card">`;
     html+=`<div class="nt-title">${title}${fmtLabel}</div>`;
-    if(subtopic) html+=`<div class="nt-subtitle">${subtopic}</div>`;
+    const createdStr2=item.createdAt?(()=>{const d=new Date(item.createdAt);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`)():'';
+    if(subtopic||createdStr2) html+=`<div class="nt-subtitle">${subtopic}${createdStr2?' <span style="color:#999;font-size:10pt;">⏰ '+createdStr2+'</span>':''}</div>`;
     if(item.content) html+=`<div class="nt-content">${item.content}</div>`;
     if(item.keywords) html+=`<div class="nt-keywords">🔑 ${item.keywords}</div>`;
     // DSE tags
@@ -8717,6 +8719,8 @@ function renderExportItem(item,subj){
     html+=`<div class="nt-title">${isKB?'📚':'✏️'} ${title}</div>`;
   }
   if(subtopic) html+=`<div class="nt-subtitle">${subtopic}</div>`;
+  const createdStr3=item.createdAt?(()=>{const d=new Date(item.createdAt);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`)():'';
+  if(createdStr3) html+=`<div style="font-size:10pt;color:#999;">⏰ 建立時間：${createdStr3}</div>`;
 
   // 文科（中史/世史/C&SD）知識庫 - 顯示所有格式
   if(isKB && ['中史','世史','C&SD'].includes(subj)){
@@ -8827,8 +8831,10 @@ function showExportPreview(){
   const subjLabel=subjVal==='all'?'全部科目':subjVal;
 
   // Build preview HTML — group by subject
+  const now=new Date();
+  const exportTime=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
   let html=`<h1 style="color:#1B3A5C;text-align:center;border-bottom:3px solid #1B3A5C;padding-bottom:8pt;font-size:18pt;margin-bottom:6pt;">DSE 匯出列印</h1>`;
-  html+=`<div style="font-size:10pt;color:#888;text-align:center;margin-bottom:12pt;">匯出日期：${new Date().toLocaleString('zh-HK')} | 科目：${subjLabel} | 來源：${srcLabel} | 共 ${selectedItems.length} 條</div>`;
+  html+=`<div style="font-size:10pt;color:#888;text-align:center;margin-bottom:12pt;">📅 匯出時間：${exportTime} | 科目：${subjLabel} | 來源：${srcLabel} | 共 ${selectedItems.length} 條</div>`;
 
   // Group items by subject
   const subjGroups={};
@@ -8883,8 +8889,9 @@ function showExportPreview(){
       } else if(item._src==='prac'){
         // 操練記錄 - note-card 排版
         const isMath=item._pracKey==='math';
+        const pracCreated=item.createdAt?(()=>{const d=new Date(item.createdAt);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`)():'';
         html+=`<div class="note-card"><div class="nt-title">📋 ${item.date||''} ${item.topic||item.type||''}</div>`;
-        html+=`<div class="nt-info">${item.paper||''} · ${item.source||''} · 題號 ${item.qNum||''}</div>`;
+        html+=`<div class="nt-info">${item.paper||''} · ${item.source||''} · 題號 ${item.qNum||''}${pracCreated?' · ⏰ '+pracCreated:''}</div>`;
         if(isMath){
           if(item.qType) html+=`<div class="nt-section"><div class="nt-label">題型</div><div class="nt-content">${item.qType}</div></div>`;
           html+=`<div class="nt-section"><div class="nt-label">做對</div><div class="nt-content">${item.correct==='是'?'✅ 正確':'❌ 錯誤'}</div></div>`;
