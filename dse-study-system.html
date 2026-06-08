@@ -6,6 +6,12 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<meta name="theme-color" content="#1B3A5C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DSE Notes">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="images/icon-192.png">
 <title>DSE 筆記系統</title>
 <style>
 :root {
@@ -9686,6 +9692,39 @@ window.addEventListener('load',function(){
     avatar.classList.add('bounce');
     setTimeout(jiwoongClose,8000);
   },2000);
+});
+
+// ============ PWA Service Worker 註冊 ============
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then(reg=>{
+    console.log('✅ Service Worker 已註冊');
+  }).catch(err=>{
+    console.log('Service Worker 註冊失敗:',err);
+  });
+}
+
+// PWA 安裝提示
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // 顯示安裝按鈕
+  const installBtn = document.createElement('div');
+  installBtn.id = 'pwa-install-btn';
+  installBtn.innerHTML = '📱 安裝 App';
+  installBtn.style.cssText = 'position:fixed;top:12px;right:12px;z-index:9999;background:#4CAF50;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(76,175,80,0.4);transition:transform 0.2s;';
+  installBtn.onmouseover = () => installBtn.style.transform = 'scale(1.05)';
+  installBtn.onmouseout = () => installBtn.style.transform = 'scale(1)';
+  installBtn.onclick = async () => {
+    deferredPrompt.prompt();
+    const {outcome} = await deferredPrompt.userChoice;
+    if(outcome === 'accepted') console.log('✅ 已安裝 PWA');
+    deferredPrompt = null;
+    installBtn.remove();
+  };
+  document.body.appendChild(installBtn);
+  // 10秒後自動隱藏
+  setTimeout(() => { if(document.getElementById('pwa-install-btn')) installBtn.remove(); }, 15000);
 });
 
 // ============ 學習追蹤與報告 ============
