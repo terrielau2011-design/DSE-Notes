@@ -8527,7 +8527,7 @@ function renderExportItem(item,subj){
 
       html+=`<div class="note-card">`;
       html+=`<div class="nt-title">✏️ ${title}${fmtStr}</div>`;
-      const createdStr=item.createdAt?(()=>{const d=new Date(item.createdAt);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`)():'';
+      const createdStr=item.createdAt?formatDateTime(item.createdAt):'';
       if(subtopic||createdStr) html+=`<div class="nt-subtitle">${subtopic}${createdStr?' <span style="color:#999;font-size:10pt;">⏰ '+createdStr+'</span>':''}</div>`;
 
       // 信息行
@@ -8628,7 +8628,7 @@ function renderExportItem(item,subj){
     const fmtLabel=item.fmtLabel?` <span style="font-size:10pt;color:var(--warm-accent);font-weight:400;">[${item.fmtLabel}]</span>`:'';
     html+=`<div class="note-card">`;
     html+=`<div class="nt-title">${title}${fmtLabel}</div>`;
-    const createdStr2=item.createdAt?(()=>{const d=new Date(item.createdAt);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`)():'';
+    const createdStr2=item.createdAt?formatDateTime(item.createdAt):'';
     if(subtopic||createdStr2) html+=`<div class="nt-subtitle">${subtopic}${createdStr2?' <span style="color:#999;font-size:10pt;">⏰ '+createdStr2+'</span>':''}</div>`;
     if(item.content) html+=`<div class="nt-content">${item.content}</div>`;
     if(item.keywords) html+=`<div class="nt-keywords">🔑 ${item.keywords}</div>`;
@@ -8719,7 +8719,7 @@ function renderExportItem(item,subj){
     html+=`<div class="nt-title">${isKB?'📚':'✏️'} ${title}</div>`;
   }
   if(subtopic) html+=`<div class="nt-subtitle">${subtopic}</div>`;
-  const createdStr3=item.createdAt?(()=>{const d=new Date(item.createdAt);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`)():'';
+  const createdStr3=item.createdAt?formatDateTime(item.createdAt):'';
   if(createdStr3) html+=`<div style="font-size:10pt;color:#999;">⏰ 建立時間：${createdStr3}</div>`;
 
   // 文科（中史/世史/C&SD）知識庫 - 顯示所有格式
@@ -8889,7 +8889,7 @@ function showExportPreview(){
       } else if(item._src==='prac'){
         // 操練記錄 - note-card 排版
         const isMath=item._pracKey==='math';
-        const pracCreated=item.createdAt?(()=>{const d=new Date(item.createdAt);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`)():'';
+        const pracCreated=item.createdAt?formatDateTime(item.createdAt):'';
         html+=`<div class="note-card"><div class="nt-title">📋 ${item.date||''} ${item.topic||item.type||''}</div>`;
         html+=`<div class="nt-info">${item.paper||''} · ${item.source||''} · 題號 ${item.qNum||''}${pracCreated?' · ⏰ '+pracCreated:''}</div>`;
         if(isMath){
@@ -9762,6 +9762,12 @@ function toLocalDateKey(isoStr){
   if(!isoStr) return '';
   const d=new Date(isoStr);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function formatDateTime(isoStr){
+  if(!isoStr) return '';
+  const d=new Date(isoStr);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
 
 function addStudyTime(subject, seconds){
