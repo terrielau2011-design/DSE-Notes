@@ -9597,16 +9597,26 @@ function initSyncPage(){
   updateSyncStatus();
 }
 
-// 強制清除舊快取 - 確保手機載入最新版本
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.getRegistrations().then(function(registrations){
-    registrations.forEach(function(reg){reg.unregister();});
-  });
+// ============ 版本更新檢查 ============
+const APP_VERSION='v20';
+function checkForUpdate(){
+  // 比對本地版本和最新版本
+  const stored=localStorage.getItem('dse_app_version');
+  if(stored && stored!==APP_VERSION){
+    console.log('🔄 版本更新:', stored, '→', APP_VERSION, '，清除快取中...');
+    // 版本變更時才清除快取
+    if('caches' in window){
+      caches.keys().then(names=>{names.forEach(name=>caches.delete(name));});
+    }
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.getRegistrations().then(regs=>{
+        regs.forEach(reg=>reg.unregister());
+      });
+    }
+  }
+  localStorage.setItem('dse_app_version', APP_VERSION);
 }
-if('caches' in window){
-  caches.keys().then(function(names){names.forEach(function(name){caches.delete(name);});});
-}
-
+checkForUpdate();
 // ============ ZB1 鼓勵夥伴 ============
 const zb1Msgs=[
   {zh:"加油！💪 每溫一鐘就離目標近一步！",kr:"파이팅! 💪 한 시간 공부할 때마다 목표에 가까워져!"},
@@ -9746,9 +9756,28 @@ window.addEventListener('load',function(){
 // ============ PWA Service Worker 註冊 ============
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').then(reg=>{
-    console.log('✅ Service Worker 已註冊');
+    console.log('✅ Service Worker 已註冊，版本:', APP_VERSION);
+    // 每次載入時檢查 SW 更新
+    reg.addEventListener('updatefound', ()=>{
+      const newWorker=reg.installing;
+      newWorker.addEventListener('statechange', ()=>{
+        if(newWorker.state==='activated'){
+          console.log('🔄 Service Worker 已更新至新版本');
+        }
+      });
+    });
+    // 主動觸發更新檢查
+    if(reg.waiting){
+      reg.waiting.postMessage({type:'SKIP_WAITING'});
+    }
   }).catch(err=>{
     console.log('Service Worker 註冊失敗:',err);
+  });
+  // SW 控制頁面後自動刷新（確保使用新版本）
+  navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+    if(localStorage.getItem('dse_app_version')===APP_VERSION){
+      // 版本一致不需要刷新
+    }
   });
 }
 
