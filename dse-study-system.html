@@ -889,40 +889,29 @@ tr:hover td { background:var(--gray-50); }
   <div style="max-width:700px;margin:0 auto;">
     <!-- 主播放器 -->
     <div style="background:#fff;border-radius:var(--radius);padding:20px;margin-bottom:16px;border:1px solid var(--gray-200);">
-      <!-- Playlist 選擇 -->
+      <!-- Playlist 按鈕（由 JS 動態生成） -->
       <div style="margin-bottom:14px;">
         <div style="font-size:13px;color:var(--gray-600);margin-bottom:8px;">🎶 選擇播放清單</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;" id="playlist-selector">
-          <button class="btn btn-sm playlist-btn active" data-pl="0" onclick="switchPlaylist(0)">🎵 Playlist 1</button>
-          <button class="btn btn-sm playlist-btn" data-pl="1" onclick="switchPlaylist(1)">🎵 Playlist 2</button>
-          <button class="btn btn-sm playlist-btn" data-pl="2" onclick="switchPlaylist(2)">🎵 Playlist 3</button>
-        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;" id="playlist-selector"></div>
       </div>
-      <!-- iframe 播放器 -->
-      <div id="music-player-container">
-        <iframe id="music-iframe" 
-          src="https://www.youtube-nocookie.com/embed/videoseries?list=RDbZrfMU71W9I&rel=0" 
-          style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;border-radius:8px;" 
-          allow="autoplay; encrypted-media" 
-          allowfullscreen>
-        </iframe>
-      </div>
-      <!-- 開 YouTube App 按鈕 -->
+      <!-- iframe 播放器容器 -->
+      <div id="music-player-container"></div>
+      <!-- YouTube App + 最小化 -->
       <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
-        <a id="yt-app-link" href="https://www.youtube.com/playlist?list=RDVR_KtJYMrdo" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:#FF0000;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+        <a id="yt-app-link" href="#" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:#FF0000;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
           ▶️ 在 YouTube App 播放
         </a>
-        <button class="btn btn-outline btn-sm" onclick="musicMinimize()">🔽 最小化到浮動播放器</button>
+        <button class="btn btn-outline btn-sm" onclick="musicMinimize()">🔽 最小化播放器</button>
       </div>
     </div>
 
     <!-- 播放清單資訊 -->
     <div style="background:#E3F2FD;border-radius:var(--radius);padding:16px;border:1px solid #BBDEFB;">
-      <h3 style="font-size:14px;color:#1565C0;margin-bottom:8px;">📋 播放清單</h3>
+      <h3 style="font-size:14px;color:#1565C0;margin-bottom:8px;">📋 使用說明</h3>
       <div style="font-size:13px;color:var(--gray-700);line-height:1.6;">
-        選擇播放清單後，影片會在上方播放器自動輪播。<br>
-        💡 <strong>提示</strong>：切換到其他頁面時，音樂會繼續播放。<br>
-        📱 <strong>更穩定</strong>：按「在 YouTube App 播放」可直接在手機 YouTube App 聽歌。
+        選擇播放清單後，影片會自動輪播。<br>
+        💡 <strong>提示</strong>：切換頁面時音樂會繼續播放。<br>
+        📱 <strong>最穩定</strong>：按「在 YouTube App 播放」直接在手機 YouTube App 聽歌。
       </div>
     </div>
   </div>
@@ -1153,6 +1142,20 @@ tr:hover td { background:var(--gray-50); }
 </div>
 
 <script>
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  🎵 YouTube 播放清單配置 — 在這裡更新 YouTube Link！        ║
+// ║  每個物件包含：                                              ║
+// ║    name  : 按鈕上顯示的名稱                                  ║
+// ║    listId: YouTube 播放清單 ID（URL 中 list= 後面的值）     ║
+// ║    videoId: 起始影片 ID（URL 中 v= 後面的值）               ║
+// ║  新增清單：在陣列末尾加一個物件即可，按鈕會自動生成         ║
+// ╚══════════════════════════════════════════════════════════════╝
+const YT_PLAYLISTS=[
+  {name:'🎵 Playlist 1', listId:'RDbZrfMU71W9I', videoId:'bZrfMU71W9I'},
+  {name:'🎵 Playlist 2', listId:'RDVR_KtJYMrdo', videoId:'VR_KtJYMrdo'},
+  {name:'🎵 Playlist 3', listId:'RDFS93cEWcwQA', videoId:'FS93cEWcwQA'}
+];
+
 const engWritingDB = {
 Paper2:{
   tasks:[
@@ -6327,7 +6330,7 @@ function initSyncPage(){
 }
 
 // ============ 版本更新檢查 ============
-const APP_VERSION='v29';
+const APP_VERSION='v30';
 let _versionReloadDone=false;
 function checkForUpdate(){
   const stored=localStorage.getItem('dse_app_version');
@@ -7059,35 +7062,94 @@ function renderDashStats(){
 }
 
 // ============ 音樂播放器（iframe 方式） ============
-const YT_PLAYLISTS=[
-  {id:'RDbZrfMU71W9I', video:'bZrfMU71W9I', name:'Playlist 1'},
-  {id:'RDVR_KtJYMrdo', video:'VR_KtJYMrdo', name:'Playlist 2'},
-  {id:'RDFS93cEWcwQA', video:'FS93cEWcwQA', name:'Playlist 3'}
-];
-let currentPlaylist=0;
+// ⚠️ 播放清單配置已移至 <script> 最頂端（YT_PLAYLISTS 陣列），方便修改！
 
-function switchPlaylist(idx){
-  currentPlaylist=idx;
+let currentPlaylist=0;
+let _plSwitching=false; // 防抖鎖：載入期間禁止重複點擊
+const _PL_DEBOUNCE_MS=1500; // 切換冷卻時間（毫秒）
+
+// 初始化：動態生成按鈕 + 載入第一個清單
+function initMusicPlayer(){
+  const sel=document.getElementById('playlist-selector');
+  if(!sel) return;
+  // 生成按鈕
+  sel.innerHTML='';
+  YT_PLAYLISTS.forEach((pl,i)=>{
+    const btn=document.createElement('button');
+    btn.className='btn btn-sm playlist-btn'+(i===0?' active':'');
+    btn.dataset.pl=i;
+    btn.textContent=pl.name;
+    btn.onclick=function(){ switchPlaylist(i); };
+    sel.appendChild(btn);
+  });
+  // 載入第一個清單
+  loadPlaylistIframe(0);
+}
+
+// 核心：銷毀舊 iframe → 建立新 iframe（徹底清除上一次播放狀態）
+function loadPlaylistIframe(idx){
   const pl=YT_PLAYLISTS[idx];
-  // 更新 iframe src
-  const iframe=document.getElementById('music-iframe');
-  if(iframe) iframe.src='https://www.youtube-nocookie.com/embed/videoseries?list='+pl.id+'&rel=0';
+  if(!pl) return;
+  const container=document.getElementById('music-player-container');
+  if(!container) return;
+  // 銷毀舊 iframe（移除 DOM = 徹底清除 YouTube Player 狀態）
+  container.innerHTML='';
+  // 建立新 iframe
+  const iframe=document.createElement('iframe');
+  iframe.id='music-iframe';
+  iframe.src='https://www.youtube-nocookie.com/embed/videoseries?list='+pl.listId+'&rel=0';
+  iframe.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;border:none;border-radius:8px;';
+  iframe.allow='autoplay; encrypted-media';
+  iframe.allowFullscreen=true;
+  iframe.onload=function(){
+    // iframe 載入完成 → 解除防抖鎖
+    _plSwitching=false;
+    enablePlaylistBtns(true);
+  };
+  container.appendChild(iframe);
   // 更新 YouTube App 連結
   const appLink=document.getElementById('yt-app-link');
-  if(appLink) appLink.href='https://www.youtube.com/playlist?list='+pl.id;
+  if(appLink) appLink.href='https://www.youtube.com/playlist?list='+pl.listId;
   // 更新浮動播放器
   const floatLink=document.getElementById('float-yt-link');
-  if(floatLink) floatLink.href='https://www.youtube.com/playlist?list='+pl.id;
+  if(floatLink) floatLink.href='https://www.youtube.com/playlist?list='+pl.listId;
   const floatName=document.getElementById('float-pl-name');
   if(floatName) floatName.textContent=pl.name;
-  // 更新按鈕樣式
+}
+
+// 切換播放清單（含防抖 + 按鈕 disable）
+function switchPlaylist(idx){
+  if(_plSwitching) return; // 防抖：載入中，忽略點擊
+  if(idx===currentPlaylist){
+    // 同一個清單：重新載入（銷毀重建）
+  }
+  _plSwitching=true;
+  currentPlaylist=idx;
+  // 禁用所有按鈕
+  enablePlaylistBtns(false);
+  // 標記 active 樣式
   document.querySelectorAll('.playlist-btn').forEach(b=>{
     b.classList.toggle('active',parseInt(b.dataset.pl)===idx);
+  });
+  // 銷毀重建 iframe
+  loadPlaylistIframe(idx);
+  // 安全保險：即使 iframe onload 沒觸發，也在冷卻時間後解鎖
+  setTimeout(function(){
+    _plSwitching=false;
+    enablePlaylistBtns(true);
+  }, _PL_DEBOUNCE_MS);
+}
+
+// 啟用/禁用播放清單按鈕
+function enablePlaylistBtns(enabled){
+  document.querySelectorAll('.playlist-btn').forEach(b=>{
+    b.disabled=!enabled;
+    b.style.opacity=enabled?'1':'0.5';
+    b.style.pointerEvents=enabled?'auto':'none';
   });
 }
 
 function musicMinimize(){
-  // 顯示浮動播放器，跳轉到首頁
   const fp=document.getElementById('float-player');
   if(fp) fp.style.display='block';
   navigateTo('dashboard');
@@ -7098,7 +7160,8 @@ function floatClose(){
   if(fp) fp.style.display='none';
 }
 
-// 浮動播放器預設隱藏，在音樂頁面時不顯示
+// 頁面載入時初始化播放器
+initMusicPlayer();
 
 </script>
 </body>
