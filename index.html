@@ -901,7 +901,7 @@ tr:hover td { background:var(--gray-50); }
       <!-- iframe 播放器 -->
       <div id="music-player-container">
         <iframe id="music-iframe" 
-          src="https://www.youtube.com/embed/videoseries?list=RDVR_KtJYMrdo&rel=0" 
+          src="https://www.youtube-nocookie.com/embed/videoseries?list=RDbZrfMU71W9I&rel=0" 
           style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;border-radius:8px;" 
           allow="autoplay; encrypted-media" 
           allowfullscreen>
@@ -6327,7 +6327,7 @@ function initSyncPage(){
 }
 
 // ============ 版本更新檢查 ============
-const APP_VERSION='v28';
+const APP_VERSION='v29';
 let _versionReloadDone=false;
 function checkForUpdate(){
   const stored=localStorage.getItem('dse_app_version');
@@ -7060,8 +7060,8 @@ function renderDashStats(){
 
 // ============ 音樂播放器（iframe 方式） ============
 const YT_PLAYLISTS=[
-  {id:'RDVR_KtJYMrdo', video:'VR_KtJYMrdo', name:'Playlist 1'},
-  {id:'RDbZrfMU71W9I', video:'bZrfMU71W9I', name:'Playlist 2'},
+  {id:'RDbZrfMU71W9I', video:'bZrfMU71W9I', name:'Playlist 1'},
+  {id:'RDVR_KtJYMrdo', video:'VR_KtJYMrdo', name:'Playlist 2'},
   {id:'RDFS93cEWcwQA', video:'FS93cEWcwQA', name:'Playlist 3'}
 ];
 let currentPlaylist=0;
@@ -7071,7 +7071,7 @@ function switchPlaylist(idx){
   const pl=YT_PLAYLISTS[idx];
   // 更新 iframe src
   const iframe=document.getElementById('music-iframe');
-  if(iframe) iframe.src='https://www.youtube.com/embed/videoseries?list='+pl.id+'&rel=0';
+  if(iframe) iframe.src='https://www.youtube-nocookie.com/embed/videoseries?list='+pl.id+'&rel=0';
   // 更新 YouTube App 連結
   const appLink=document.getElementById('yt-app-link');
   if(appLink) appLink.href='https://www.youtube.com/playlist?list='+pl.id;
