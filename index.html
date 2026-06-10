@@ -899,10 +899,13 @@ tr:hover td { background:var(--gray-50); }
       </div>
       <!-- iframe 播放器容器 -->
       <div id="music-player-container"></div>
-      <!-- YouTube App + 最小化 -->
+      <!-- YouTube App + Spotify + 最小化 -->
       <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
         <a id="yt-app-link" href="#" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:#FF0000;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-          ▶️ 在 YouTube App 播放
+          ▶️ YouTube App
+        </a>
+        <a id="spotify-link" href="#" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:#1DB954;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+          🎧 Spotify
         </a>
         <button class="btn btn-outline btn-sm" onclick="musicMinimize()">🔽 最小化播放器</button>
       </div>
@@ -914,8 +917,9 @@ tr:hover td { background:var(--gray-50); }
       <div style="font-size:13px;color:var(--gray-700);line-height:1.6;">
         選擇播放清單後，影片會自動輪播。<br>
         💡 <strong>提示</strong>：切換頁面時音樂會繼續播放。<br>
-        📱 <strong>最穩定</strong>：按「在 YouTube App 播放」直接在手機 YouTube App 聽歌。<br>
-        ✏️ <strong>自訂清單</strong>：按下方「✏️ 管理清單」可隨時貼入新 YouTube 連結。
+        🎧 <strong>最穩定</strong>：按綠色「Spotify」按鈕直接在 Spotify App 聽歌，冇廣告！<br>
+        📱 <strong>YouTube</strong>：按紅色「YouTube App」按鈕在 YouTube App 播放。<br>
+        ✏️ <strong>自訂清單</strong>：按下方「✏️ 管理清單」可隨時貼入新連結。
       </div>
     </div>
 
@@ -953,7 +957,8 @@ tr:hover td { background:var(--gray-50); }
       <div id="float-now-playing" style="font-size:11px;color:var(--gray-700);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">音樂播放中</div>
       <div style="font-size:10px;color:var(--gray-400);" id="float-pl-name">Playlist 1</div>
     </div>
-    <a id="float-yt-link" href="https://www.youtube.com/playlist?list=RDVR_KtJYMrdo" target="_blank" rel="noopener" style="background:#FF0000;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:12px;flex-shrink:0;" title="在 YouTube App 播放">▶</a>
+    <a id="float-yt-link" href="https://www.youtube.com/playlist?list=RDVR_KtJYMrdo" target="_blank" rel="noopener" style="background:#FF0000;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:12px;flex-shrink:0;" title="YouTube App 播放">▶</a>
+    <a id="float-spotify-link" href="#" target="_blank" rel="noopener" style="background:#1DB954;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:11px;flex-shrink:0;" title="Spotify 播放">S</a>
     <button onclick="floatClose()" style="background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:14px;flex-shrink:0;">✕</button>
   </div>
 </div>
@@ -1179,9 +1184,9 @@ tr:hover td { background:var(--gray-50); }
 // ║  新增清單：在陣列末尾加一個物件即可，按鈕會自動生成         ║
 // ╚══════════════════════════════════════════════════════════════╝
 const YT_PLAYLISTS=[
-  {name:'🎵 Playlist 1', listId:'RDbZrfMU71W9I', videoId:'bZrfMU71W9I'},
-  {name:'🎵 Playlist 2', listId:'RDVR_KtJYMrdo', videoId:'VR_KtJYMrdo'},
-  {name:'🎵 Playlist 3', listId:'RDFS93cEWcwQA', videoId:'FS93cEWcwQA'}
+  {name:'🎵 Playlist 1', listId:'RDbZrfMU71W9I', videoId:'bZrfMU71W9I', spotify:'https://open.spotify.com/playlist/5yi3o52CcdvgxY9CoqtPCJ?si=NBWP14eRSb-rnULZr72oYg'},
+  {name:'🎵 Playlist 2', listId:'RDVR_KtJYMrdo', videoId:'VR_KtJYMrdo', spotify:'https://open.spotify.com/playlist/5yi3o52CcdvgxY9CoqtPCJ?si=NBWP14eRSb-rnULZr72oYg'},
+  {name:'🎵 Playlist 3', listId:'RDFS93cEWcwQA', videoId:'FS93cEWcwQA', spotify:'https://open.spotify.com/playlist/5yi3o52CcdvgxY9CoqtPCJ?si=NBWP14eRSb-rnULZr72oYg'}
 ];
 
 const engWritingDB = {
@@ -6358,7 +6363,7 @@ function initSyncPage(){
 }
 
 // ============ 版本更新檢查 ============
-const APP_VERSION='v32';
+const APP_VERSION='v33';
 let _versionReloadDone=false;
 function checkForUpdate(){
   const stored=localStorage.getItem('dse_app_version');
@@ -7175,9 +7180,14 @@ function loadPlaylistIframe(idx){
   // 更新 YouTube App 連結
   const appLink=document.getElementById('yt-app-link');
   if(appLink) appLink.href='https://www.youtube.com/playlist?list='+pl.listId;
+  // 更新 Spotify 連結
+  const spotLink=document.getElementById('spotify-link');
+  if(spotLink) spotLink.href=pl.spotify||'#';
   // 更新浮動播放器
   const floatLink=document.getElementById('float-yt-link');
   if(floatLink) floatLink.href='https://www.youtube.com/playlist?list='+pl.listId;
+  const floatSpotLink=document.getElementById('float-spotify-link');
+  if(floatSpotLink) floatSpotLink.href=pl.spotify||'#';
   const floatName=document.getElementById('float-pl-name');
   if(floatName) floatName.textContent=pl.name;
 }
@@ -7245,9 +7255,13 @@ function createPlaylistRow(idx, pl){
       <label style="font-size:11px;color:var(--gray-500);">顯示名稱</label>
       <input type="text" class="pl-name-input" value="${pl.name}" style="width:100%;padding:6px 10px;border:1px solid var(--gray-200);border-radius:8px;font-size:13px;margin-top:2px;">
     </div>
-    <div>
+    <div style="margin-bottom:6px;">
       <label style="font-size:11px;color:var(--gray-500);">YouTube 連結（貼上完整 URL，系統自動提取 ID）</label>
       <input type="url" class="pl-url-input" value="https://www.youtube.com/watch?v=${pl.videoId||''}&list=${pl.listId}" placeholder="https://www.youtube.com/watch?v=...&list=..." style="width:100%;padding:6px 10px;border:1px solid var(--gray-200);border-radius:8px;font-size:12px;margin-top:2px;">
+    </div>
+    <div>
+      <label style="font-size:11px;color:var(--gray-500);">🎧 Spotify 連結（可選，按 Spotify 按鈕時使用）</label>
+      <input type="url" class="pl-spotify-input" value="${pl.spotify||''}" placeholder="https://open.spotify.com/playlist/..." style="width:100%;padding:6px 10px;border:1px solid var(--gray-200);border-radius:8px;font-size:12px;margin-top:2px;">
     </div>
   `;
   return row;
@@ -7266,6 +7280,7 @@ function savePlaylistEditor(){
   rows.forEach(row=>{
     const nameInput=row.querySelector('.pl-name-input');
     const urlInput=row.querySelector('.pl-url-input');
+    const spotInput=row.querySelector('.pl-spotify-input');
     if(!nameInput||!urlInput) return;
     const name=nameInput.value.trim()||'🎵 Playlist';
     const url=urlInput.value.trim();
@@ -7276,7 +7291,8 @@ function savePlaylistEditor(){
       return;
     }
     urlInput.style.borderColor='var(--gray-200)';
-    newPlaylists.push({name, listId:parsed.listId, videoId:parsed.videoId||''});
+    const spotify=spotInput?spotInput.value.trim():'';
+    newPlaylists.push({name, listId:parsed.listId, videoId:parsed.videoId||'', spotify});
   });
   if(hasError){
     alert('⚠️ 紅色框嘅連結無法提取清單 ID，請檢查連結格式。');
