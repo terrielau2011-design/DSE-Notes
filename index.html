@@ -914,8 +914,33 @@ tr:hover td { background:var(--gray-50); }
       <div style="font-size:13px;color:var(--gray-700);line-height:1.6;">
         選擇播放清單後，影片會自動輪播。<br>
         💡 <strong>提示</strong>：切換頁面時音樂會繼續播放。<br>
-        📱 <strong>最穩定</strong>：按「在 YouTube App 播放」直接在手機 YouTube App 聽歌。
+        📱 <strong>最穩定</strong>：按「在 YouTube App 播放」直接在手機 YouTube App 聽歌。<br>
+        ✏️ <strong>自訂清單</strong>：按下方「✏️ 管理清單」可隨時貼入新 YouTube 連結。
       </div>
+    </div>
+
+    <!-- 管理清單按鈕 -->
+    <div style="margin-top:12px;">
+      <button class="btn btn-outline btn-sm" onclick="openPlaylistEditor()">✏️ 管理清單</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 管理播放清單 Modal ============ -->
+<div id="pl-editor-modal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h2 style="font-size:18px;font-weight:700;">✏️ 管理播放清單</h2>
+      <button onclick="closePlaylistEditor()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray-500);">✕</button>
+    </div>
+    <div style="font-size:13px;color:var(--gray-500);margin-bottom:16px;">
+      貼上 YouTube 連結，系統會自動提取清單 ID。每一行一條連結。
+    </div>
+    <div id="pl-editor-list"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+      <button class="btn btn-primary btn-sm" onclick="addPlaylistRow()">➕ 新增清單</button>
+      <button class="btn btn-sm" style="background:#4CAF50;color:#fff;" onclick="savePlaylistEditor()">💾 儲存並套用</button>
+      <button class="btn btn-outline btn-sm" onclick="resetPlaylistToDefault()">🔄 重設為預設</button>
     </div>
   </div>
 </div>
@@ -6333,7 +6358,7 @@ function initSyncPage(){
 }
 
 // ============ 版本更新檢查 ============
-const APP_VERSION='v31';
+const APP_VERSION='v32';
 let _versionReloadDone=false;
 function checkForUpdate(){
   const stored=localStorage.getItem('dse_app_version');
@@ -7066,18 +7091,55 @@ function renderDashStats(){
 
 // ============ 音樂播放器（iframe 方式） ============
 // ⚠️ 播放清單配置已移至 <script> 最頂端（YT_PLAYLISTS 陣列），方便修改！
+// 用戶亦可在 App 內按「✏️ 管理清單」修改，設定存於 localStorage
 
+const _DEFAULT_PLAYLISTS=YT_PLAYLISTS.slice(); // 保留代碼預設值
 let currentPlaylist=0;
 let _plSwitching=false; // 防抖鎖：載入期間禁止重複點擊
 const _PL_DEBOUNCE_MS=1500; // 切換冷卻時間（毫秒）
 
+// 讀取用戶自訂 Playlist（localStorage 優先，否則用代碼預設）
+function getPlaylistConfig(){
+  try{
+    const saved=localStorage.getItem('dse_custom_playlists');
+    if(saved){
+      const arr=JSON.parse(saved);
+      if(Array.isArray(arr)&&arr.length>0) return arr;
+    }
+  }catch(e){}
+  return _DEFAULT_PLAYLISTS;
+}
+
+// 儲存用戶自訂 Playlist 到 localStorage
+function savePlaylistConfig(arr){
+  localStorage.setItem('dse_custom_playlists',JSON.stringify(arr));
+}
+
+// 從 YouTube URL 自動提取 listId 和 videoId
+function parseYouTubeUrl(url){
+  if(!url) return {listId:'',videoId:''};
+  let listId='', videoId='';
+  // 提取 list=
+  const listMatch=url.match(/[?&]list=([^&]+)/);
+  if(listMatch) listId=listMatch[1];
+  // 提取 v=
+  const videoMatch=url.match(/[?&]v=([^&]+)/);
+  if(videoMatch) videoId=videoMatch[1];
+  // 如果輸入嘅只係 ID（冇 URL 格式），當做 listId
+  if(!listId&&!videoId&&/^[a-zA-Z0-9_-]+$/.test(url.trim())){
+    listId=url.trim();
+  }
+  return {listId, videoId};
+}
+
 // 初始化：動態生成按鈕 + 載入第一個清單
 function initMusicPlayer(){
+  const playlists=getPlaylistConfig();
   const sel=document.getElementById('playlist-selector');
   if(!sel) return;
   // 生成按鈕
   sel.innerHTML='';
-  YT_PLAYLISTS.forEach((pl,i)=>{
+  playlists.forEach((pl,i)=>{
     const btn=document.createElement('button');
     btn.className='btn btn-sm playlist-btn'+(i===0?' active':'');
     btn.dataset.pl=i;
@@ -7091,11 +7153,12 @@ function initMusicPlayer(){
 
 // 核心：銷毀舊 iframe → 建立新 iframe（徹底清除上一次播放狀態）
 function loadPlaylistIframe(idx){
-  const pl=YT_PLAYLISTS[idx];
+  const playlists=getPlaylistConfig();
+  const pl=playlists[idx];
   if(!pl) return;
   const container=document.getElementById('music-player-container');
   if(!container) return;
-  // 銷毀舊 iframe（移除 DOM = 徹底清除 YouTube Player 狀態）
+  // 銷毀舊 iframe
   container.innerHTML='';
   // 建立新 iframe
   const iframe=document.createElement('iframe');
@@ -7105,7 +7168,6 @@ function loadPlaylistIframe(idx){
   iframe.allow='autoplay; encrypted-media';
   iframe.allowFullscreen=true;
   iframe.onload=function(){
-    // iframe 載入完成 → 解除防抖鎖
     _plSwitching=false;
     enablePlaylistBtns(true);
   };
@@ -7122,28 +7184,20 @@ function loadPlaylistIframe(idx){
 
 // 切換播放清單（含防抖 + 按鈕 disable）
 function switchPlaylist(idx){
-  if(_plSwitching) return; // 防抖：載入中，忽略點擊
-  if(idx===currentPlaylist){
-    // 同一個清單：重新載入（銷毀重建）
-  }
+  if(_plSwitching) return;
   _plSwitching=true;
   currentPlaylist=idx;
-  // 禁用所有按鈕
   enablePlaylistBtns(false);
-  // 標記 active 樣式
   document.querySelectorAll('.playlist-btn').forEach(b=>{
     b.classList.toggle('active',parseInt(b.dataset.pl)===idx);
   });
-  // 銷毀重建 iframe
   loadPlaylistIframe(idx);
-  // 安全保險：即使 iframe onload 沒觸發，也在冷卻時間後解鎖
   setTimeout(function(){
     _plSwitching=false;
     enablePlaylistBtns(true);
   }, _PL_DEBOUNCE_MS);
 }
 
-// 啟用/禁用播放清單按鈕
 function enablePlaylistBtns(enabled){
   document.querySelectorAll('.playlist-btn').forEach(b=>{
     b.disabled=!enabled;
@@ -7161,6 +7215,90 @@ function musicMinimize(){
 function floatClose(){
   const fp=document.getElementById('float-player');
   if(fp) fp.style.display='none';
+}
+
+// ============ 播放清單編輯器 ============
+function openPlaylistEditor(){
+  const playlists=getPlaylistConfig();
+  const list=document.getElementById('pl-editor-list');
+  if(!list) return;
+  list.innerHTML='';
+  playlists.forEach((pl,i)=>{
+    list.appendChild(createPlaylistRow(i, pl));
+  });
+  document.getElementById('pl-editor-modal').style.display='flex';
+}
+
+function closePlaylistEditor(){
+  document.getElementById('pl-editor-modal').style.display='none';
+}
+
+function createPlaylistRow(idx, pl){
+  const row=document.createElement('div');
+  row.style.cssText='background:var(--gray-50);border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid var(--gray-200);';
+  row.innerHTML=`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="font-weight:600;font-size:13px;color:var(--primary);">清單 ${idx+1}</span>
+      <button onclick="this.closest('div[style]').remove()" style="margin-left:auto;background:none;border:none;color:#E53935;cursor:pointer;font-size:13px;">🗑 刪除</button>
+    </div>
+    <div style="margin-bottom:6px;">
+      <label style="font-size:11px;color:var(--gray-500);">顯示名稱</label>
+      <input type="text" class="pl-name-input" value="${pl.name}" style="width:100%;padding:6px 10px;border:1px solid var(--gray-200);border-radius:8px;font-size:13px;margin-top:2px;">
+    </div>
+    <div>
+      <label style="font-size:11px;color:var(--gray-500);">YouTube 連結（貼上完整 URL，系統自動提取 ID）</label>
+      <input type="url" class="pl-url-input" value="https://www.youtube.com/watch?v=${pl.videoId||''}&list=${pl.listId}" placeholder="https://www.youtube.com/watch?v=...&list=..." style="width:100%;padding:6px 10px;border:1px solid var(--gray-200);border-radius:8px;font-size:12px;margin-top:2px;">
+    </div>
+  `;
+  return row;
+}
+
+function addPlaylistRow(){
+  const list=document.getElementById('pl-editor-list');
+  const idx=list.children.length;
+  list.appendChild(createPlaylistRow(idx, {name:'🎵 Playlist '+(idx+1), listId:'', videoId:''}));
+}
+
+function savePlaylistEditor(){
+  const rows=document.querySelectorAll('#pl-editor-list > div');
+  const newPlaylists=[];
+  let hasError=false;
+  rows.forEach(row=>{
+    const nameInput=row.querySelector('.pl-name-input');
+    const urlInput=row.querySelector('.pl-url-input');
+    if(!nameInput||!urlInput) return;
+    const name=nameInput.value.trim()||'🎵 Playlist';
+    const url=urlInput.value.trim();
+    const parsed=parseYouTubeUrl(url);
+    if(!parsed.listId){
+      urlInput.style.borderColor='#E53935';
+      hasError=true;
+      return;
+    }
+    urlInput.style.borderColor='var(--gray-200)';
+    newPlaylists.push({name, listId:parsed.listId, videoId:parsed.videoId||''});
+  });
+  if(hasError){
+    alert('⚠️ 紅色框嘅連結無法提取清單 ID，請檢查連結格式。');
+    return;
+  }
+  if(newPlaylists.length===0){
+    alert('⚠️ 至少需要一個播放清單。');
+    return;
+  }
+  savePlaylistConfig(newPlaylists);
+  currentPlaylist=0;
+  initMusicPlayer();
+  closePlaylistEditor();
+  alert('✅ 播放清單已儲存！');
+}
+
+function resetPlaylistToDefault(){
+  if(!confirm('🔄 確定重設為預設清單？\n你嘅自訂清單會被移除。')) return;
+  localStorage.removeItem('dse_custom_playlists');
+  currentPlaylist=0;
+  initMusicPlayer();
+  closePlaylistEditor();
 }
 
 // 強制更新 App（清除所有緩存並重新載入）
