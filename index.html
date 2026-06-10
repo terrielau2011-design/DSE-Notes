@@ -6341,7 +6341,7 @@ function initSyncPage(){
 }
 
 // ============ 版本更新檢查 ============
-const APP_VERSION='v24';
+const APP_VERSION='v25';
 function checkForUpdate(){
   // 比對本地版本和最新版本
   const stored=localStorage.getItem('dse_app_version');
@@ -7067,11 +7067,20 @@ const YT_PLAYLISTS=[
 let currentPlaylist=0;
 let ytPlayer=null;
 let ytReady=false;
+let ytRetryCount=0;
 
 // 載入 YouTube IFrame API
 (function(){
   const tag=document.createElement('script');
   tag.src='https://www.youtube.com/iframe_api';
+  tag.onerror=function(){
+    console.log('⚠️ YouTube API 載入失敗，3秒後重試');
+    setTimeout(function(){
+      const t2=document.createElement('script');
+      t2.src='https://www.youtube.com/iframe_api';
+      document.head.appendChild(t2);
+    },3000);
+  };
   document.head.appendChild(tag);
 })();
 
@@ -7093,8 +7102,10 @@ function onYouTubeIframeAPIReady(){
     events:{
       onReady:function(e){
         ytReady=true;
+        ytRetryCount=0;
         e.target.setVolume(50);
         updatePlayBtn();
+        document.getElementById('music-now-playing').textContent='🎵 就緒 — 選擇歌曲播放';
       },
       onStateChange:function(e){
         updatePlayBtn();
@@ -7106,14 +7117,25 @@ function onYouTubeIframeAPIReady(){
           const floatNP=document.getElementById('float-now-playing');
           if(floatNP) floatNP.textContent='🎵 '+title;
         }
+      },
+      onError:function(e){
+        console.log('⚠️ YouTube 播放器錯誤:', e.data);
+        document.getElementById('music-now-playing').textContent='⚠️ 播放出錯，嘗試下一首...';
+        // 嘗試跳到下一首
+        if(ytPlayer&&ytReady&&ytRetryCount<3){
+          ytRetryCount++;
+          setTimeout(function(){ ytPlayer.nextVideo(); }, 1000);
+        }
       }
     }
   });
 }
 
 function switchPlaylist(idx){
-  if(idx===currentPlaylist) return;
+  // 允許重新點擊同一個 playlist（用於重新載入）
+  const isSamePlaylist=(idx===currentPlaylist);
   currentPlaylist=idx;
+  ytRetryCount=0;
   // 更新按鈕樣式
   document.querySelectorAll('.playlist-btn').forEach(b=>{
     b.classList.toggle('active',parseInt(b.dataset.pl)===idx);
@@ -7121,10 +7143,22 @@ function switchPlaylist(idx){
   // 載入新 playlist
   if(ytPlayer&&ytReady){
     const pl=YT_PLAYLISTS[idx];
-    ytPlayer.loadPlaylist({list:pl.id});
+    if(isSamePlaylist){
+      // 同一個 playlist：重新載入
+      ytPlayer.loadPlaylist({list:pl.id, index:0});
+    }else{
+      // 不同 playlist：用 cuePlaylist 避免立即播放衝突
+      ytPlayer.cuePlaylist({list:pl.id});
+    }
     document.getElementById('music-now-playing').textContent='⏳ 載入 '+pl.name+'...';
     const floatNP=document.getElementById('float-now-playing');
     if(floatNP) floatNP.textContent='⏳ '+pl.name;
+  }else{
+    // 播放器未就緒，嘗試重新初始化
+    document.getElementById('music-now-playing').textContent='⏳ 播放器載入中...';
+    if(typeof YT!=='undefined'&&YT.Player){
+      onYouTubeIframeAPIReady();
+    }
   }
 }
 
