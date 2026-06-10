@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dse-notes-v26';
+const CACHE_NAME = 'dse-notes-v27';
 const CACHE_URLS = [
   '/DSE-Notes/',
   '/DSE-Notes/index.html',

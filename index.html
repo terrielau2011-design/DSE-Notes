@@ -6341,23 +6341,36 @@ function initSyncPage(){
 }
 
 // ============ 版本更新檢查 ============
-const APP_VERSION='v26';
+const APP_VERSION='v27';
+let _versionReloadDone=false;
 function checkForUpdate(){
-  // 比對本地版本和最新版本
   const stored=localStorage.getItem('dse_app_version');
   if(stored && stored!==APP_VERSION){
     console.log('🔄 版本更新:', stored, '→', APP_VERSION, '，清除快取中...');
-    // 版本變更時才清除快取
     if('caches' in window){
       caches.keys().then(names=>{names.forEach(name=>caches.delete(name));});
     }
     if('serviceWorker' in navigator){
       navigator.serviceWorker.getRegistrations().then(regs=>{
-        regs.forEach(reg=>reg.unregister());
+        Promise.all(regs.map(reg=>reg.unregister())).then(()=>{
+          localStorage.setItem('dse_app_version', APP_VERSION);
+          if(!_versionReloadDone){
+            _versionReloadDone=true;
+            console.log('🔄 緩存已清除，重新載入頁面...');
+            location.reload();
+          }
+        });
       });
+    }else{
+      localStorage.setItem('dse_app_version', APP_VERSION);
+      if(!_versionReloadDone){
+        _versionReloadDone=true;
+        location.reload();
+      }
     }
+  }else{
+    localStorage.setItem('dse_app_version', APP_VERSION);
   }
-  localStorage.setItem('dse_app_version', APP_VERSION);
 }
 checkForUpdate();
 // ============ ZB1 鼓勵夥伴 ============
@@ -6498,9 +6511,10 @@ window.addEventListener('load',function(){
 
 // ============ PWA Service Worker 註冊 ============
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').then(reg=>{
+  navigator.serviceWorker.register('sw.js?v='+APP_VERSION).then(reg=>{
     console.log('✅ Service Worker 已註冊，版本:', APP_VERSION);
-    // 每次載入時檢查 SW 更新
+    // 每次載入都強制檢查 SW 更新
+    reg.update();
     reg.addEventListener('updatefound', ()=>{
       const newWorker=reg.installing;
       newWorker.addEventListener('statechange', ()=>{
@@ -6509,17 +6523,17 @@ if('serviceWorker' in navigator){
         }
       });
     });
-    // 主動觸發更新檢查
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
     }
   }).catch(err=>{
     console.log('Service Worker 註冊失敗:',err);
   });
-  // SW 控制頁面後自動刷新（確保使用新版本）
   navigator.serviceWorker.addEventListener('controllerchange', ()=>{
-    if(localStorage.getItem('dse_app_version')===APP_VERSION){
-      // 版本一致不需要刷新
+    // 新 SW 接管後自動刷新
+    if(!_versionReloadDone && localStorage.getItem('dse_app_version')!==APP_VERSION){
+      _versionReloadDone=true;
+      location.reload();
     }
   });
 }
