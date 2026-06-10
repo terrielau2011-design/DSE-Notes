@@ -881,9 +881,12 @@ tr:hover td { background:var(--gray-50); }
     <div class="zb1-avatar" style="width:44px;height:44px;background-image:url('https://raw.githubusercontent.com/terrielau2011-design/DSE-Notes/main/images/zb1_6.jpeg');border:2px solid #4CAF50;"></div>
     <div style="font-size:12px;color:#2E7D32;">聽住音樂加油！🎵💚</div>
   </div>
-  <div class="page-header">
-    <h1>🎵 溫習音樂</h1>
-    <p style="color:var(--gray-500);font-size:14px;margin-top:4px;">溫習悶了？播放音樂輕鬆一下 🎶</p>
+  <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <div>
+      <h1>🎵 溫習音樂</h1>
+      <p style="color:var(--gray-500);font-size:14px;margin-top:4px;">溫習悶了？播放音樂輕鬆一下 🎶</p>
+    </div>
+    <button onclick="forceUpdateApp()" style="background:var(--primary);color:#fff;border:none;padding:6px 14px;border-radius:16px;font-size:12px;font-weight:600;cursor:pointer;">🔄 更新系統</button>
   </div>
 
   <div style="max-width:700px;margin:0 auto;">
@@ -6330,7 +6333,7 @@ function initSyncPage(){
 }
 
 // ============ 版本更新檢查 ============
-const APP_VERSION='v30';
+const APP_VERSION='v31';
 let _versionReloadDone=false;
 function checkForUpdate(){
   const stored=localStorage.getItem('dse_app_version');
@@ -7158,6 +7161,31 @@ function musicMinimize(){
 function floatClose(){
   const fp=document.getElementById('float-player');
   if(fp) fp.style.display='none';
+}
+
+// 強制更新 App（清除所有緩存並重新載入）
+function forceUpdateApp(){
+  if(!confirm('🔄 確定更新系統？\n將會清除緩存並重新載入最新版本。')) return;
+  // 1. 清除版本標記，確保下次載入觸發更新
+  localStorage.removeItem('dse_app_version');
+  // 2. 清除所有 Cache Storage
+  if('caches' in window){
+    caches.keys().then(names=>{names.forEach(name=>caches.delete(name));}).then(()=>{
+      // 3. 反註冊所有 Service Worker
+      if('serviceWorker' in navigator){
+        navigator.serviceWorker.getRegistrations().then(regs=>{
+          Promise.all(regs.map(reg=>reg.unregister())).then(()=>{
+            // 4. 重新載入
+            location.reload();
+          });
+        });
+      }else{
+        location.reload();
+      }
+    });
+  }else{
+    location.reload();
+  }
 }
 
 // 頁面載入時初始化播放器
