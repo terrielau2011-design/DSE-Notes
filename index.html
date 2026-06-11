@@ -372,6 +372,7 @@ tr:hover td { background:var(--gray-50); }
   <div class="nav-item" data-page="sync"><span class="icon">☁️</span>雲端同步</div>
   <div class="nav-item" data-page="music"><span class="icon">🎵</span>音樂</div>
   <div class="nav-item" data-page="report"><span class="icon">📊</span>學習報告</div>
+  <div style="margin-top:auto;padding:10px 14px;border-top:1px solid var(--gray-200);font-size:11px;color:var(--gray-400);text-align:center;" id="sidebar-version"></div>
 </nav>
 
 <div class="main">
@@ -6363,7 +6364,7 @@ function initSyncPage(){
 }
 
 // ============ 版本更新檢查 ============
-const APP_VERSION='v33';
+const APP_VERSION='v34';
 let _versionReloadDone=false;
 function checkForUpdate(){
   const stored=localStorage.getItem('dse_app_version');
@@ -7344,6 +7345,22 @@ function forceUpdateApp(){
 
 // 頁面載入時初始化播放器
 initMusicPlayer();
+
+// ============ 版本號顯示 ============
+function showVersion(){
+  const el=document.getElementById('sidebar-version');
+  if(el) el.innerHTML='<span style="color:var(--primary);font-weight:600;">'+APP_VERSION+'</span> · DSE筆記系統';
+  // 檢查 GitHub 最新版本
+  fetch('https://raw.githubusercontent.com/terrielau2011-design/DSE-Notes/main/index.html',{cache:'no-cache'})
+    .then(r=>r.text())
+    .then(html=>{
+      const m=html.match(/APP_VERSION='(v\d+)'/);
+      if(m&&m[1]&&m[1]!==APP_VERSION){
+        if(el) el.innerHTML='🔄 <span style="color:#E53935;font-weight:600;">有更新 ('+m[1]+')</span><br><span style="font-size:10px;color:var(--gray-400);">按「🔄 更新系統」升級</span>';
+      }
+    }).catch(()=>{});
+}
+showVersion();
 
 </script>
 </body>
